@@ -8,50 +8,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    /**
-     * Register user baru.
-     */
-    public function register(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
-            'email' => ['required', 'email', 'max:100', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['nullable', 'in:admin,operator,citizen'],
-            'phone_number' => ['nullable', 'string', 'max:15'],
-        ]);
-
-        $user = User::create([
-            'full_name' => $validated['full_name'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-
-            // Model User kamu sudah menggunakan
-            // cast password => hashed.
-            'password' => $validated['password'],
-
-            'role' => $validated['role'] ?? 'citizen',
-            'phone_number' => $validated['phone_number'] ?? null,
-            'is_active' => true,
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User berhasil didaftarkan.',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ], 201);
-    }
-
     /**
      * Login user.
      *
@@ -91,7 +51,15 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login berhasil.',
             'data' => [
-                'user' => $user,
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'phone_number' => $user->phone_number,
+                    'is_active' => $user->is_active,
+                ],
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -103,11 +71,36 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $bearer = $request->bearerToken();
+
+        $token = PersonalAccessToken::findToken($bearer);
+    
+        if (!$token) {
+            return response()->json([
+                'message' => 'Sesi Anda telah berakhir atau token tidak valid.',
+            ], 401);
+        }
+
+        $user = $token->tokenable;
+
+        if ($user->is_active === false || $user->is_active === '0') {
+            return response()->json([
+                'message' => 'Akun kamu tidak aktif.',
+            ], 403);
+        }
+
         return response()->json([
-            'success' => true,
             'message' => 'Data user berhasil diambil.',
             'data' => [
-                'user' => $request->user(),
+                'user' => [
+                    'user_id' => $user->user_id,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'phone_number' => $user->phone_number,
+                    'is_active' => $user->is_active,
+                ]
             ],
         ]);
     }
@@ -117,15 +110,27 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $bearer = $request->bearerToken();
 
-        if ($user && $user->currentAccessToken()) {
-            $user->currentAccessToken()->delete();
+        if (!$bearer) {
+            return response()->json([
+                'message' => 'Token tidak ditemukan.'
+            ], 401);
         }
 
+        $token = PersonalAccessToken::findToken($bearer);
+
+        if (!$token) {
+            return response()->json([
+                'message' => 'Token tidak valid atau sudah kadaluarsa.'
+            ], 401);
+        }
+
+        $token->delete();
+
         return response()->json([
-            'success' => true,
-            'message' => 'Logout berhasil.',
+            'success' => 'succes',
+            'message' => 'Berhasil Logout dan token telah dihapus.',
         ]);
     }
 }
