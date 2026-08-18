@@ -29,5 +29,10 @@ class DatabaseSeeder extends Seeder
             'phone_number' => '081234567891',
             'is_active' => true,
         ]);
+
+        $this->call([
+            RoleSeeder::class,
+            PermissionSeeder::class,
+            RolePermissionSeeder::class,        ]);
     }
 }

@@ -32,14 +32,21 @@ Route::prefix('auth')->group(function () {
 
 });
 
-Route::middleware(['auth:sanctum', RoleMiddleware::class . ':Admin'])
+Route::middleware([
+    'auth:sanctum',
+    'permission:user-management',
+])
     ->prefix('users')
     ->group(function () {
 
         Route::get('/', [UserController::class, 'index']);
+
         Route::post('/', [UserController::class, 'store']);
+
         Route::get('/{user:user_id}', [UserController::class, 'show']);
+
         Route::put('/{user:user_id}', [UserController::class, 'update']);
+
         Route::delete('/{user:user_id}', [UserController::class, 'destroy']);
 
     });
@@ -123,3 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
+Route::middleware(['auth:sanctum', 'permission:Dashboard'])
+    ->get('/test-permission', function () {
+        return response()->json([
+            'success' => true,
+            'message' => 'Anda memiliki permission Dashboard.',
+        ]);
+    });
