@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,25 +10,32 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
+    'national_id',
     'full_name',
-    'username',
+    'birth_place',
+    'birth_date',
+    'gender',
+    'address',
+    'phone_number',
     'email',
     'password',
-    'role',
-    'phone_number',
-    'is_active',
 ])]
 #[Hidden([
     'password',
 ])]
-class User extends Authenticatable
+class Citizen extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Table name.
+     */
+    protected $table = 'citizens';
+
+    /**
      * Primary key.
      */
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'citizen_id';
 
     /**
      * Primary key type.
@@ -41,6 +47,7 @@ class User extends Authenticatable
      */
     public $incrementing = true;
 
+
     /**
      * Cast attributes.
      */
@@ -48,7 +55,22 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
-            'is_active' => 'boolean',
+            'birth_date' => 'date',
         ];
+    }
+
+    public function letterRequests()
+    {
+        return $this->hasMany(LetterRequest::class, 'citizen_id', 'citizen_id');
+    }
+
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class, 'citizen_id', 'citizen_id');
+    }
+
+    public function bookLoans()
+    {
+        return $this->hasMany(BookLoan::class, 'citizen_id', 'citizen_id');
     }
 }

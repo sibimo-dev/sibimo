@@ -44,7 +44,6 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':Admin'])
 
     });
 
-/*PUBLIK diakses tanpa login (profil desa publik)*/
 
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
@@ -123,3 +122,4 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 });
+

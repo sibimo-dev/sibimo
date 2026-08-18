@@ -2,34 +2,29 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
-    'full_name',
-    'username',
-    'email',
-    'password',
-    'role',
-    'phone_number',
+    'section_name',
+    'slug',
+    'sort_order',
     'is_active',
 ])]
-#[Hidden([
-    'password',
-])]
-class User extends Authenticatable
+class ProfileSection extends Model
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory;
+
+    /**
+     * Table name.
+     */
+    protected $table = 'profile_sections';
 
     /**
      * Primary key.
      */
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'section_id';
 
     /**
      * Primary key type.
@@ -41,14 +36,22 @@ class User extends Authenticatable
      */
     public $incrementing = true;
 
+    public $timestamps = false;
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = null;
+
     /**
      * Cast attributes.
      */
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function contents()
+    {
+        return $this->hasMany(ProfileContent::class, 'section_id', 'section_id');
     }
 }
