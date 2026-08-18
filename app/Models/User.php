@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Role;
+use App\Models\UserPermission;
 
 #[Fillable([
     'full_name',
@@ -50,5 +52,23 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function roleRelation()
+    {
+        return $this->belongsTo(
+            Role::class,
+            'role_id',
+            'role_id'
+        );
+    }
+
+    public function userPermissions()
+    {
+        return $this->hasMany(
+            UserPermission::class,
+            'user_id',
+            'user_id'
+        );
     }
 }
