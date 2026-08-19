@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
     'start_time',
     'end_time',
     'location',
-    'craated_by',
+    'created_by',
 ])]
 class Agenda extends Model
 {

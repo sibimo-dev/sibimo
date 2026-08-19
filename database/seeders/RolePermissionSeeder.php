@@ -60,6 +60,7 @@ class RolePermissionSeeder extends Seeder
         */
         $adminSlugs = [
             'dashboard',
+            'user-management',
             'profil-desa',
             'berita',
             'layanan-desa',

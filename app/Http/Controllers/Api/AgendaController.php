@@ -31,8 +31,9 @@ class AgendaController extends Controller
             'start_time' => ['nullable','date_format:H:i'],
             'end_time' => ['nullable','date_format:H:i'],
             'location' => ['nullable','string','max:255'],
-            'craated_by' => ['required','exists:users,user_id']
         ]);
+
+        $validated['created_by'] = $request->user()->user_id;
 
         $agenda = Agenda::create($validated);
 

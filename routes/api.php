@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\UserPermissionController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileContentController;
@@ -51,6 +54,23 @@ Route::middleware([
 
     });
 
+Route::middleware([
+    'auth:sanctum',
+    'permission:user-management',
+])
+    ->group(function () {
+
+        Route::apiResource('roles', RoleController::class)
+            ->parameters(['roles' => 'role_id']);
+
+        Route::apiResource('permissions', PermissionController::class)
+            ->parameters(['permissions' => 'permission_id']);
+
+        Route::get('/user-permissions', [UserPermissionController::class, 'index']);
+        Route::post('/user-permissions', [UserPermissionController::class, 'store']);
+        Route::delete('/user-permissions', [UserPermissionController::class, 'destroy']);
+
+    });
 
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
@@ -109,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->parameters(['citizens' => 'citizen_id']);
 
    
-    Route::middleware(RoleMiddleware::class . ':Admin,Operator')->group(function () {
+    Route::middleware(RoleMiddleware::class . ':Superadmin,Admin,Operator')->group(function () {
         Route::apiResource('profile-sections', ProfileSectionController::class)
             ->parameters(['profile-sections' => 'section_id'])->except(['index']);
         Route::apiResource('profile-contents', ProfileContentController::class)
