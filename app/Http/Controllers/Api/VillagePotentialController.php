@@ -17,7 +17,7 @@ class VillagePotentialController extends Controller
         $potentials = VillagePotential::query()->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data potensi desa berhasil diambil.',
             'data' => $potentials,
         ]);
@@ -36,7 +36,7 @@ class VillagePotentialController extends Controller
         $potential = VillagePotential::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Potensi desa berhasil dibuat.',
             'data' => $potential,
         ], 201);
@@ -48,7 +48,7 @@ class VillagePotentialController extends Controller
         $potential = VillagePotential::query()->findOrFail($potential_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail potensi desa berhasil diambil.',
             'data' => $potential,
         ]);
@@ -70,7 +70,7 @@ class VillagePotentialController extends Controller
         $potential->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Potensi desa berhasil diperbarui.',
             'data' => $potential,
         ]);
@@ -83,7 +83,7 @@ class VillagePotentialController extends Controller
         $potential->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Potensi desa berhasil dihapus.',
         ]);
     }

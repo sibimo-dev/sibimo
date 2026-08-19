@@ -16,7 +16,7 @@ class FeedbackController extends Controller
         $feedbacks = Feedback::query()->latest('submitted_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data feedback berhasil diambil.',
             'data' => $feedbacks,
         ]);
@@ -30,10 +30,12 @@ class FeedbackController extends Controller
             'message' => ['required','string']
         ]);
 
+        $validated['submitted_at'] = now();
+
         $feedback = Feedback::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Feedback berhasil dikirim.',
             'data' => $feedback,
         ], 201);
@@ -44,7 +46,7 @@ class FeedbackController extends Controller
         $feedback = Feedback::query()->findOrFail($feedback_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail feedback berhasil diambil.',
             'data' => $feedback,
         ]);
@@ -61,7 +63,7 @@ class FeedbackController extends Controller
         $feedback->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Status feedback berhasil diperbarui.',
             'data' => $feedback,
         ]);
@@ -73,7 +75,7 @@ class FeedbackController extends Controller
         $feedback->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Feedback berhasil dihapus.',
         ]);
     }

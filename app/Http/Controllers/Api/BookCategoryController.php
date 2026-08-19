@@ -17,7 +17,7 @@ class BookCategoryController extends Controller
         $categorys = BookCategory::query()->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data kategori buku berhasil diambil.',
             'data' => $categorys,
         ]);
@@ -33,7 +33,7 @@ class BookCategoryController extends Controller
         $category = BookCategory::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori buku berhasil dibuat.',
             'data' => $category,
         ], 201);
@@ -44,7 +44,7 @@ class BookCategoryController extends Controller
         $category = BookCategory::query()->findOrFail($category_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail kategori buku berhasil diambil.',
             'data' => $category,
         ]);
@@ -62,7 +62,7 @@ class BookCategoryController extends Controller
         $category->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori buku berhasil diperbarui.',
             'data' => $category,
         ]);
@@ -74,7 +74,7 @@ class BookCategoryController extends Controller
         $category->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori buku berhasil dihapus.',
         ]);
     }

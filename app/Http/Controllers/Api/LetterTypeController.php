@@ -17,7 +17,7 @@ class LetterTypeController extends Controller
         $letterTypes = LetterType::query()->with(['documents'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data jenis surat berhasil diambil.',
             'data' => $letterTypes,
         ]);
@@ -38,7 +38,7 @@ class LetterTypeController extends Controller
         $letterType = LetterType::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Jenis surat berhasil dibuat.',
             'data' => $letterType,
         ], 201);
@@ -50,7 +50,7 @@ class LetterTypeController extends Controller
         $letterType = LetterType::query()->with(['documents'])->findOrFail($letter_type_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail jenis surat berhasil diambil.',
             'data' => $letterType,
         ]);
@@ -72,7 +72,7 @@ class LetterTypeController extends Controller
         $letterType->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Jenis surat berhasil diperbarui.',
             'data' => $letterType,
         ]);
@@ -84,7 +84,7 @@ class LetterTypeController extends Controller
         $letterType->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Jenis surat berhasil dihapus.',
         ]);
     }
@@ -94,7 +94,7 @@ class LetterTypeController extends Controller
         $documents = LetterTypeDocument::where('letter_type_id', $letterTypeId)->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data dokumen persyaratan berhasil diambil.',
             'data' => $documents,
         ]);
@@ -112,7 +112,7 @@ class LetterTypeController extends Controller
         $document = LetterTypeDocument::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Dokumen persyaratan berhasil ditambahkan.',
             'data' => $document,
         ], 201);
@@ -124,7 +124,7 @@ class LetterTypeController extends Controller
         $document->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Dokumen persyaratan berhasil dihapus.',
         ]);
     }

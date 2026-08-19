@@ -35,7 +35,10 @@ class ComplaintAttachment extends Model
      */
     public $incrementing = true;
 
-    public $timestamps = false;
+    public $timestamps = true;
+
+    const CREATED_AT = 'uploaded_at';
+    const UPDATED_AT = null;
 
     public function complaint()
     {

@@ -17,7 +17,7 @@ class CitizenController extends Controller
         $citizens = Citizen::query()->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data citizen berhasil diambil.',
             'data' => $citizens,
         ]);
@@ -40,7 +40,7 @@ class CitizenController extends Controller
         $citizen = Citizen::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Citizen berhasil dibuat.',
             'data' => $citizen,
         ], 201);
@@ -51,7 +51,7 @@ class CitizenController extends Controller
         $citizen = Citizen::query()->findOrFail($citizen_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail citizen berhasil diambil.',
             'data' => $citizen,
         ]);
@@ -63,7 +63,7 @@ class CitizenController extends Controller
         $citizen = Citizen::findOrFail($citizen_id);
 
         $validated = $request->validate([
-            'national_id' => ['sometimes','required','string','size:16', Rule::unique('citizens','nationnal_id')->ignore($citizen_id, 'citizen_id')],
+            'national_id' => ['sometimes','required','string','size:16', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
             'full_name' => ['sometimes','required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
             'birth_date' => ['nullable','date'],
@@ -77,7 +77,7 @@ class CitizenController extends Controller
         $citizen->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Citizen berhasil diperbarui.',
             'data' => $citizen,
         ]);
@@ -89,7 +89,7 @@ class CitizenController extends Controller
         $citizen->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Citizen berhasil dihapus.',
         ]);
     }

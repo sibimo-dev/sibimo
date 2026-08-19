@@ -17,7 +17,7 @@ class ComplaintController extends Controller
         $complaints = Complaint::query()->with(['citizen', 'attachments', 'statusHistories'])->latest('submitted_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data pengaduan berhasil diambil.',
             'data' => $complaints,
         ]);
@@ -26,16 +26,18 @@ class ComplaintController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'citizen_id' => ['required','exists:citizens,citizen_id'],
-            'category' => ['required', Rule::in(['Infrastructure','Public Service','Environment','Security','Other'])],
-            'title' => ['required','string','max:200'],
-            'description' => ['required','string']
+            'citizen_id' => ['required', 'exists:citizens,citizen_id'],
+            'category' => ['required', Rule::in(['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other'])],
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['required', 'string']
         ]);
-
+    
+        $validated['submitted_at'] = now();
+    
         $complaint = Complaint::create($validated);
-
+    
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Pengaduan berhasil dibuat.',
             'data' => $complaint,
         ], 201);
@@ -46,7 +48,7 @@ class ComplaintController extends Controller
         $complaint = Complaint::query()->with(['citizen', 'attachments', 'statusHistories'])->findOrFail($complaint_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail pengaduan berhasil diambil.',
             'data' => $complaint,
         ]);
@@ -66,7 +68,7 @@ class ComplaintController extends Controller
         $complaint->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Pengaduan berhasil diperbarui.',
             'data' => $complaint,
         ]);
@@ -78,7 +80,7 @@ class ComplaintController extends Controller
         $complaint->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Pengaduan berhasil dihapus.',
         ]);
     }
@@ -86,26 +88,30 @@ class ComplaintController extends Controller
     public function updateStatus(Request $request, int $complaint_id): JsonResponse
     {
         $complaint = Complaint::findOrFail($complaint_id);
-
+    
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['Submitted','In Progress','Resolved','Rejected'])],
+            'status' => ['required', Rule::in(['Submitted', 'In Progress', 'Resolved', 'Rejected'])],
             'note' => ['nullable', 'string'],
-            'user_id' => ['required', 'exists:users,user_id'],
         ]);
-
-        $complaint->update(['status' => $validated['status']]);
-
+    
+        $complaint->update([
+            'status' => $validated['status']
+        ]);
+    
         $history = ComplaintStatusHistory::create([
             'complaint_id' => $complaint->complaint_id,
             'status' => $validated['status'],
             'note' => $validated['note'] ?? null,
-            'user_id' => $validated['user_id'],
+            'user_id' => $request->user()->user_id,
         ]);
-
+    
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Status pengaduan berhasil diperbarui.',
-            'data' => ['complaint' => $complaint, 'history' => $history],
+            'data' => [
+                'complaint' => $complaint,
+                'history' => $history
+            ],
         ]);
     }
 
@@ -114,7 +120,7 @@ class ComplaintController extends Controller
         $histories = ComplaintStatusHistory::where('complaint_id', $complaint_id)->latest('changed_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Riwayat status pengaduan berhasil diambil.',
             'data' => $histories,
         ]);
@@ -131,7 +137,7 @@ class ComplaintController extends Controller
         $attachment = ComplaintAttachment::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Lampiran pengaduan berhasil diunggah.',
             'data' => $attachment,
         ], 201);
@@ -142,7 +148,7 @@ class ComplaintController extends Controller
         $attachments = ComplaintAttachment::where('complaint_id', $complaint_id)->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data lampiran pengaduan berhasil diambil.',
             'data' => $attachments,
         ]);

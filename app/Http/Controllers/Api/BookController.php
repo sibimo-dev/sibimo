@@ -16,7 +16,7 @@ class BookController extends Controller
         $books = Book::query()->with(['category'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data buku berhasil diambil.',
             'data' => $books,
         ]);
@@ -35,7 +35,7 @@ class BookController extends Controller
         $book = Book::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Buku berhasil ditambahkan.',
             'data' => $book,
         ], 201);
@@ -46,7 +46,7 @@ class BookController extends Controller
         $book = Book::query()->with(['category'])->findOrFail($book_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail buku berhasil diambil.',
             'data' => $book,
         ]);
@@ -67,7 +67,7 @@ class BookController extends Controller
         $book->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Buku berhasil diperbarui.',
             'data' => $book,
         ]);
@@ -79,7 +79,7 @@ class BookController extends Controller
         $book->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Buku berhasil dihapus.',
         ]);
     }

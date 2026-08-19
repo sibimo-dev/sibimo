@@ -39,7 +39,8 @@ class Agenda extends Model
      */
     public $incrementing = true;
 
-    public $timestamps = false;
+    public $timestamps = true;
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = null;
 

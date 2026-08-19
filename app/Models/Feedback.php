@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
     'email',
     'message',
     'status',
+    'submitted_at',
 ])]
 class Feedback extends Model
 {

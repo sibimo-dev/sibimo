@@ -17,7 +17,7 @@ class ServiceController extends Controller
         $services = Service::query()->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data layanan berhasil diambil.',
             'data' => $services,
         ]);
@@ -37,7 +37,7 @@ class ServiceController extends Controller
         $service = Service::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Layanan berhasil dibuat.',
             'data' => $service,
         ], 201);
@@ -49,7 +49,7 @@ class ServiceController extends Controller
         $service = Service::query()->findOrFail($service_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail layanan berhasil diambil.',
             'data' => $service,
         ]);
@@ -71,7 +71,7 @@ class ServiceController extends Controller
         $service->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Layanan berhasil diperbarui.',
             'data' => $service,
         ]);
@@ -84,7 +84,7 @@ class ServiceController extends Controller
         $service->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Layanan berhasil dihapus.',
         ]);
     }

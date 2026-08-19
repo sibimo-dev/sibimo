@@ -16,7 +16,7 @@ class GalleryController extends Controller
         $gallerys = Gallery::query()->with(['uploader'])->latest('uploaded_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data galeri berhasil diambil.',
             'data' => $gallerys,
         ]);
@@ -28,13 +28,15 @@ class GalleryController extends Controller
             'title' => ['required','string','max:200'],
             'description' => ['nullable','string'],
             'image' => ['required','string','max:255'],
-            'uploaded_by' => ['required','exists:users,user_id']
         ]);
-
+    
+        $validated['uploaded_by'] = $request->user()->user_id;
+        $validated['uploaded_at'] = now();
+    
         $gallery = Gallery::create($validated);
-
+    
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Galeri berhasil dibuat.',
             'data' => $gallery,
         ], 201);
@@ -46,7 +48,7 @@ class GalleryController extends Controller
         $gallery = Gallery::query()->with(['uploader'])->findOrFail($gallery_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail galeri berhasil diambil.',
             'data' => $gallery,
         ]);
@@ -66,7 +68,7 @@ class GalleryController extends Controller
         $gallery->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Galeri berhasil diperbarui.',
             'data' => $gallery,
         ]);
@@ -79,7 +81,7 @@ class GalleryController extends Controller
         $gallery->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Galeri berhasil dihapus.',
         ]);
     }
