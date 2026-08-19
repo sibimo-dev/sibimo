@@ -17,7 +17,7 @@ class ProfileContentController extends Controller
         $contents = ProfileContent::query()->with(['section', 'publisher'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data konten profil berhasil diambil.',
             'data' => $contents,
         ]);
@@ -38,7 +38,7 @@ class ProfileContentController extends Controller
         $content = ProfileContent::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Konten profil berhasil dibuat.',
             'data' => $content,
         ], 201);
@@ -49,7 +49,7 @@ class ProfileContentController extends Controller
         $content = ProfileContent::query()->with(['section', 'publisher'])->findOrFail($profileContent_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail konten profil berhasil diambil.',
             'data' => $content,
         ]);
@@ -72,7 +72,7 @@ class ProfileContentController extends Controller
         $content->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Konten profil berhasil diperbarui.',
             'data' => $content,
         ]);
@@ -84,7 +84,7 @@ class ProfileContentController extends Controller
         $content->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Konten profil berhasil dihapus.',
         ]);
     }

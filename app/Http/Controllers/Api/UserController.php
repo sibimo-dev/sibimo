@@ -32,7 +32,7 @@ class UserController extends Controller
             ->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data user berhasil diambil.',
             'data' => $users,
         ]);
@@ -64,7 +64,7 @@ class UserController extends Controller
         ]);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'User berhasil dibuat.',
             'data' => [
                 'user_id' => $user->user_id,
@@ -100,7 +100,7 @@ class UserController extends Controller
             ->findOrFail($user_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail pengguna berhasil diambil.',
             'data' => $user,
         ]);
@@ -115,7 +115,7 @@ class UserController extends Controller
 
         if (!$user) {
             return response()->json([
-                'succes' => false,
+                'success' => false,
                 'message' => 'User tidak ditemukan.',
             ], 404);
         }
@@ -157,7 +157,7 @@ class UserController extends Controller
         $user->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'User berhasil diperbarui.',
             'data' => [
                 'user_id' => $user->user_id,
@@ -182,7 +182,7 @@ class UserController extends Controller
 
         if ((int) $request->user()->user_id === $user->user_id) {
             return response()->json([
-                'succes' => false,
+                'success' => false,
                 'message' => 'Anda tidak dapat menghapus diri sendiri.',
             ], 403);
         }
@@ -192,7 +192,7 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'User berhasil dihapus.',
         ]);
     }

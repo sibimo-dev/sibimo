@@ -17,7 +17,7 @@ class NewsCategoryController extends Controller
         $categorys = NewsCategory::query()->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data kategori berita berhasil diambil.',
             'data' => $categorys,
         ]);
@@ -34,7 +34,7 @@ class NewsCategoryController extends Controller
         $category = NewsCategory::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori berita berhasil dibuat.',
             'data' => $category,
         ], 201);
@@ -46,7 +46,7 @@ class NewsCategoryController extends Controller
         $category = NewsCategory::query()->findOrFail($category_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail kategori berita berhasil diambil.',
             'data' => $category,
         ]);
@@ -65,7 +65,7 @@ class NewsCategoryController extends Controller
         $category->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori berita berhasil diperbarui.',
             'data' => $category,
         ]);
@@ -78,7 +78,7 @@ class NewsCategoryController extends Controller
         $category->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Kategori berita berhasil dihapus.',
         ]);
     }

@@ -17,7 +17,7 @@ class ProfileSectionController extends Controller
         $sections = ProfileSection::query()->with(['contents'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data section profil berhasil diambil.',
             'data' => $sections,
         ]);
@@ -36,7 +36,7 @@ class ProfileSectionController extends Controller
         $section = ProfileSection::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Section profil berhasil dibuat.',
             'data' => $section,
         ], 201);
@@ -48,7 +48,7 @@ class ProfileSectionController extends Controller
         $section = ProfileSection::query()->with(['contents'])->findOrFail($section_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail section profil berhasil diambil.',
             'data' => $section,
         ]);
@@ -69,7 +69,7 @@ class ProfileSectionController extends Controller
         $section->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Section profil berhasil diperbarui.',
             'data' => $section,
         ]);
@@ -81,7 +81,7 @@ class ProfileSectionController extends Controller
         $section->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Section profil berhasil dihapus.',
         ]);
     }

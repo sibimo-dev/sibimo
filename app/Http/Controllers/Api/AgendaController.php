@@ -16,7 +16,7 @@ class AgendaController extends Controller
         $agendas = Agenda::query()->with(['creator'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data agenda berhasil diambil.',
             'data' => $agendas,
         ]);
@@ -25,19 +25,20 @@ class AgendaController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['required','string','max:200'],
-            'description' => ['nullable','string'],
-            'event_date' => ['required','date'],
-            'start_time' => ['nullable','date_format:H:i'],
-            'end_time' => ['nullable','date_format:H:i'],
-            'location' => ['nullable','string','max:255'],
-            'craated_by' => ['required','exists:users,user_id']
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['nullable', 'string'],
+            'event_date' => ['required', 'date'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
+            'location' => ['nullable', 'string', 'max:255'],
         ]);
-
+    
+        $validated['created_by'] = $request->user()->user_id;
+    
         $agenda = Agenda::create($validated);
-
+    
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Agenda berhasil dibuat.',
             'data' => $agenda,
         ], 201);
@@ -48,7 +49,7 @@ class AgendaController extends Controller
         $agenda = Agenda::query()->with(['creator'])->findOrFail($agenda_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail agenda berhasil diambil.',
             'data' => $agenda,
         ]);
@@ -70,7 +71,7 @@ class AgendaController extends Controller
         $agenda->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Agenda berhasil diperbarui.',
             'data' => $agenda,
         ]);
@@ -82,7 +83,7 @@ class AgendaController extends Controller
         $agenda->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Agenda berhasil dihapus.',
         ]);
     }

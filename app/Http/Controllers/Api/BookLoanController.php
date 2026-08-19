@@ -16,7 +16,7 @@ class BookLoanController extends Controller
         $loans = BookLoan::query()->with(['book', 'citizen'])->latest()->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data peminjaman buku berhasil diambil.',
             'data' => $loans,
         ]);
@@ -37,7 +37,7 @@ class BookLoanController extends Controller
         $loan = BookLoan::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Peminjaman buku berhasil dicatat.',
             'data' => $loan,
         ], 201);
@@ -49,7 +49,7 @@ class BookLoanController extends Controller
         $loan = BookLoan::query()->with(['book', 'citizen'])->findOrFail($loan_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail peminjaman buku berhasil diambil.',
             'data' => $loan,
         ]);
@@ -68,7 +68,7 @@ class BookLoanController extends Controller
         $loan->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data peminjaman berhasil diperbarui.',
             'data' => $loan,
         ]);
@@ -80,7 +80,7 @@ class BookLoanController extends Controller
         $loan->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data peminjaman berhasil dihapus.',
         ]);
     }

@@ -18,7 +18,7 @@ class LetterRequestController extends Controller
         $letterRequests = LetterRequest::query()->with(['citizen', 'letterType', 'attachments', 'statusHistories'])->latest('submitted_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data permohonan surat berhasil diambil.',
             'data' => $letterRequests,
         ]);
@@ -30,18 +30,18 @@ class LetterRequestController extends Controller
         $validated = $request->validate([
             'citizen_id' => ['required','exists:citizens,citizen_id'],
             'letter_type_id' => ['required','exists:letter_types,letter_type_id'],
-            'status' => ['nullable','string'],
             'form_data' => ['nullable','array'],
-            'letter_number' => ['nullable','string','max:100'],
             'signature_type' => ['nullable', Rule::in(['manual','digital'])],
-            'submitted_at' => ['nullable','date'],
             'remarks' => ['nullable','string']
         ]);
-
+        
+        $validated['status'] = 'Submitted';
+        $validated['submitted_at'] = now();
+        
         $letterRequest = LetterRequest::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Permohonan surat berhasil dibuat.',
             'data' => $letterRequest,
         ], 201);
@@ -53,7 +53,7 @@ class LetterRequestController extends Controller
         $letterRequest = LetterRequest::query()->with(['citizen', 'letterType', 'attachments', 'statusHistories'])->findOrFail($letterRequest_id);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Detail permohonan surat berhasil diambil.',
             'data' => $letterRequest,
         ]);
@@ -70,7 +70,7 @@ class LetterRequestController extends Controller
             'letter_number' => ['nullable','string','max:100'],
             'signature_type' => ['nullable', Rule::in(['manual','digital'])],
             'verified_by' => ['nullable','exists:users,user_id'],
-            'authorized_by' => ['nullable','exists:users,user_id'],
+            'authorized_at' => ['nullable','date'],
             'result_file_path' => ['nullable','string','max:100'],
             'remarks' => ['nullable','string']
         ]);
@@ -78,7 +78,7 @@ class LetterRequestController extends Controller
         $letterRequest->update($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Permohonan surat berhasil diperbarui.',
             'data' => $letterRequest,
         ]);
@@ -91,7 +91,7 @@ class LetterRequestController extends Controller
         $letterRequest->delete();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Permohonan surat berhasil dihapus.',
         ]);
     }
@@ -103,7 +103,6 @@ class LetterRequestController extends Controller
         $validated = $request->validate([
             'status' => ['required', 'string'],
             'note' => ['nullable', 'string'],
-            'change_by' => ['required', 'exists:users,user_id'],
         ]);
 
         $letterRequest->update(['status' => $validated['status']]);
@@ -112,11 +111,11 @@ class LetterRequestController extends Controller
             'letter_request_id' => $letterRequest->letter_request_id,
             'status' => $validated['status'],
             'note' => $validated['note'] ?? null,
-            'change_by' => $validated['change_by'],
+            'change_by' => $request->user()->user_id,
         ]);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Status surat berhasil diperbarui.',
             'data' => ['letter_request' => $letterRequest, 'history' => $history],
         ]);
@@ -127,7 +126,7 @@ class LetterRequestController extends Controller
         $histories = LetterRequestStatusHistory::where('letter_request_id', $letterRequest_id)->latest('changed_at')->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Riwayat status surat berhasil diambil.',
             'data' => $histories,
         ]);
@@ -145,7 +144,7 @@ class LetterRequestController extends Controller
         $attachment = LetterRequestAttachment::create($validated);
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Lampiran berhasil diunggah.',
             'data' => $attachment,
         ], 201);
@@ -156,7 +155,7 @@ class LetterRequestController extends Controller
         $attachments = LetterRequestAttachment::where('letter_request_id', $letterRequest_id)->get();
 
         return response()->json([
-            'succes' => true,
+            'success' => true,
             'message' => 'Data lampiran berhasil diambil.',
             'data' => $attachments,
         ]);

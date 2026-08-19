@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
     'description',
     'image',
     'uploaded_by',
+    'uploaded_at',
 ])]
 class Gallery extends Model
 {

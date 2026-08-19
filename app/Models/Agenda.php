@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
     'start_time',
     'end_time',
     'location',
-    'craated_by',
+    'created_by',
 ])]
 class Agenda extends Model
 {
@@ -39,7 +39,8 @@ class Agenda extends Model
      */
     public $incrementing = true;
 
-    public $timestamps = false;
+    public $timestamps = true;
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = null;
 
