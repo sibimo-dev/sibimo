@@ -48,7 +48,7 @@ class LetterRequestController extends Controller
     }
 
 
-    public function show(int $letterRequest_id): JsonResponse
+    public function show(int|string $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::query()->with(['citizen', 'letterType', 'attachments', 'statusHistories'])->findOrFail($letterRequest_id);
 
@@ -96,7 +96,7 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, int $letterRequest_id): JsonResponse
+    public function updateStatus(Request $request, int|string $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
@@ -121,7 +121,7 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    public function statusHistories(int $letterRequest_id): JsonResponse
+    public function statusHistories(int|string $letterRequest_id): JsonResponse
     {
         $histories = LetterRequestStatusHistory::where('letter_request_id', $letterRequest_id)->latest('changed_at')->get();
 

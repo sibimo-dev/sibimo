@@ -25,16 +25,16 @@ class AgendaController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'description' => ['nullable', 'string'],
-            'event_date' => ['required', 'date'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
-            'location' => ['nullable', 'string', 'max:255'],
+            'title' => ['required','string','max:200'],
+            'description' => ['nullable','string'],
+            'event_date' => ['required','date'],
+            'start_time' => ['nullable','date_format:H:i'],
+            'end_time' => ['nullable','date_format:H:i'],
+            'location' => ['nullable','string','max:255'],
         ]);
-    
+
         $validated['created_by'] = $request->user()->user_id;
-    
+
         $agenda = Agenda::create($validated);
     
         return response()->json([
