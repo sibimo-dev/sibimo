@@ -11,14 +11,17 @@ use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
     'national_id',
+    'family_card_number',
     'full_name',
     'birth_place',
     'birth_date',
     'gender',
     'address',
     'phone_number',
-    'email',
-    'password',
+    'occupation',
+    'education',
+    'marital_status',
+    'status',
 ])]
 #[Hidden([
     'password',

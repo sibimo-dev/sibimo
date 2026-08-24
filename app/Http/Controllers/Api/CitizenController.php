@@ -27,14 +27,17 @@ class CitizenController extends Controller
     {
         $validated = $request->validate([
             'national_id' => ['required','string','size:16','unique:citizens,national_id'],
+            'family_card_number' => ['nullable','string','size:16',],
             'full_name' => ['required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
             'birth_date' => ['nullable','date'],
-            'gender' => ['nullable', Rule::in(['Male','Female'])],
+            'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address' => ['nullable','string'],
             'phone_number' => ['nullable','string','max:15'],
-            'email' => ['nullable','email','max:100'],
-            'password' => ['nullable','string','min:6']
+            'occupation' => ['nullable', 'string', 'max:100'],
+            'education' => ['nullable', 'string', 'max:50'],
+            'marital_status' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
         $citizen = Citizen::create($validated);
@@ -64,14 +67,17 @@ class CitizenController extends Controller
 
         $validated = $request->validate([
             'national_id' => ['sometimes','required','string','size:16', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
+            'family_card_number' => ['nullable','string','size:16',],
             'full_name' => ['sometimes','required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
             'birth_date' => ['nullable','date'],
-            'gender' => ['nullable', Rule::in(['Male','Female'])],
+            'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address' => ['nullable','string'],
             'phone_number' => ['nullable','string','max:15'],
-            'email' => ['nullable','email','max:100'],
-            'password' => ['sometimes','nullable','string','min:6']
+            'occupation' => ['nullable', 'string', 'max:100'],
+            'education' => ['nullable', 'string', 'max:50'],
+            'marital_status' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
         $citizen->update($validated);

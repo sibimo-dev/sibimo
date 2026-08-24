@@ -11,14 +11,19 @@ return new class extends Migration
         Schema::create('citizens', function (Blueprint $table) {
             $table->id('citizen_id');
             $table->char('national_id', 16)->unique();
+            $table->string('family_card_number', 16)->nullable();
             $table->string('full_name', 100);
             $table->string('birth_place', 50)->nullable();
             $table->date('birth_date')->nullable();
-            $table->enum('gender', ['Male', 'Female'])->nullable();
+            $table->enum('gender', ['Laki-laki', 'Perempuan'])->nullable();
             $table->text('address')->nullable();
             $table->string('phone_number', 15)->nullable();
             $table->string('email', 100)->nullable();
             $table->string('password', 255)->nullable();
+            $table->string('occupation', 100)->nullable();
+            $table->string('education', 50)->nullable();
+            $table->string('marital_status', 30)->nullable();
+            $table->enum('status', ['Active', 'Pindah'])->default('Active');
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();
         });
