@@ -76,6 +76,14 @@ class BookController extends Controller
     public function destroy(int $book_id): JsonResponse
     {
         $book = Book::findOrFail($book_id);
+
+        if ($book->loans()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Buku tidak dapat dihapus karena sudah memiliki riwayat peminjaman.',
+            ], 409);
+        }
+
         $book->delete();
 
         return response()->json([

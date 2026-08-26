@@ -18,6 +18,7 @@ use App\Models\UserPermission;
     'email',
     'password',
     'role',
+    'role_id',
     'phone_number',
     'is_active',
 ])]
@@ -70,5 +71,21 @@ class User extends Authenticatable
             'user_id',
             'user_id'
         );
+    }
+
+    public function effectivePermissionSlugs(): array
+    {
+        $this->loadMissing([
+            'roleRelation.permissions:permission_id,slug',
+            'userPermissions.permissions:permission_id,slug',
+        ]);
+
+        $rolePermissions = $this->roleRelation?->permissions?->pluck('slug') ?? collect();
+
+        return $rolePermissions
+            ->merge($this->userPermissions->pluck('permissions.slug')->filter())
+            ->unique()
+            ->values()
+            ->all();
     }
 }

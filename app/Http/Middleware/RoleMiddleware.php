@@ -21,7 +21,9 @@ class RoleMiddleware
             ], 401);
         }
 
-        if (!in_array($user->role, $roles, true)) {
+        $roleName = $user->roleRelation?->name;
+
+        if (!$roleName || !in_array($roleName, $roles, true)) {
             return response()->json([
                 'message' => 'Anda tidak memiliki izin untuk mengakses fitur ini.',
             ], 403);

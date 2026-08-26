@@ -28,9 +28,7 @@ class PermissionMiddleware
         |--------------------------------------------------------------------------
         */
 
-        $roleId = DB::table('users')
-            ->where('user_id', $user->user_id)
-            ->value('role_id');
+        $roleId = $user->role_id;
 
         /*
         |--------------------------------------------------------------------------

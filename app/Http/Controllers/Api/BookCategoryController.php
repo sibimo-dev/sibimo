@@ -71,6 +71,14 @@ class BookCategoryController extends Controller
     public function destroy(int $category_id): JsonResponse
     {
         $category = BookCategory::findOrFail($category_id);
+
+        if ($category->books()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak dapat dihapus karena masih digunakan oleh buku.',
+            ], 409);
+        }
+
         $category->delete();
 
         return response()->json([

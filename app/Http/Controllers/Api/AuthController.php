@@ -24,7 +24,9 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('username', $validated['login'])
+        $user = User::query()
+            ->with(['roleRelation.permissions', 'userPermissions.permissions'])
+            ->where('username', $validated['login'])
             ->orWhere('email', $validated['login'])
             ->first();
 
@@ -51,15 +53,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login berhasil.',
             'data' => [
-                'user' => [
-                    'user_id' => $user->user_id,
-                    'full_name' => $user->full_name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'phone_number' => $user->phone_number,
-                    'is_active' => $user->is_active,
-                ],
+                'user' => $this->userPayload($user),
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -81,7 +75,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = $token->tokenable;
+        $user = $token->tokenable->load(['roleRelation.permissions', 'userPermissions.permissions']);
 
         if ($user->is_active === false || $user->is_active === '0') {
             return response()->json([
@@ -92,15 +86,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Data user berhasil diambil.',
             'data' => [
-                'user' => [
-                    'user_id' => $user->user_id,
-                    'full_name' => $user->full_name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'phone_number' => $user->phone_number,
-                    'is_active' => $user->is_active,
-                ]
+                'user' => $this->userPayload($user),
             ],
         ]);
     }
@@ -132,5 +118,23 @@ class AuthController extends Controller
             'success' => 'succes',
             'message' => 'Berhasil Logout dan token telah dihapus.',
         ]);
+    }
+
+    private function userPayload(User $user): array
+    {
+        return [
+            'user_id' => $user->user_id,
+            'full_name' => $user->full_name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+            'role' => $user->roleRelation ? [
+                'role_id' => $user->roleRelation->role_id,
+                'name' => $user->roleRelation->name,
+            ] : null,
+            'permissions' => $user->effectivePermissionSlugs(),
+            'phone_number' => $user->phone_number,
+            'is_active' => $user->is_active,
+        ];
     }
 }
