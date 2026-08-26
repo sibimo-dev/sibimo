@@ -150,7 +150,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::middleware(['auth:sanctum', 'permission:Dashboard'])
+Route::middleware(['auth:sanctum', 'permission:dashboard'])
     ->get('/test-permission', function () {
         return response()->json([
             'success' => true,
