@@ -4,18 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LetterRequest;
+use App\Models\LetterRequestAttachment;
+use App\Models\LetterRequestStatusHistory;
+use App\Models\LetterType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Models\LetterRequestAttachment;
-use App\Models\LetterRequestStatusHistory;
 
 class LetterRequestController extends Controller
 {
-
     public function index(): JsonResponse
     {
-        $letterRequests = LetterRequest::query()->with(['citizen', 'letterType', 'attachments', 'statusHistories'])->latest('submitted_at')->get();
+        $letterRequests = LetterRequest::query()
+        ->with([
+            'citizen',
+            'letterType.signer',
+            'verifier',
+            'authorizedSigner'
+        ])
+        ->latest('submitted_at')
+        ->get();
 
         return response()->json([
             'success' => true,
@@ -24,21 +32,28 @@ class LetterRequestController extends Controller
         ]);
     }
 
-
+    // Dipanggil dari LetterCreateView.vue -- step 3 "Cetak Surat"
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'citizen_id' => ['required','exists:citizens,citizen_id'],
-            'letter_type_id' => ['required','exists:letter_types,letter_type_id'],
-            'form_data' => ['nullable','array'],
-            'signature_type' => ['nullable', Rule::in(['manual','digital'])],
-            'remarks' => ['nullable','string']
+            'letter_type_id' => ['required', 'exists:letter_types,letter_type_id'],
+            'citizen_id' => ['nullable', 'exists:citizens,citizen_id'],
+            'applicant_name' => ['required', 'string', 'max:100'],
+            'applicant_nik' => ['required', 'string', 'size:16'],
+            'applicant_phone' => ['nullable', 'string', 'max:15'],
+            'applicant_address' => ['required', 'string'],
+            'notes' => ['nullable', 'string'],
+            'source' => ['nullable', Rule::in(['Online', 'Manual (Kelurahan)'])],
         ]);
-        
-        $validated['status'] = 'Submitted';
-        $validated['submitted_at'] = now();
-        
+
+        $letterType = LetterType::findOrFail($validated['letter_type_id']);
+
+        // signature_type ikut default dari letter_type, bisa diubah lagi saat otorisasi
+        $validated['signature_type'] = $letterType->signature_method === 'digital' ? 'digital' : 'manual';
+        $validated['source'] = $validated['source'] ?? 'Manual (Kelurahan)';
+
         $letterRequest = LetterRequest::create($validated);
+        $letterRequest->load(['citizen', 'letterType.signer']);
 
         return response()->json([
             'success' => true,
@@ -47,10 +62,11 @@ class LetterRequestController extends Controller
         ], 201);
     }
 
-
-    public function show(int|string $letterRequest_id): JsonResponse
+    public function show(int $letterRequest_id): JsonResponse
     {
-        $letterRequest = LetterRequest::query()->with(['citizen', 'letterType', 'attachments', 'statusHistories'])->findOrFail($letterRequest_id);
+        $letterRequest = LetterRequest::query()
+            ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner', 'attachments', 'statusHistories'])
+            ->findOrFail($letterRequest_id);
 
         return response()->json([
             'success' => true,
@@ -59,20 +75,15 @@ class LetterRequestController extends Controller
         ]);
     }
 
-
     public function update(Request $request, int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
         $validated = $request->validate([
-            'status' => ['sometimes','required','string'],
-            'form_data' => ['nullable','array'],
-            'letter_number' => ['nullable','string','max:100'],
-            'signature_type' => ['nullable', Rule::in(['manual','digital'])],
-            'verified_by' => ['nullable','exists:users,user_id'],
-            'authorized_at' => ['nullable','date'],
-            'result_file_path' => ['nullable','string','max:100'],
-            'remarks' => ['nullable','string']
+            'applicant_name' => ['sometimes', 'required', 'string', 'max:100'],
+            'applicant_phone' => ['nullable', 'string', 'max:15'],
+            'applicant_address' => ['sometimes', 'required', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $letterRequest->update($validated);
@@ -84,11 +95,9 @@ class LetterRequestController extends Controller
         ]);
     }
 
-
     public function destroy(int $letterRequest_id): JsonResponse
     {
-        $letterRequest = LetterRequest::findOrFail($letterRequest_id);
-        $letterRequest->delete();
+        LetterRequest::findOrFail($letterRequest_id)->delete();
 
         return response()->json([
             'success' => true,
@@ -96,34 +105,96 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, int|string $letterRequest_id): JsonResponse
+    // ===== Halaman Verifikasi Surat (LetterVerificationView.vue) =====
+    // Tombol "Setujui Permohonan" -> status jadi Diverifikasi
+    // Tombol "Tolak Permohonan"   -> status jadi Ditolak
+    public function verify(Request $request, int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
         $validated = $request->validate([
-            'status' => ['required', 'string'],
-            'note' => ['nullable', 'string'],
+            'status' => ['required', Rule::in(['verified', 'rejected'])],
+            'notes' => ['nullable', 'string'],
+            'verified_by' => ['required', 'exists:users,user_id'],
         ]);
 
-        $letterRequest->update(['status' => $validated['status']]);
+        $letterRequest->update([
+            'status' => $validated['status'],
+            'verified_by' => $validated['verified_by'],
+            'notes' => $validated['notes'] ?? $letterRequest->notes,
+            'verified_at' => now(),
+        ]);
 
-        $history = LetterRequestStatusHistory::create([
+        LetterRequestStatusHistory::create([
             'letter_request_id' => $letterRequest->letter_request_id,
             'status' => $validated['status'],
-            'note' => $validated['note'] ?? null,
-            'change_by' => $request->user()->user_id,
+            'note' => $validated['notes'] ?? null,
+            'change_by' => $validated['verified_by'],
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Status surat berhasil diperbarui.',
-            'data' => ['letter_request' => $letterRequest, 'history' => $history],
+            'message' => 'Verifikasi permohonan surat berhasil disimpan.',
+            'data' => $letterRequest,
         ]);
     }
 
-    public function statusHistories(int|string $letterRequest_id): JsonResponse
+    // ===== Halaman Otorisasi Surat (LetterAuthorizationView.vue) =====
+    // Pilih penandatangan + jenis TTD, keputusan Diverifikasi (masih menunggu) / Disetujui
+    public function authorize(Request $request, int $letterRequest_id): JsonResponse
     {
-        $histories = LetterRequestStatusHistory::where('letter_request_id', $letterRequest_id)->latest('changed_at')->get();
+        $letterRequest = LetterRequest::findOrFail($letterRequest_id);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['verified', 'authorized'])],
+            'authorized_by_signer_id' => ['required_if:status,authorized', 'nullable', 'exists:signers,signer_id'],
+            'signature_type' => ['required_if:status,authorized', 'nullable', Rule::in(['digital', 'manual'])],
+        ]);
+
+        $updateData = [
+            'status' => $validated['status'],
+        ];
+
+        if ($validated['status'] === 'authorized') {
+            $updateData['authorized_by_signer_id'] = $validated['authorized_by_signer_id'];
+            $updateData['signature_type'] = $validated['signature_type'];
+            $updateData['authorized_at'] = now();
+            $updateData['letter_number'] = $this->generateLetterNumber($letterRequest->letterType);
+        }
+
+        $letterRequest->update($updateData);
+
+        LetterRequestStatusHistory::create([
+            'letter_request_id' => $letterRequest->letter_request_id,
+            'status' => $validated['status'],
+            'note' => null,
+            'change_by' => $request->user()->user_id ?? null,
+        ]);
+
+        $letterRequest->load(['authorizedSigner', 'letterType']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Otorisasi permohonan surat berhasil disimpan.',
+            'data' => $letterRequest,
+        ]);
+    }
+
+    private function generateLetterNumber(LetterType $letterType): string
+    {
+        $prefix = $letterType->number_prefix ?? '';
+        $countSamePrefix = LetterRequest::where('letter_number', 'like', "{$prefix}%")->count();
+        $sequence = str_pad($countSamePrefix + 1, 3, '0', STR_PAD_LEFT);
+
+        return $prefix . $sequence;
+    }
+
+    // ===== Riwayat status =====
+    public function statusHistories(int $letterRequest_id): JsonResponse
+    {
+        $histories = LetterRequestStatusHistory::where('letter_request_id', $letterRequest_id)
+            ->latest('changed_at')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -132,6 +203,7 @@ class LetterRequestController extends Controller
         ]);
     }
 
+    // ===== Lampiran dokumen =====
     public function storeAttachment(Request $request, int $letterRequest_id): JsonResponse
     {
         $validated = $request->validate([
