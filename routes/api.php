@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileContentController;
 use App\Http\Controllers\Api\ProfileSectionController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Middleware\RoleMiddleware;
@@ -93,13 +94,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Pengelolaan Surat
     Route::apiResource('letter-types', LetterTypeController::class)
         ->parameters(['letter-types' => 'letterType_id']);
-    Route::get('letter-types/{letterTypeId}/documents', [LetterTypeController::class, 'documents']);
-    Route::post('letter-types/{letterTypeId}/documents', [LetterTypeController::class, 'storeDocument']);
-    Route::delete('letter-type-documents/{documentId}', [LetterTypeController::class, 'destroyDocument']);
+    Route::get('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'documents']);
+    Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
+    Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
+    Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
 
     Route::apiResource('letter-requests', LetterRequestController::class)
         ->parameters(['letter-requests' => 'letterRequest_id']);
-    Route::post('letter-requests/{letterRequest_id}/status', [LetterRequestController::class, 'updateStatus']);
+    Route::post('letter-requests/{letterRequest_id}/verify', [LetterRequestController::class, 'verify']);
+    Route::post('letter-requests/{letterRequest_id}/authorize', [LetterRequestController::class, 'authorize']);
     Route::get('letter-requests/{letterRequest_id}/status-histories', [LetterRequestController::class, 'statusHistories']);
     Route::post('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'storeAttachment']);
     Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
@@ -127,6 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Manajemen akun citizen
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
+
+    //Signers
+    Route::apiResource('signers', SignerController::class)
+        ->parameters(['signers' => 'signer_id']);
 
    
     Route::middleware(RoleMiddleware::class . ':Superadmin,Admin,Operator')->group(function () {

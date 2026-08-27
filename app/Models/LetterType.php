@@ -9,39 +9,24 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'code',
     'letter_name',
+    'category',
+    'number_prefix',
+    'processing_time',
+    'signature_method',
+    'signer_id',
     'description',
     'blade_view',
-    'number_prefix',
     'is_active',
 ])]
 class LetterType extends Model
 {
     use HasFactory;
 
-    /**
-     * Table name.
-     */
     protected $table = 'letter_types';
-
-    /**
-     * Primary key.
-     */
     protected $primaryKey = 'letter_type_id';
-
-    /**
-     * Primary key type.
-     */
     protected $keyType = 'int';
-
-    /**
-     * Auto increment.
-     */
     public $incrementing = true;
 
-
-    /**
-     * Cast attributes.
-     */
     protected function casts(): array
     {
         return [
@@ -49,9 +34,26 @@ class LetterType extends Model
         ];
     }
 
+    // document_count BUKAN kolom database -- dihitung otomatis dari relasi documents.
+    // Kalau controller load pakai ->withCount('documents'), Laravel otomatis
+    // isi attribute 'documents_count' -- accessor ini tinggal alias-in ke nama
+    // yang dipakai frontend ('document_count', tanpa 's'). Kalau belum di-load
+    // pakai withCount, fallback ke query count() manual (lebih lambat).
+    protected $appends = ['document_count'];
+
+    public function getDocumentCountAttribute()
+    {
+        return $this->documents_count ?? $this->documents()->count();
+    }
+
     public function documents()
     {
         return $this->hasMany(LetterTypeDocument::class, 'letter_type_id', 'letter_type_id');
+    }
+
+    public function signer()
+    {
+        return $this->belongsTo(Signer::class, 'signer_id', 'signer_id');
     }
 
     public function numberSequences()
