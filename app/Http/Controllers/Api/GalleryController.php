@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Gallery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 
 class GalleryController extends Controller
@@ -27,9 +27,10 @@ class GalleryController extends Controller
         $validated = $request->validate([
             'title' => ['required','string','max:200'],
             'description' => ['nullable','string'],
-            'image' => ['required','string','max:255'],
+            'image' => ['required','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
         ]);
-    
+        $path = $validated['image']->store('galleries', 'public');
+        $validated['image'] = Storage::disk('public')->url($path);
         $validated['uploaded_by'] = $request->user()->user_id;
         $validated['uploaded_at'] = now();
     
@@ -62,8 +63,15 @@ class GalleryController extends Controller
         $validated = $request->validate([
             'title' => ['sometimes','required','string','max:200'],
             'description' => ['nullable','string'],
-            'image' => ['sometimes','required','string','max:255']
+            'image' => ['sometimes','required','file','mimes:jpg,jpeg,png,webp,gif','max:5120']
         ]);
+
+        if (isset($validated['image'])) {
+            if ($gallery->image && !str_starts_with($gallery->image, 'http')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', parse_url($gallery->image, PHP_URL_PATH)));
+            }
+            $validated['image'] = Storage::disk('public')->url($validated['image']->store('galleries', 'public'));
+        }
 
         $gallery->update($validated);
 
@@ -78,6 +86,9 @@ class GalleryController extends Controller
     public function destroy(int $gallery_id): JsonResponse
     {
         $gallery = Gallery::findOrFail($gallery_id);
+        if ($gallery->image && !str_starts_with($gallery->image, 'http')) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', parse_url($gallery->image, PHP_URL_PATH)));
+        }
         $gallery->delete();
 
         return response()->json([

@@ -7,6 +7,7 @@ use App\Models\VillagePotential;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 
 class VillagePotentialController extends Controller
@@ -15,6 +16,12 @@ class VillagePotentialController extends Controller
     public function index(): JsonResponse
     {
         $potentials = VillagePotential::query()->latest()->get();
+        foreach ($potentials as $potential) {
+            if (!$potential->created_at) {
+                $potential->created_at = now();
+                $potential->save();
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -29,10 +36,12 @@ class VillagePotentialController extends Controller
             'category' => ['required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['required','string','max:200'],
             'description' => ['nullable','string'],
-            'image' => ['nullable','string','max:255'],
+            'image' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'location' => ['nullable','string','max:255']
         ]);
 
+        if (isset($validated['image'])) $validated['image'] = Storage::disk('public')->url($validated['image']->store('village-potentials', 'public'));
+        $validated['created_at'] = now();
         $potential = VillagePotential::create($validated);
 
         return response()->json([
@@ -63,10 +72,11 @@ class VillagePotentialController extends Controller
             'category' => ['sometimes','required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['sometimes','required','string','max:200'],
             'description' => ['nullable','string'],
-            'image' => ['nullable','string','max:255'],
+            'image' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'location' => ['nullable','string','max:255']
         ]);
 
+        if (isset($validated['image'])) $validated['image'] = Storage::disk('public')->url($validated['image']->store('village-potentials', 'public'));
         $potential->update($validated);
 
         return response()->json([

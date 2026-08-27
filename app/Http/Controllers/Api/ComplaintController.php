@@ -7,6 +7,7 @@ use App\Models\Complaint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use App\Models\ComplaintAttachment;
 use App\Models\ComplaintStatusHistory;
 
@@ -128,13 +129,18 @@ class ComplaintController extends Controller
 
     public function storeAttachment(Request $request, int $complaint_id): JsonResponse
     {
+        Complaint::findOrFail($complaint_id);
         $validated = $request->validate([
-            'file_name' => ['required', 'string', 'max:255'],
-            'file_path' => ['required', 'string', 'max:255'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
         ]);
-        $validated['complaint_id'] = $complaint_id;
+        $file = $validated['file'];
+        $path = $file->store('complaints', 'public');
 
-        $attachment = ComplaintAttachment::create($validated);
+        $attachment = ComplaintAttachment::create([
+            'complaint_id' => $complaint_id,
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => Storage::disk('public')->url($path),
+        ]);
 
         return response()->json([
             'success' => true,

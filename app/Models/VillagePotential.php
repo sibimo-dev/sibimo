@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
     'description',
     'image',
     'location',
+    'created_at',
 ])]
 class VillagePotential extends Model
 {
