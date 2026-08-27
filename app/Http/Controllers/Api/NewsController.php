@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\News;
+use App\Models\NewsCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 
 class NewsController extends Controller
@@ -27,16 +29,24 @@ class NewsController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id' => ['required','exists:news_categories,category_id'],
-            'author_id' => ['required','exists:users,user_id'],
+            'category_id' => ['nullable','exists:news_categories,category_id'],
+            'category_name' => ['nullable','string','max:100'],
+            'author_id' => ['nullable','exists:users,user_id'],
             'title' => ['required','string','max:200'],
             'slug' => ['required','string','max:200','unique:news,slug'],
             'content' => ['required','string'],
-            'thumbnail' => ['nullable','string','max:225'],
+            'thumbnail' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'status' => ['nullable', Rule::in(['Draft','Published','Archived'])],
             'published_at' => ['nullable','date']
         ]);
 
+        $validated['author_id'] = $request->user()->user_id;
+        if (empty($validated['category_id']) && !empty($validated['category_name'])) {
+            $category = NewsCategory::firstOrCreate(['slug' => str($validated['category_name'])->slug()], ['category_name' => $validated['category_name']]);
+            $validated['category_id'] = $category->category_id;
+        }
+        unset($validated['category_name']);
+        if (isset($validated['thumbnail'])) $validated['thumbnail'] = Storage::disk('public')->url($validated['thumbnail']->store('news', 'public'));
         $news = News::create($validated);
 
         return response()->json([
@@ -64,15 +74,22 @@ class NewsController extends Controller
         $news = News::findOrFail($news_id);
 
         $validated = $request->validate([
-            'category_id' => ['sometimes','required','exists:news_categories,category_id'],
+            'category_id' => ['nullable','exists:news_categories,category_id'],
+            'category_name' => ['nullable','string','max:100'],
             'title' => ['sometimes','required','string','max:200'],
             'slug' => ['sometimes','required','string','max:200', Rule::unique('news','slug')->ignore($news_id, 'news_id')],
             'content' => ['sometimes','required','string'],
-            'thumbnail' => ['nullable','string','max:225'],
+            'thumbnail' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'status' => ['nullable', Rule::in(['Draft','Published','Archived'])],
             'published_at' => ['nullable','date']
         ]);
 
+        if (empty($validated['category_id']) && !empty($validated['category_name'])) {
+            $category = NewsCategory::firstOrCreate(['slug' => str($validated['category_name'])->slug()], ['category_name' => $validated['category_name']]);
+            $validated['category_id'] = $category->category_id;
+        }
+        unset($validated['category_name']);
+        if (isset($validated['thumbnail'])) $validated['thumbnail'] = Storage::disk('public')->url($validated['thumbnail']->store('news', 'public'));
         $news->update($validated);
 
         return response()->json([
