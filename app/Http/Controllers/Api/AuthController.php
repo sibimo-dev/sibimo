@@ -115,7 +115,7 @@ class AuthController extends Controller
         $token->delete();
 
         return response()->json([
-            'success' => 'succes',
+            'success' => 'success',
             'message' => 'Berhasil Logout dan token telah dihapus.',
         ]);
     }

@@ -7,50 +7,35 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
+    'request_code',
     'citizen_id',
+    'applicant_name',
+    'applicant_nik',
+    'applicant_phone',
+    'applicant_address',
     'letter_type_id',
     'status',
-    'form_data',
-    'letter_number',
     'signature_type',
+    'letter_number',
     'verified_by',
-    'authorized_by',
+    'authorized_by_signer_id',
+    'source',
+    'notes',
+    'form_data',
     'submitted_at',
     'verified_at',
     'authorized_at',
-    'completed_at',
-    'result_file_path',
-    'remarks',
 ])]
 class LetterRequest extends Model
 {
     use HasFactory;
 
-    /**
-     * Table name.
-     */
     protected $table = 'letter_requests';
-
-    /**
-     * Primary key.
-     */
     protected $primaryKey = 'letter_request_id';
-
-    /**
-     * Primary key type.
-     */
     protected $keyType = 'int';
-
-    /**
-     * Auto increment.
-     */
     public $incrementing = true;
-
     public $timestamps = false;
 
-    /**
-     * Cast attributes.
-     */
     protected function casts(): array
     {
         return [
@@ -58,7 +43,6 @@ class LetterRequest extends Model
             'submitted_at' => 'datetime',
             'verified_at' => 'datetime',
             'authorized_at' => 'datetime',
-            'completed_at' => 'datetime',
         ];
     }
 
@@ -77,9 +61,9 @@ class LetterRequest extends Model
         return $this->belongsTo(User::class, 'verified_by', 'user_id');
     }
 
-    public function authorizer()
+    public function authorizedSigner()
     {
-        return $this->belongsTo(User::class, 'authorized_by', 'user_id');
+        return $this->belongsTo(Signer::class, 'authorized_by_signer_id', 'signer_id');
     }
 
     public function attachments()
@@ -90,5 +74,22 @@ class LetterRequest extends Model
     public function statusHistories()
     {
         return $this->hasMany(LetterRequestStatusHistory::class, 'letter_request_id', 'letter_request_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (LetterRequest $letterRequest) {
+            if (empty($letterRequest->request_code)) {
+                $prefix = 'REQ-' . now()->format('Ymd');
+                $lastNumber = static::where('request_code', 'like', "{$prefix}-%")->count() + 1;
+                $letterRequest->request_code = $prefix . '-' . str_pad($lastNumber, 3, '0', STR_PAD_LEFT);
+            }
+            if (empty($letterRequest->submitted_at)) {
+                $letterRequest->submitted_at = now();
+            }
+            if (empty($letterRequest->status)) {
+                $letterRequest->status = 'submitted';
+            }
+        });
     }
 }
