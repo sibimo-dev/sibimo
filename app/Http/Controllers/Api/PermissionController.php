@@ -51,6 +51,7 @@ class PermissionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:permissions,name',
+            'slug' => 'required|string|max:100|unique:permissions,slug',
             'description' => 'nullable|string',
         ]);
 
@@ -81,6 +82,10 @@ class PermissionController extends Controller
             'name' => [
                 'sometimes', 'required', 'string', 'max:255',
                 Rule::unique('permissions', 'name')->ignore($permission->permission_id, 'permission_id'),
+            ],
+            'slug' => [
+                'sometimes', 'required', 'string', 'max:100',
+                Rule::unique('permissions', 'slug')->ignore($permission->permission_id, 'permission_id'),
             ],
             'description' => 'nullable|string',
         ]);

@@ -95,7 +95,9 @@ class UserPermissionController extends Controller
             ], 404);
         }
 
-        $userPermission->delete();
+        UserPermission::where('user_id', $validated['user_id'])
+            ->where('permission_id', $validated['permission_id'])
+            ->delete();
 
         return response()->json([
             'success' => true,

@@ -14,7 +14,7 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::orderBy('name')->paginate(20);
+        $roles = Role::with('permissions')->orderBy('name')->paginate(20);
 
         return response()->json([
             'success' => true,
@@ -91,6 +91,34 @@ class RoleController extends Controller
             'success' => true,
             'message' => 'Role berhasil diperbarui',
             'data' => $role,
+        ]);
+    }
+
+    /**
+     * PUT /api/roles/{id}/permissions
+     */
+    public function syncPermissions(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'permission_ids' => ['required', 'array'],
+            'permission_ids.*' => ['integer', 'distinct', 'exists:permissions,permission_id'],
+        ]);
+
+        $role = Role::find($id);
+
+        if (!$role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role tidak ditemukan',
+            ], 404);
+        }
+
+        $role->permissions()->sync($validated['permission_ids']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permission role berhasil diperbarui',
+            'data' => $role->load('permissions'),
         ]);
     }
 
