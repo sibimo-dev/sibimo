@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\ProfileContentController;
 use App\Http\Controllers\Api\ProfileSectionController;
+use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
@@ -63,6 +65,7 @@ Route::middleware([
 
         Route::apiResource('roles', RoleController::class)
             ->parameters(['roles' => 'role_id']);
+        Route::put('/roles/{role_id}/permissions', [RoleController::class, 'syncPermissions']);
 
         Route::apiResource('permissions', PermissionController::class)
             ->parameters(['permissions' => 'permission_id']);
@@ -87,6 +90,7 @@ Route::get('/news-categories', [NewsCategoryController::class, 'index']);
 Route::get('/profile-sections', [ProfileSectionController::class, 'index']);
 Route::get('/profile-contents', [ProfileContentController::class, 'index']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
+Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -156,6 +160,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 });
+
+Route::middleware(['auth:sanctum', 'permission:dashboard'])
+    ->get('/dashboard/summary', [DashboardController::class, 'summary']);
 
 Route::middleware(['auth:sanctum', 'permission:dashboard'])
     ->get('/test-permission', function () {
