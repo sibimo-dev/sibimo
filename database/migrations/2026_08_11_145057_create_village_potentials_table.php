@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('image', 255)->nullable();
             $table->string('location', 255)->nullable();
             $table->timestamp('created_at')->nullable();
+
+            $table->index('category');
         });
     }
 

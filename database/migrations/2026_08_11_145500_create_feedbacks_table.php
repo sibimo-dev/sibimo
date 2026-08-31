@@ -15,6 +15,8 @@ return new class extends Migration
             $table->text('message');
             $table->enum('status', ['Unread', 'Read', 'Replied'])->default('Unread');
             $table->timestamp('submitted_at')->nullable();
+
+            $table->index('status');
         });
     }
 

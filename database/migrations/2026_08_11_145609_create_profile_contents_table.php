@@ -1,11 +1,9 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('profile_contents', function (Blueprint $table) {
@@ -17,8 +15,9 @@ return new class extends Migration
             $table->foreignId('published_by')->nullable()->constrained('users', 'user_id');
             $table->enum('status', ['Draft', 'Published'])->default('Draft');
             $table->timestamp('published_at')->nullable();
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+
+            $table->index('status');
         });
     }
 

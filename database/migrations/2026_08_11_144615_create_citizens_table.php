@@ -18,14 +18,14 @@ return new class extends Migration
             $table->enum('gender', ['Laki-laki', 'Perempuan'])->nullable();
             $table->text('address')->nullable();
             $table->string('phone_number', 15)->nullable();
-            $table->string('email', 100)->nullable();
-            $table->string('password', 255)->nullable();
             $table->string('occupation', 100)->nullable();
             $table->string('education', 50)->nullable();
             $table->string('marital_status', 30)->nullable();
             $table->enum('status', ['Active', 'Pindah'])->default('Active');
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
+
+            $table->index('full_name');
+            $table->index('status');
         });
     }
 
