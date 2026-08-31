@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('book_loans', function (Blueprint $table) {
@@ -16,9 +15,11 @@ return new class extends Migration
             $table->date('due_date');
             $table->date('returned_at')->nullable();
             $table->enum('status', ['Borrowed', 'Returned', 'Late'])->default('Borrowed');
-            $table->decimal('fine_amount', 10, 2)->default(0);
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->decimal('fine_amount', 10, 2)->default(0.00);
+            $table->timestamps();
+
+            $table->index('status');
+            $table->index('due_date');
         });
     }
 

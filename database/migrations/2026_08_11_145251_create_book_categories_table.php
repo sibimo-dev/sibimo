@@ -12,8 +12,7 @@ return new class extends Migration
             $table->id('category_id');
             $table->string('category_name', 100);
             $table->text('description')->nullable();
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
         });
     }
 

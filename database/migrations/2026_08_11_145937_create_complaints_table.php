@@ -1,11 +1,9 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('complaints', function (Blueprint $table) {
@@ -17,6 +15,9 @@ return new class extends Migration
             $table->enum('status', ['Submitted', 'In Progress', 'Resolved', 'Rejected'])->default('Submitted');
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('resolved_at')->nullable();
+
+            $table->index('status');
+            $table->index('category');
         });
     }
 

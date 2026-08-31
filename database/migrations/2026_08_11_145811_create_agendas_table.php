@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('agendas', function (Blueprint $table) {
@@ -18,6 +17,8 @@ return new class extends Migration
             $table->string('location', 255)->nullable();
             $table->foreignId('created_by')->constrained('users', 'user_id');
             $table->timestamp('created_at')->nullable();
+
+            $table->index('event_date');
         });
     }
 
