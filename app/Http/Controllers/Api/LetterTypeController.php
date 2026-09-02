@@ -35,7 +35,7 @@ class LetterTypeController extends Controller
             'number_prefix' => ['nullable', 'string', 'max:50'],
             'processing_time' => ['nullable', 'string', 'max:50'],
             'signature_method' => ['required', Rule::in(['digital', 'manual'])],
-            'signer_id' => ['nullable', 'exists:signers,signer_id'],
+            'signer_id' => ['nullable', 'exists:staff,staff_id'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
         ]);
@@ -74,7 +74,7 @@ class LetterTypeController extends Controller
             'number_prefix' => ['nullable', 'string', 'max:50'],
             'processing_time' => ['nullable', 'string', 'max:50'],
             'signature_method' => ['sometimes', 'required', Rule::in(['digital', 'manual'])],
-            'signer_id' => ['nullable', 'exists:signers,signer_id'],
+            'signer_id' => ['nullable', 'exists:staff,staff_id'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
         ]);

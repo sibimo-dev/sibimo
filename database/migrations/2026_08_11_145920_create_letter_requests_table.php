@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->string('letter_number', 100)->nullable();
             $table->enum('signature_type', ['manual', 'digital'])->nullable();
             $table->foreignId('verified_by')->nullable()->constrained('users', 'user_id');
-            $table->foreignId('authorized_by_signer_id')->nullable()->constrained('signers', 'signer_id');
+            $table->foreignId('authorized_by_signer_id')->nullable()->constrained('staff', 'staff_id');
             $table->enum('source', ['Online', 'Manual (Kelurahan)'])->default('Manual (Kelurahan)');
             $table->text('notes')->nullable();
             $table->foreignId('authorized_by')->nullable()->constrained('users', 'user_id');            $table->timestamp('submitted_at')->nullable();

@@ -9,7 +9,7 @@ class LetterTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        $signerId = DB::table('signers')->value('signer_id');
+        $signerId = DB::table('staff')->where('is_signer', true)->value('staff_id');
 
         $types = [
             ['SKTM', 'Surat Keterangan Tidak Mampu', 'Keterangan', 'manual'],

@@ -147,7 +147,7 @@ class LetterRequestController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', Rule::in(['verified', 'authorized'])],
-            'authorized_by_signer_id' => ['required_if:status,authorized', 'nullable', 'exists:signers,signer_id'],
+            'authorized_by_signer_id' => ['required_if:status,authorized', 'nullable', 'exists:staff,staff_id'],
             'signature_type' => ['required_if:status,authorized', 'nullable', Rule::in(['digital', 'manual'])],
         ]);
 
