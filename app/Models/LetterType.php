@@ -53,7 +53,7 @@ class LetterType extends Model
 
     public function signer()
     {
-        return $this->belongsTo(Signer::class, 'signer_id', 'signer_id');
+        return $this->belongsTo(Signer::class, 'signer_id', 'staff_id');
     }
 
     public function numberSequences()

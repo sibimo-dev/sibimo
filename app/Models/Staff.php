@@ -9,22 +9,21 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'name',
     'position',
+    'level',
+    'description',
+    'photo',
+    'is_signer',
 ])]
-class Signer extends Model
+class Staff extends Model
 {
     use HasFactory;
 
     protected $table = 'staff';
     protected $primaryKey = 'staff_id';
-    protected $keyType = 'int';
-    public $incrementing = true;
 
-    protected $appends = ['signer_id'];
-
-    protected static function booted(): void
+    protected function casts(): array
     {
-        static::creating(fn (self $signer) => $signer->is_signer = true);
-        static::addGlobalScope('signers', fn ($query) => $query->where('is_signer', true));
+        return ['is_signer' => 'boolean'];
     }
 
     public function letterTypes()
@@ -35,10 +34,5 @@ class Signer extends Model
     public function letterRequestsAuthorized()
     {
         return $this->hasMany(LetterRequest::class, 'authorized_by_signer_id', 'staff_id');
-    }
-
-    public function getSignerIdAttribute(): int
-    {
-        return (int) $this->getKey();
     }
 }

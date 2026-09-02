@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\PermissionController;
@@ -16,14 +17,14 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserPermissionController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
-use App\Http\Controllers\Api\ProfileContentController;
-use App\Http\Controllers\Api\ProfileSectionController;
+use App\Http\Controllers\Api\OrganizationalStructureController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
+use App\Http\Controllers\Api\VisionMissionController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -87,8 +88,12 @@ Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{news_id}', [NewsController::class, 'show']);
 Route::get('/news-categories', [NewsCategoryController::class, 'index']);
-Route::get('/profile-sections', [ProfileSectionController::class, 'index']);
-Route::get('/profile-contents', [ProfileContentController::class, 'index']);
+Route::get('/histories', [HistoryController::class, 'index']);
+Route::get('/histories/{history_id}', [HistoryController::class, 'show']);
+Route::get('/vision-missions', [VisionMissionController::class, 'index']);
+Route::get('/vision-missions/{vision_mission_id}', [VisionMissionController::class, 'show']);
+Route::get('/organizational-structures', [OrganizationalStructureController::class, 'index']);
+Route::get('/organizational-structures/{organizational_structure_id}', [OrganizationalStructureController::class, 'show']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
 
@@ -141,10 +146,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
    
     Route::middleware(RoleMiddleware::class . ':Superadmin,Admin,Operator')->group(function () {
-        Route::apiResource('profile-sections', ProfileSectionController::class)
-            ->parameters(['profile-sections' => 'section_id'])->except(['index']);
-        Route::apiResource('profile-contents', ProfileContentController::class)
-            ->parameters(['profile-contents' => 'profileContent_id'])->except(['index']);
+        Route::apiResource('histories', HistoryController::class)
+            ->parameters(['histories' => 'history_id'])->except(['index', 'show']);
+        Route::apiResource('vision-missions', VisionMissionController::class)
+            ->parameters(['vision-missions' => 'vision_mission_id'])->except(['index', 'show']);
+        Route::apiResource('organizational-structures', OrganizationalStructureController::class)
+            ->parameters(['organizational-structures' => 'organizational_structure_id'])
+            ->except(['index', 'show']);
         Route::apiResource('services', ServiceController::class)
             ->parameters(['services' => 'service_id'])->except(['index', 'show']);
         Route::apiResource('village-potentials', VillagePotentialController::class)

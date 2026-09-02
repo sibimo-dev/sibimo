@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->enum('signature_method', ['digital', 'manual'])->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->foreignId('signer_id')->nullable()->constrained('signers', 'signer_id')->onDelete('set null');
+            $table->foreignId('signer_id')->nullable()->constrained('staff', 'staff_id')->onDelete('set null');
 
             $table->index(['category', 'is_active']);
         });

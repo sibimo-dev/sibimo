@@ -63,7 +63,7 @@ class LetterRequest extends Model
 
     public function authorizedSigner()
     {
-        return $this->belongsTo(Signer::class, 'authorized_by_signer_id', 'signer_id');
+        return $this->belongsTo(Signer::class, 'authorized_by_signer_id', 'staff_id');
     }
 
     public function attachments()

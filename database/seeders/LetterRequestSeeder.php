@@ -11,7 +11,7 @@ class LetterRequestSeeder extends Seeder
         $citizenIds = DB::table('citizens')->pluck('citizen_id');
         $letterTypeIds = DB::table('letter_types')->pluck('letter_type_id');
         $userIds = DB::table('users')->pluck('user_id');
-        $signerIds = DB::table('signers')->pluck('signer_id');
+        $signerIds = DB::table('staff')->where('is_signer', true)->pluck('staff_id');
 
         $statuses = ['submitted', 'verified', 'authorized', 'completed', 'rejected'];
 
