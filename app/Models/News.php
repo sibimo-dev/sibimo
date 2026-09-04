@@ -11,9 +11,13 @@ use Illuminate\Database\Eloquent\Model;
     'author_id',
     'title',
     'slug',
+    'excerpt',
     'content',
+    'content_blocks',
     'thumbnail',
     'status',
+    'is_popular',
+    'is_pinned',
     'published_at',
 ])]
 class News extends Model
@@ -48,6 +52,9 @@ class News extends Model
     {
         return [
             'published_at' => 'datetime',
+            'content_blocks' => 'array',
+            'is_popular' => 'boolean',
+            'is_pinned' => 'boolean',
         ];
     }
 

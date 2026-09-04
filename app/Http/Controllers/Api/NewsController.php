@@ -37,7 +37,11 @@ class NewsController extends Controller
             'content' => ['required','string'],
             'thumbnail' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'status' => ['nullable', Rule::in(['Draft','Published','Archived'])],
-            'published_at' => ['nullable','date']
+            'published_at' => ['nullable','date'],
+            'excerpt' => ['nullable', 'string', 'max:255'],
+            'content_blocks' => ['nullable', 'array'], // format: [{ "type": "text", "value": "..." }, { "type": "image", "src": "...", "caption": "..." }]
+            'is_popular' => ['boolean'],
+            'is_pinned' => ['boolean']
         ]);
 
         $validated['author_id'] = $request->user()->user_id;
@@ -81,7 +85,11 @@ class NewsController extends Controller
             'content' => ['sometimes','required','string'],
             'thumbnail' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
             'status' => ['nullable', Rule::in(['Draft','Published','Archived'])],
-            'published_at' => ['nullable','date']
+            'published_at' => ['nullable','date'],
+            'excerpt' => ['nullable', 'string', 'max:255'],
+            'content_blocks' => ['nullable', 'array'], 
+            'is_popular' => ['boolean'],
+            'is_pinned' => ['boolean']
         ]);
 
         if (empty($validated['category_id']) && !empty($validated['category_name'])) {
