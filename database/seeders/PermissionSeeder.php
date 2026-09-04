@@ -66,6 +66,26 @@ class PermissionSeeder extends Seeder
                 'slug' => 'surat',
                 'description' => 'Mengelola pengajuan dan penerbitan surat.',
             ],
+            [
+                'name' => 'Sejarah',
+                'slug' => 'sejarah',
+                'description' => 'Mengelola sejarah kalurahan.',
+            ],
+            [
+                'name' => 'Visi & Misi',
+                'slug' => 'visi-misi',
+                'description' => 'Mengelola visi & misi kalurahan.',
+            ],
+            [
+                'name' => 'Struktur Organisasi',
+                'slug' => 'struktur-organisasi',
+                'description' => 'Mengelola struktur organisasi kalurahan.',
+            ],
+            [
+                'name' => 'Data Wilayah',
+                'slug' => 'data-wilayah',
+                'description' => 'Mengelola data wilayah kalurahan.',
+            ],
         ];
 
         foreach ($permissions as $permission)
