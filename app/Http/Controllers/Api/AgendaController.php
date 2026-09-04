@@ -31,6 +31,7 @@ class AgendaController extends Controller
             'start_time' => ['nullable','date_format:H:i'],
             'end_time' => ['nullable','date_format:H:i'],
             'location' => ['nullable','string','max:255'],
+            'attendee' => ['nullable', 'string', 'max:255']
         ]);
 
         $validated['created_by'] = $request->user()->user_id;
@@ -65,7 +66,8 @@ class AgendaController extends Controller
             'event_date' => ['sometimes','required','date'],
             'start_time' => ['nullable','date_format:H:i'],
             'end_time' => ['nullable','date_format:H:i'],
-            'location' => ['nullable','string','max:255']
+            'location' => ['nullable','string','max:255'],
+            'attendee' => ['nullable', 'string', 'max:255']
         ]);
 
         $agenda->update($validated);
