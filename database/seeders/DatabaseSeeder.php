@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             UserRoleSeeder::class,
             SignerSeeder::class,
+            StaffSeeder::class,
             CitizenSeeder::class,
             LetterTypeSeeder::class,
             ServiceSeeder::class,

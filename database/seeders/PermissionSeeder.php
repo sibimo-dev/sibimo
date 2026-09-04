@@ -22,9 +22,9 @@ class PermissionSeeder extends Seeder
                 'description' => 'Mengelola pengguna sistem',
             ],
             [
-                'name' => 'Profil Desa',
-                'slug' => 'profil-desa',
-                'description' => 'Mengelola informasi profil desa.',
+                'name' => 'Profil Kalurahan',
+                'slug' => 'profil-kalurahan',
+                'description' => 'Mengelola informasi profil kalurahan.',
             ],
             [
                 'name' => 'Berita & Pengumuman',
@@ -37,9 +37,9 @@ class PermissionSeeder extends Seeder
                 'description' => 'Mengelola layanan desa.',
             ],
             [
-                'name' => 'Potensi Desa',
-                'slug' => 'potensi-desa',
-                'description' => 'Mengelola data potensi desa.',
+                'name' => 'Potensi Kalurahan',
+                'slug' => 'potensi-kalurahan',
+                'description' => 'Mengelola data potensi kalurahan.',
             ],
             [
                 'name' => 'Agenda',

@@ -61,10 +61,10 @@ class RolePermissionSeeder extends Seeder
         $adminSlugs = [
             'dashboard',
             'user-management',
-            'profil-desa',
+            'profil-kalurahan',
             'berita',
             'layanan-desa',
-            'potensi-desa',
+            'potensi-kalurahan',
             'agenda',
             'gallery',
             'pengaduan',
@@ -95,6 +95,8 @@ class RolePermissionSeeder extends Seeder
             'pengaduan',
             'perpustakaan',
             'surat',
+            'profil-kalurahan',
+            'potensi-kalurahan',
         ];
 
         $operatorPermissions = [];
