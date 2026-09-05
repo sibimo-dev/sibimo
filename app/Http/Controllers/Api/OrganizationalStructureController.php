@@ -143,7 +143,7 @@ class OrganizationalStructureController extends Controller
 
         return [
             'organizational_structure_id' => 1,
-            'title' => $title ?? 'Struktur Organisasi Pemerintah Desa',
+            'title' => $title ?? 'Struktur Organisasi Pemerintah Kalurahan',
             'levels' => $levels,
             'status' => $status ?? 'Draft',
             'published_at' => null,

@@ -58,6 +58,18 @@ class StaffSeeder extends Seeder
                 'level' => 'Kepala Seksi',
                 'description' => 'Mengelola urusan pemerintahan dan keamanan.',
             ],
+            [
+                'name' => 'Dukuh I Krebet',
+                'position' => 'Dukuh I Krebet',
+                'level' => 'Dukuh (Kepala Padukuhan)',
+                'description' => 'Kepala Padukuhan Krebet.',
+            ],
+            [
+                'name' => 'Staff Pamong Kalurahan',
+                'position' => 'Staff Pamong Kalurahan',
+                'level' => 'Staff Pamong Kalurahan',
+                'description' => 'Mendukung administrasi pemerintahan kalurahan.',
+            ],
         ];
 
         foreach ($staff as $person) {
