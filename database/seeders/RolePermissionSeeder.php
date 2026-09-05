@@ -62,6 +62,10 @@ class RolePermissionSeeder extends Seeder
             'dashboard',
             'user-management',
             'profil-kalurahan',
+            'sejarah',
+            'visi-misi',
+            'struktur-organisasi',
+            'data-wilayah',
             'berita',
             'layanan-desa',
             'potensi-kalurahan',
@@ -96,6 +100,10 @@ class RolePermissionSeeder extends Seeder
             'perpustakaan',
             'surat',
             'profil-kalurahan',
+            'sejarah',
+            'visi-misi',
+            'struktur-organisasi',
+            'data-wilayah',
             'potensi-kalurahan',
         ];
 
