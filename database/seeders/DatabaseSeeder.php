@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
             SignerSeeder::class,
             StaffSeeder::class,
             CitizenSeeder::class,
+            RegionSeeder::class,
             LetterTypeSeeder::class,
             ServiceSeeder::class,
             VillagePotentialSeeder::class,
