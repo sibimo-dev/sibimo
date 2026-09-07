@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('occupation', 100)->nullable();
             $table->string('education', 50)->nullable();
             $table->string('marital_status', 30)->nullable();
+            $table->string('religion', 30)->nullable();
             $table->enum('status', ['Active', 'Pindah'])->default('Active');
             $table->timestamps();
 

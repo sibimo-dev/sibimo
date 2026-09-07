@@ -21,6 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
     'occupation',
     'education',
     'marital_status',
+    'religion',
     'status',
 ])]
 #[Hidden([

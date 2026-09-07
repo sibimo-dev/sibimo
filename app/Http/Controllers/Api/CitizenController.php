@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Citizen;
+use App\Models\Region;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -23,6 +24,84 @@ class CitizenController extends Controller
         ]);
     }
 
+    /**
+     * Public aggregate-only citizen data for the public statistics page.
+     * No names, NIKs, addresses, or contact details are exposed here.
+     */
+    public function statistics(): JsonResponse
+    {
+        $citizens = Citizen::query()
+            ->where('status', 'Active')
+            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion']);
+
+        $ageGroups = [
+            '0–4', '5–9', '10–14', '15–19', '20–24', '25–29', '30–34', '35–39',
+            '40–44', '45–49', '50–54', '55–59', '60–64', '65–69', '70–74', '75+',
+        ];
+        $ageRows = collect($ageGroups)->mapWithKeys(fn (string $label) => [
+            $label => ['group' => $label, 'total' => 0, 'male' => 0, 'female' => 0],
+        ])->all();
+
+        $aggregate = function (callable $labeler, array $initial = []) use ($citizens): array {
+            $rows = $initial;
+            foreach ($citizens as $citizen) {
+                $label = $labeler($citizen) ?: 'Tidak diisi';
+                $rows[$label] ??= ['group' => $label, 'total' => 0, 'male' => 0, 'female' => 0];
+                $rows[$label]['total']++;
+                if ($citizen->gender === 'Laki-laki') $rows[$label]['male']++;
+                if ($citizen->gender === 'Perempuan') $rows[$label]['female']++;
+            }
+
+            return array_values($rows);
+        };
+
+        $ageLabel = function (Citizen $citizen) use ($ageGroups): string {
+            if (!$citizen->birth_date) return 'Tidak diisi';
+            $age = $citizen->birth_date->age;
+            if ($age < 5) return $ageGroups[0];
+            if ($age >= 75) return '75+';
+
+            return $ageGroups[(int) floor($age / 5)];
+        };
+
+        $genderRows = [
+            'Laki-laki' => ['group' => 'Laki-laki', 'total' => 0, 'male' => 0, 'female' => 0],
+            'Perempuan' => ['group' => 'Perempuan', 'total' => 0, 'male' => 0, 'female' => 0],
+        ];
+
+        $maleCount = $citizens->where('gender', 'Laki-laki')->count();
+        $femaleCount = $citizens->where('gender', 'Perempuan')->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_population' => $citizens->count(),
+                    'kk_count' => $citizens->pluck('family_card_number')->filter()->unique()->count(),
+                    'male_count' => $maleCount,
+                    'female_count' => $femaleCount,
+                ],
+                'categories' => [
+                    'age' => $aggregate($ageLabel, $ageRows),
+                    'education' => $aggregate(fn (Citizen $citizen) => $citizen->education),
+                    'occupation' => $aggregate(fn (Citizen $citizen) => $citizen->occupation),
+                    'gender' => $aggregate(fn (Citizen $citizen) => $citizen->gender, $genderRows),
+                    'religion' => $aggregate(fn (Citizen $citizen) => $citizen->religion),
+                ],
+                'regions' => Region::query()
+                    ->latest()
+                    ->get(['name', 'population', 'male_count', 'female_count'])
+                    ->map(fn (Region $region) => [
+                        'group' => $region->name,
+                        'total' => (int) $region->population,
+                        'male' => (int) $region->male_count,
+                        'female' => (int) $region->female_count,
+                    ])
+                    ->values(),
+            ],
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -37,6 +116,7 @@ class CitizenController extends Controller
             'occupation' => ['nullable', 'string', 'max:100'],
             'education' => ['nullable', 'string', 'max:50'],
             'marital_status' => ['nullable', 'string', 'max:30'],
+            'religion' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
@@ -77,6 +157,7 @@ class CitizenController extends Controller
             'occupation' => ['nullable', 'string', 'max:100'],
             'education' => ['nullable', 'string', 'max:50'],
             'marital_status' => ['nullable', 'string', 'max:30'],
+            'religion' => ['nullable', 'string', 'max:30'],
             'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
