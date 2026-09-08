@@ -1,2 +1,11 @@
 *
 !.gitignore
+!news/
+!news/**
+!galleries/
+!galleries/**
+!village-potentials/
+!village-potentials/**
+!profile/
+!profile/organization/
+!profile/organization/**
