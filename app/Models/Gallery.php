@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
     'title',
+    'category',
+    'location',
+    'event_date',
     'description',
     'image',
     'uploaded_by',
@@ -42,5 +45,13 @@ class Gallery extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by', 'user_id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'uploaded_at' => 'datetime',
+            'event_date' => 'date',
+        ];
     }
 }

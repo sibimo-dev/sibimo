@@ -26,8 +26,11 @@ class GalleryController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required','string','max:200'],
+            'category' => ['required', 'in:musyawarah,kegiatan-sosial,pembangunan,budaya'],
+            'location' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
             'image' => ['required','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
+            'event_date' => ['nullable', 'date']
         ]);
         $path = $validated['image']->store('galleries', 'public');
         $validated['image'] = Storage::disk('public')->url($path);
@@ -62,8 +65,11 @@ class GalleryController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes','required','string','max:200'],
+            'category' => ['sometimes', 'in:musyawarah,kegiatan-sosial,pembangunan,budaya'],
+            'location' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
-            'image' => ['sometimes','required','file','mimes:jpg,jpeg,png,webp,gif','max:5120']
+            'image' => ['sometimes','required','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
+            'event_date' => ['nullable', 'date']
         ]);
 
         if (isset($validated['image'])) {

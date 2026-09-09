@@ -9,37 +9,32 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'category',
     'title',
+    'slug',
+    'short_desc',
     'description',
     'image',
     'location',
+    'contact',
+    'extra_info',
     'created_at',
 ])]
 class VillagePotential extends Model
 {
     use HasFactory;
 
-    /**
-     * Table name.
-     */
     protected $table = 'village_potentials';
-
-    /**
-     * Primary key.
-     */
     protected $primaryKey = 'potential_id';
-
-    /**
-     * Primary key type.
-     */
     protected $keyType = 'int';
-
-    /**
-     * Auto increment.
-     */
     public $incrementing = true;
 
     public $timestamps = false;
     const CREATED_AT = 'created_at';
     const UPDATED_AT = null;
 
+    protected function casts(): array
+    {
+        return [
+            'extra_info' => 'array',
+        ];
+    }
 }

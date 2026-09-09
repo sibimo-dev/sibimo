@@ -32,18 +32,26 @@ class VillagePotentialController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($request->has('extra_info') && is_string($request->input('extra_info'))) {
+            $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
+        }
         $validated = $request->validate([
             'category' => ['required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['required','string','max:200'],
+            'short_desc' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
             'image' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
-            'location' => ['nullable','string','max:255']
+            'location' => ['nullable','string','max:255'],
+            'contact' => ['nullable','string','max:255'],
+            'extra_info' => ['nullable','array'],
         ]);
-
+    
+        $validated['slug'] = \Illuminate\Support\Str::slug($validated['title']) . '-' . \Illuminate\Support\Str::random(5);
+    
         if (isset($validated['image'])) $validated['image'] = Storage::disk('public')->url($validated['image']->store('village-potentials', 'public'));
         $validated['created_at'] = now();
         $potential = VillagePotential::create($validated);
-
+    
         return response()->json([
             'success' => true,
             'message' => 'Potensi desa berhasil dibuat.',
@@ -67,18 +75,23 @@ class VillagePotentialController extends Controller
     public function update(Request $request, int $potential_id): JsonResponse
     {
         $potential = VillagePotential::findOrFail($potential_id);
-
+        if ($request->has('extra_info') && is_string($request->input('extra_info'))) {
+            $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
+        }
         $validated = $request->validate([
             'category' => ['sometimes','required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['sometimes','required','string','max:200'],
+            'short_desc' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
             'image' => ['nullable','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
-            'location' => ['nullable','string','max:255']
+            'location' => ['nullable','string','max:255'],
+            'contact' => ['nullable','string','max:255'],
+            'extra_info' => ['nullable','array'],
         ]);
-
+    
         if (isset($validated['image'])) $validated['image'] = Storage::disk('public')->url($validated['image']->store('village-potentials', 'public'));
         $potential->update($validated);
-
+    
         return response()->json([
             'success' => true,
             'message' => 'Potensi desa berhasil diperbarui.',
