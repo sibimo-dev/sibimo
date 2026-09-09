@@ -10,18 +10,42 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
+    'record_type',
+    'record_event',
     'national_id',
     'family_card_number',
+    'dusun',
     'full_name',
     'birth_place',
     'birth_date',
+    'age',
     'gender',
     'address',
+    'rt',
+    'rw',
     'phone_number',
+    'birth_certificate_status',
+    'birth_certificate_number',
+    'blood_type',
     'occupation',
     'education',
     'marital_status',
+    'marriage_certificate_status',
+    'marriage_certificate_number',
+    'marriage_date',
+    'divorce_certificate_status',
+    'divorce_certificate_number',
+    'divorce_date',
+    'family_relationship',
+    'physical_disability',
+    'disability_status',
     'religion',
+    'mother_national_id',
+    'mother_name',
+    'father_national_id',
+    'father_name',
+    'nationality',
+    'ktp_address',
     'status',
 ])]
 #[Hidden([
@@ -60,6 +84,9 @@ class Citizen extends Authenticatable
         return [
             'password' => 'hashed',
             'birth_date' => 'date',
+            'marriage_date' => 'date',
+            'divorce_date' => 'date',
+            'age' => 'integer',
         ];
     }
 

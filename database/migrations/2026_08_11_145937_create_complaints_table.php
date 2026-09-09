@@ -8,7 +8,8 @@ return new class extends Migration {
     {
         Schema::create('complaints', function (Blueprint $table) {
             $table->id('complaint_id');
-            $table->foreignId('citizen_id')->constrained('citizens', 'citizen_id');
+            $table->string('reporter_name', 100)->nullable();
+            $table->string('reporter_phone', 20)->nullable();
             $table->enum('category', ['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other']);
             $table->string('title', 200);
             $table->longText('description');

@@ -15,7 +15,7 @@ class ComplaintController extends Controller
 {
     public function index(): JsonResponse
     {
-        $complaints = Complaint::query()->with(['citizen', 'attachments', 'statusHistories'])->latest('submitted_at')->get();
+        $complaints = Complaint::query()->with(['attachments', 'statusHistories'])->latest('submitted_at')->get();
 
         return response()->json([
             'success' => true,
@@ -27,7 +27,8 @@ class ComplaintController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'citizen_id' => ['required', 'exists:citizens,citizen_id'],
+            'reporter_name' => ['nullable', 'string', 'max:100'],
+            'reporter_phone' => ['nullable', 'string', 'max:20'],
             'category' => ['required', Rule::in(['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other'])],
             'title' => ['required', 'string', 'max:200'],
             'description' => ['required', 'string']
@@ -46,7 +47,7 @@ class ComplaintController extends Controller
 
     public function show(int $complaint_id): JsonResponse
     {
-        $complaint = Complaint::query()->with(['citizen', 'attachments', 'statusHistories'])->findOrFail($complaint_id);
+        $complaint = Complaint::query()->with(['attachments', 'statusHistories'])->findOrFail($complaint_id);
 
         return response()->json([
             'success' => true,
@@ -60,6 +61,8 @@ class ComplaintController extends Controller
         $complaint = Complaint::findOrFail($complaint_id);
 
         $validated = $request->validate([
+            'reporter_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'reporter_phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'category' => ['sometimes','required', Rule::in(['Infrastructure','Public Service','Environment','Security','Other'])],
             'title' => ['sometimes','required','string','max:200'],
             'description' => ['sometimes','required','string'],

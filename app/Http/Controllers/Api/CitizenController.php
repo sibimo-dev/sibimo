@@ -104,19 +104,44 @@ class CitizenController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->normalizeInput($request);
         $validated = $request->validate([
+            'record_type' => ['nullable', 'string', 'max:100'],
+            'record_event' => ['nullable', 'string', 'max:100'],
             'national_id' => ['required','string','size:16','unique:citizens,national_id'],
             'family_card_number' => ['nullable','string','size:16',],
+            'dusun' => ['nullable', 'string', 'max:100'],
             'full_name' => ['required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
             'birth_date' => ['nullable','date'],
+            'age' => ['nullable', 'integer', 'min:0', 'max:150'],
             'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address' => ['nullable','string'],
+            'rt' => ['nullable', 'string', 'max:20'],
+            'rw' => ['nullable', 'string', 'max:20'],
             'phone_number' => ['nullable','string','max:15'],
+            'birth_certificate_status' => ['nullable', 'string', 'max:50'],
+            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
+            'blood_type' => ['nullable', 'string', 'max:10'],
             'occupation' => ['nullable', 'string', 'max:100'],
             'education' => ['nullable', 'string', 'max:50'],
             'marital_status' => ['nullable', 'string', 'max:30'],
+            'marriage_certificate_status' => ['nullable', 'string', 'max:50'],
+            'marriage_certificate_number' => ['nullable', 'string', 'max:50'],
+            'marriage_date' => ['nullable', 'date'],
+            'divorce_certificate_status' => ['nullable', 'string', 'max:50'],
+            'divorce_certificate_number' => ['nullable', 'string', 'max:50'],
+            'divorce_date' => ['nullable', 'date'],
+            'family_relationship' => ['nullable', 'string', 'max:100'],
+            'physical_disability' => ['nullable', 'string', 'max:100'],
+            'disability_status' => ['nullable', 'string', 'max:100'],
             'religion' => ['nullable', 'string', 'max:30'],
+            'mother_national_id' => ['nullable', 'string', 'size:16'],
+            'mother_name' => ['nullable', 'string', 'max:100'],
+            'father_national_id' => ['nullable', 'string', 'size:16'],
+            'father_name' => ['nullable', 'string', 'max:100'],
+            'nationality' => ['nullable', 'string', 'max:50'],
+            'ktp_address' => ['nullable', 'string'],
             'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
@@ -144,20 +169,45 @@ class CitizenController extends Controller
     public function update(Request $request, int $citizen_id): JsonResponse
     {
         $citizen = Citizen::findOrFail($citizen_id);
+        $this->normalizeInput($request);
 
         $validated = $request->validate([
+            'record_type' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'record_event' => ['sometimes', 'nullable', 'string', 'max:100'],
             'national_id' => ['sometimes','required','string','size:16', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
             'family_card_number' => ['nullable','string','size:16',],
+            'dusun' => ['sometimes', 'nullable', 'string', 'max:100'],
             'full_name' => ['sometimes','required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
             'birth_date' => ['nullable','date'],
+            'age' => ['nullable', 'integer', 'min:0', 'max:150'],
             'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address' => ['nullable','string'],
+            'rt' => ['nullable', 'string', 'max:20'],
+            'rw' => ['nullable', 'string', 'max:20'],
             'phone_number' => ['nullable','string','max:15'],
+            'birth_certificate_status' => ['nullable', 'string', 'max:50'],
+            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
+            'blood_type' => ['nullable', 'string', 'max:10'],
             'occupation' => ['nullable', 'string', 'max:100'],
             'education' => ['nullable', 'string', 'max:50'],
             'marital_status' => ['nullable', 'string', 'max:30'],
+            'marriage_certificate_status' => ['nullable', 'string', 'max:50'],
+            'marriage_certificate_number' => ['nullable', 'string', 'max:50'],
+            'marriage_date' => ['nullable', 'date'],
+            'divorce_certificate_status' => ['nullable', 'string', 'max:50'],
+            'divorce_certificate_number' => ['nullable', 'string', 'max:50'],
+            'divorce_date' => ['nullable', 'date'],
+            'family_relationship' => ['nullable', 'string', 'max:100'],
+            'physical_disability' => ['nullable', 'string', 'max:100'],
+            'disability_status' => ['nullable', 'string', 'max:100'],
             'religion' => ['nullable', 'string', 'max:30'],
+            'mother_national_id' => ['nullable', 'string', 'size:16'],
+            'mother_name' => ['nullable', 'string', 'max:100'],
+            'father_national_id' => ['nullable', 'string', 'size:16'],
+            'father_name' => ['nullable', 'string', 'max:100'],
+            'nationality' => ['nullable', 'string', 'max:50'],
+            'ktp_address' => ['nullable', 'string'],
             'status' => ['nullable', Rule::in(['Active', 'Pindah'])],
         ]);
 
@@ -179,6 +229,16 @@ class CitizenController extends Controller
             'success' => true,
             'message' => 'Citizen berhasil dihapus.',
         ]);
+    }
+
+    private function normalizeInput(Request $request): void
+    {
+        $gender = trim((string) $request->input('gender', ''));
+        if ($gender !== '') {
+            $request->merge([
+                'gender' => strcasecmp($gender, 'perempuan') === 0 ? 'Perempuan' : 'Laki-laki',
+            ]);
+        }
     }
 
 }
