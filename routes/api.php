@@ -94,6 +94,7 @@ Route::get('/vision-missions', [VisionMissionController::class, 'index']);
 Route::get('/vision-missions/{vision_mission_id}', [VisionMissionController::class, 'show']);
 Route::get('/organizational-structures', [OrganizationalStructureController::class, 'index']);
 Route::get('/organizational-structures/{organizational_structure_id}', [OrganizationalStructureController::class, 'show']);
+Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
 

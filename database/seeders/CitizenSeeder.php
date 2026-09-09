@@ -9,6 +9,8 @@ class CitizenSeeder extends Seeder
 {
     public function run(): void
     {
+        $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
+
         for ($i = 0; $i < 30; $i++) {
             DB::table('citizens')->insert([
                 'national_id' => fake()->unique()->numerify('################'), // 16 digit
@@ -22,7 +24,10 @@ class CitizenSeeder extends Seeder
                 'occupation' => fake()->randomElement(['Wiraswasta', 'Guru', 'Petani', 'Perawat', 'Karyawan Swasta', 'Ibu Rumah Tangga', 'Wirausaha', 'Mahasiswa', 'Nelayan', 'Pedagang']),
                 'education' => fake()->randomElement(['SD', 'SMP', 'SMA/SMK', 'D3', 'S1']),
                 'marital_status' => fake()->randomElement(['Menikah', 'Belum Menikah', 'Cerai Hidup', 'Cerai Mati']),
-                'status' => fake()->randomElement(['Active', 'Active', 'Active', 'Pindah']),
+                'religion' => $religions[$i % count($religions)],
+                'status' => $i < count($religions)
+                    ? 'Active'
+                    : fake()->randomElement(['Active', 'Active', 'Active', 'Pindah']),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
