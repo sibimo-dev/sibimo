@@ -73,14 +73,13 @@ class DashboardController extends Controller
             ->values();
 
         $complaints = Complaint::query()
-            ->with('citizen')
             ->latest('submitted_at')
             ->take(3)
             ->get()
             ->map(fn (Complaint $complaint) => [
                 'id' => $complaint->complaint_id,
                 'title' => $complaint->title,
-                'reporter' => $complaint->citizen?->full_name ?? '-',
+                'reporter' => ($complaint->reporter_name || $complaint->reporter_phone) ? 'Anonim' : '',
                 'time' => $complaint->submitted_at?->toISOString(),
                 'status' => $this->complaintStatusLabel($complaint->status),
             ])

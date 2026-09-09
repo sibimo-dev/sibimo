@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 #[Fillable([
-    'citizen_id',
+    'reporter_name',
+    'reporter_phone',
     'category',
     'title',
     'description',
@@ -50,11 +51,6 @@ class Complaint extends Model
             'submitted_at' => 'datetime',
             'resolved_at' => 'datetime',
         ];
-    }
-
-    public function citizen()
-    {
-        return $this->belongsTo(Citizen::class, 'citizen_id', 'citizen_id');
     }
 
     public function attachments()
