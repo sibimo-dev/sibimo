@@ -32,6 +32,9 @@ class VillagePotentialController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if ($request->has('extra_info') && is_string($request->input('extra_info'))) {
+            $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
+        }
         $validated = $request->validate([
             'category' => ['required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['required','string','max:200'],
@@ -72,7 +75,9 @@ class VillagePotentialController extends Controller
     public function update(Request $request, int $potential_id): JsonResponse
     {
         $potential = VillagePotential::findOrFail($potential_id);
-    
+        if ($request->has('extra_info') && is_string($request->input('extra_info'))) {
+            $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
+        }
         $validated = $request->validate([
             'category' => ['sometimes','required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
             'title' => ['sometimes','required','string','max:200'],

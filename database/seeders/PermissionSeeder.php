@@ -88,11 +88,16 @@ class PermissionSeeder extends Seeder
             ],
         ];
 
-        foreach ($permissions as $permission)
-            DB::table('permissions')->insert([
-                ...$permission,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        foreach ($permissions as $permission) {
+            DB::table('permissions')->updateOrInsert(
+                ['slug' => $permission['slug']],
+                [
+                    'name' => $permission['name'],
+                    'description' => $permission['description'],
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        }
     }
 }
