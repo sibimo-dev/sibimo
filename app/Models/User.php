@@ -84,6 +84,9 @@ class User extends Authenticatable
 
         return $rolePermissions
             ->merge($this->userPermissions->pluck('permissions.slug')->filter())
+            // Dashboard is universally available and is intentionally not a
+            // configurable row in the permissions table.
+            ->push('dashboard')
             ->unique()
             ->values()
             ->all();

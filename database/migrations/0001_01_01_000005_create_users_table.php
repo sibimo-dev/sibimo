@@ -12,7 +12,8 @@ return new class extends Migration {
             $table->string('username', 50)->nullable()->unique();
             $table->string('email', 100)->nullable()->unique();
             $table->string('password', 255)->nullable();
-            $table->enum('role', ['Superadmin', 'Admin', 'Operator'])->nullable();
+            // Legacy role label retained for compatibility; role_id is canonical.
+            $table->string('role', 50)->nullable();
             $table->string('phone_number', 15)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

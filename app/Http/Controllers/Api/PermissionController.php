@@ -4,17 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class PermissionController extends Controller
 {
-    /**
-     * GET /api/permissions
-     */
+    /** GET /api/permissions */
     public function index()
     {
-        $permissions = Permission::orderBy('name')->paginate(20);
+        $permissions = Permission::orderBy('name')->get();
 
         return response()->json([
             'success' => true,
@@ -44,80 +40,4 @@ class PermissionController extends Controller
         ]);
     }
 
-    /**
-     * POST /api/permissions
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name',
-            'slug' => 'required|string|max:100|unique:permissions,slug',
-            'description' => 'nullable|string',
-        ]);
-
-        $permission = Permission::create($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission berhasil dibuat',
-            'data' => $permission,
-        ], 201);
-    }
-
-    /**
-     * PUT/PATCH /api/permissions/{id}
-     */
-    public function update(Request $request, $id)
-    {
-        $permission = Permission::find($id);
-
-        if (!$permission) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Permission tidak ditemukan',
-            ], 404);
-        }
-
-        $validated = $request->validate([
-            'name' => [
-                'sometimes', 'required', 'string', 'max:255',
-                Rule::unique('permissions', 'name')->ignore($permission->permission_id, 'permission_id'),
-            ],
-            'slug' => [
-                'sometimes', 'required', 'string', 'max:100',
-                Rule::unique('permissions', 'slug')->ignore($permission->permission_id, 'permission_id'),
-            ],
-            'description' => 'nullable|string',
-        ]);
-
-        $permission->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission berhasil diperbarui',
-            'data' => $permission,
-        ]);
-    }
-
-    /**
-     * DELETE /api/permissions/{id}
-     */
-    public function destroy($id)
-    {
-        $permission = Permission::find($id);
-
-        if (!$permission) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Permission tidak ditemukan',
-            ], 404);
-        }
-
-        $permission->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission berhasil dihapus',
-        ]);
-    }
 }
