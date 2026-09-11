@@ -38,6 +38,13 @@ Route::prefix('auth')->group(function () {
 
 });
 
+Route::prefix('public')->group(function () {
+    Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
+    Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
+    Route::post('/complaints', [ComplaintController::class, 'storePublic']);
+    Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
+});
+
 Route::middleware([
     'auth:sanctum',
     'active',
@@ -81,6 +88,10 @@ Route::middleware([
 
     });
 
+Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
+Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
+Route::post('/complaints', [ComplaintController::class, 'storePublic']);
+Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
