@@ -89,6 +89,82 @@ class ComplaintController extends Controller
         ]);
     }
 
+    public function indexPublic(): JsonResponse
+    {
+        $complaints = Complaint::query()
+            ->select(['complaint_id', 'reporter_name', 'reporter_phone', 'category', 'title', 'description', 'location', 'latitude', 'longitude', 'status', 'submitted_at', 'resolved_at'])
+            ->with('attachments')
+            ->latest('submitted_at')
+            ->get();
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Data pengaduan berhasil diambil.',
+            'data' => $complaints,
+        ]);
+    }
+    
+    public function showPublic(int $complaint_id): JsonResponse
+    {
+        $complaint = Complaint::query()
+            ->select(['complaint_id', 'reporter_name', 'reporter_phone', 'category', 'title', 'description', 'location', 'status', 'submitted_at', 'resolved_at'])
+            ->with(['attachments', 'statusHistories'])
+            ->findOrFail($complaint_id);
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail pengaduan berhasil diambil.',
+            'data' => $complaint,
+        ]);
+    }
+
+    public function storePublic(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'reporter_name' => ['nullable', 'string', 'max:100'],
+            'reporter_phone' => ['nullable', 'string', 'max:20'],
+            'category' => ['required', Rule::in(['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other'])],
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['required', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+        ]);
+
+        $validated['status'] = 'Submitted';
+        $validated['submitted_at'] = now();
+
+        $complaint = Complaint::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengaduan berhasil dikirim.',
+            'data' => $complaint,
+        ], 201);
+    }
+
+    public function storeAttachmentPublic(Request $request, int $complaint_id): JsonResponse
+    {
+        Complaint::findOrFail($complaint_id);
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,mp4', 'max:10240'],
+        ]);
+        $file = $validated['file'];
+        $path = $file->store('complaints', 'public');
+
+        $attachment = ComplaintAttachment::create([
+            'complaint_id' => $complaint_id,
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => Storage::disk('public')->url($path),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lampiran berhasil diunggah.',
+            'data' => $attachment,
+        ], 201);
+    }
+
     public function updateStatus(Request $request, int $complaint_id): JsonResponse
     {
         $complaint = Complaint::findOrFail($complaint_id);

@@ -39,6 +39,13 @@ Route::prefix('auth')->group(function () {
 
 });
 
+Route::prefix('public')->group(function () {
+    Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
+    Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
+    Route::post('/complaints', [ComplaintController::class, 'storePublic']);
+    Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
+});
+
 Route::middleware([
     'auth:sanctum',
     'permission:user-management',
@@ -77,6 +84,10 @@ Route::middleware([
 
     });
 
+Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
+Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
+Route::post('/complaints', [ComplaintController::class, 'storePublic']);
+Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
@@ -97,6 +108,7 @@ Route::get('/organizational-structures/{organizational_structure_id}', [Organiza
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
 
 
 Route::middleware('auth:sanctum')->group(function () {
