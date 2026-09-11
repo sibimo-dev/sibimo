@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
@@ -14,7 +15,7 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')->orderBy('name')->paginate(20);
+        $roles = Role::with('permissions')->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
@@ -50,7 +51,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name',
+            'name' => 'required|string|max:50|unique:roles,name',
             'description' => 'nullable|string',
         ]);
 
@@ -59,7 +60,7 @@ class RoleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Role berhasil dibuat',
-            'data' => $role,
+            'data' => $role->load('permissions'),
         ], 201);
     }
 
@@ -79,18 +80,34 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name' => [
-                'sometimes', 'required', 'string', 'max:255',
+                'sometimes', 'required', 'string', 'max:50',
                 Rule::unique('roles', 'name')->ignore($role->role_id, 'role_id'),
             ],
             'description' => 'nullable|string',
         ]);
 
-        $role->update($validated);
+        if (($validated['name'] ?? $role->name) !== $role->name && $role->name === 'Superadmin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role Superadmin tidak dapat diganti nama.',
+            ], 403);
+        }
+
+        $oldName = $role->name;
+        DB::transaction(function () use ($role, $validated, $oldName): void {
+            $role->update($validated);
+
+            if ($role->name !== $oldName) {
+                DB::table('users')
+                    ->where('role_id', $role->role_id)
+                    ->update(['role' => $role->name]);
+            }
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Role berhasil diperbarui',
-            'data' => $role,
+            'data' => $role->fresh()->load('permissions'),
         ]);
     }
 
@@ -134,6 +151,13 @@ class RoleController extends Controller
                 'success' => false,
                 'message' => 'Role tidak ditemukan',
             ], 404);
+        }
+
+        if ($role->name === 'Superadmin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role Superadmin tidak dapat dihapus.',
+            ], 403);
         }
 
         if ($role->users()->exists()) {

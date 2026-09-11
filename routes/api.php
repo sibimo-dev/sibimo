@@ -25,7 +25,6 @@ use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VisionMissionController;
-use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -48,6 +47,7 @@ Route::prefix('public')->group(function () {
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'permission:user-management',
 ])
     ->prefix('users')
@@ -56,6 +56,8 @@ Route::middleware([
         Route::get('/', [UserController::class, 'index']);
 
         Route::post('/', [UserController::class, 'store']);
+
+        Route::post('/bulk-action', [UserController::class, 'bulkAction']);
 
         Route::get('/{user:user_id}', [UserController::class, 'show']);
 
@@ -67,6 +69,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'permission:user-management',
 ])
     ->group(function () {
@@ -76,7 +79,8 @@ Route::middleware([
         Route::put('/roles/{role_id}/permissions', [RoleController::class, 'syncPermissions']);
 
         Route::apiResource('permissions', PermissionController::class)
-            ->parameters(['permissions' => 'permission_id']);
+            ->parameters(['permissions' => 'permission_id'])
+            ->only(['index', 'show']);
 
         Route::get('/user-permissions', [UserPermissionController::class, 'index']);
         Route::post('/user-permissions', [UserPermissionController::class, 'store']);
@@ -110,24 +114,36 @@ Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
 
 
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
-Route::middleware('auth:sanctum')->group(function () {
+    // Tipe Surat
+    Route::middleware('permission:tipe-surat')->group(function () {
+        Route::apiResource('letter-types', LetterTypeController::class)
+            ->parameters(['letter-types' => 'letterType_id']);
+        Route::get('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'documents']);
+        Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
+        Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
+        Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
+    });
 
     // Pengelolaan Surat
-    Route::apiResource('letter-types', LetterTypeController::class)
-        ->parameters(['letter-types' => 'letterType_id']);
-    Route::get('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'documents']);
-    Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
-    Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
-    Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
+    Route::middleware('permission:pengelolaan-surat')->group(function () {
+        Route::apiResource('letter-requests', LetterRequestController::class)
+            ->parameters(['letter-requests' => 'letterRequest_id']);
+        Route::get('letter-requests/{letterRequest_id}/status-histories', [LetterRequestController::class, 'statusHistories']);
+        Route::post('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'storeAttachment']);
+        Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
+    });
 
-    Route::apiResource('letter-requests', LetterRequestController::class)
-        ->parameters(['letter-requests' => 'letterRequest_id']);
-    Route::post('letter-requests/{letterRequest_id}/verify', [LetterRequestController::class, 'verify']);
-    Route::post('letter-requests/{letterRequest_id}/authorize', [LetterRequestController::class, 'authorize']);
-    Route::get('letter-requests/{letterRequest_id}/status-histories', [LetterRequestController::class, 'statusHistories']);
-    Route::post('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'storeAttachment']);
-    Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
+    Route::middleware('permission:verifikasi-surat')->post(
+        'letter-requests/{letterRequest_id}/verify',
+        [LetterRequestController::class, 'verify'],
+    );
+
+    Route::middleware('permission:otorisasi-surat')->post(
+        'letter-requests/{letterRequest_id}/authorize',
+        [LetterRequestController::class, 'authorize'],
+    );
 
     // Pengaduan
     Route::apiResource('complaints', ComplaintController::class)
@@ -157,23 +173,43 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('signers', SignerController::class)
         ->parameters(['signers' => 'signer_id']);
 
-   
-    Route::middleware(RoleMiddleware::class . ':Superadmin,Admin,Operator')->group(function () {
+    Route::middleware('permission:sejarah')->group(function () {
         Route::apiResource('histories', HistoryController::class)
             ->parameters(['histories' => 'history_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:visi-misi')->group(function () {
         Route::apiResource('vision-missions', VisionMissionController::class)
             ->parameters(['vision-missions' => 'vision_mission_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:struktur-organisasi')->group(function () {
         Route::apiResource('organizational-structures', OrganizationalStructureController::class)
             ->parameters(['organizational-structures' => 'organizational_structure_id'])
             ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:layanan-desa')->group(function () {
         Route::apiResource('services', ServiceController::class)
             ->parameters(['services' => 'service_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:potensi-kalurahan')->group(function () {
         Route::apiResource('village-potentials', VillagePotentialController::class)
             ->parameters(['village-potentials' => 'potential_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:agenda')->group(function () {
         Route::apiResource('agendas', AgendaController::class)
             ->parameters(['agendas' => 'agenda_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:gallery')->group(function () {
         Route::apiResource('galleries', GalleryController::class)
             ->parameters(['galleries' => 'gallery_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:berita')->group(function () {
         Route::apiResource('news-categories', NewsCategoryController::class)
             ->parameters(['news-categories' => 'category_id'])->except(['index']);
         Route::apiResource('news', NewsController::class)
@@ -182,13 +218,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::middleware(['auth:sanctum', 'permission:dashboard'])
+Route::middleware(['auth:sanctum', 'active'])
     ->get('/dashboard/summary', [DashboardController::class, 'summary']);
 
-Route::middleware(['auth:sanctum', 'permission:dashboard'])
+Route::middleware(['auth:sanctum', 'active'])
     ->get('/test-permission', function () {
         return response()->json([
             'success' => true,
-            'message' => 'Anda memiliki permission Dashboard.',
+            'message' => 'Anda dapat mengakses endpoint terautentikasi.',
         ]);
     });
