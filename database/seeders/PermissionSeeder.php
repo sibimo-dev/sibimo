@@ -12,11 +12,6 @@ class PermissionSeeder extends Seeder
     {
         $permissions = [
             [
-                'name' => 'Dashboard',
-                'slug' => 'dashboard',
-                'description' => 'Akses ke dashboard sistem.',
-            ],
-            [
                 'name' => 'User Management',
                 'slug' => 'user-management',
                 'description' => 'Mengelola pengguna sistem',
@@ -46,7 +41,7 @@ class PermissionSeeder extends Seeder
                 'slug' => 'agenda',
                 'description' => 'Mengelola agenda dan kegiatan desa.',
             ],
-                        [
+            [
                 'name' => 'Gallery',
                 'slug' => 'gallery',
                 'description' => 'Mengelola gallery desa.',
@@ -63,8 +58,23 @@ class PermissionSeeder extends Seeder
             ],
             [
                 'name' => 'Pengelolaan Surat',
-                'slug' => 'surat',
-                'description' => 'Mengelola pengajuan dan penerbitan surat.',
+                'slug' => 'pengelolaan-surat',
+                'description' => 'Mengelola pengajuan surat dan proses persuratan.',
+            ],
+            [
+                'name' => 'Verifikasi Surat',
+                'slug' => 'verifikasi-surat',
+                'description' => 'Memverifikasi pengajuan surat.',
+            ],
+            [
+                'name' => 'Otorisasi Surat',
+                'slug' => 'otorisasi-surat',
+                'description' => 'Memberikan otorisasi pada pengajuan surat.',
+            ],
+            [
+                'name' => 'Tipe Surat',
+                'slug' => 'tipe-surat',
+                'description' => 'Mengelola tipe dan dokumen surat.',
             ],
             [
                 'name' => 'Sejarah',
@@ -87,6 +97,22 @@ class PermissionSeeder extends Seeder
                 'description' => 'Mengelola data wilayah kalurahan.',
             ],
         ];
+
+        // Dashboard and any permission removed from this code-defined list are
+        // not configurable modules and must not remain in the database.
+        $definedSlugs = array_column($permissions, 'slug');
+        $stalePermissionIds = DB::table('permissions')
+            ->whereNotIn('slug', $definedSlugs)
+            ->pluck('permission_id');
+
+        if ($stalePermissionIds->isNotEmpty()) {
+            DB::table('role_permissions')
+                ->whereIn('permission_id', $stalePermissionIds)
+                ->delete();
+            DB::table('permissions')
+                ->whereIn('permission_id', $stalePermissionIds)
+                ->delete();
+        }
 
         foreach ($permissions as $permission) {
             DB::table('permissions')->updateOrInsert(

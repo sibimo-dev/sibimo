@@ -4,13 +4,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Role;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('roles')->insert([
+        $roles = [
             [
                 'name' => 'Superadmin',
                 'description' => 'Memiliki akses penuh ke seluruh sistem.',
@@ -29,6 +29,13 @@ class RoleSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($roles as $role) {
+            Role::updateOrCreate(
+                ['name' => $role['name']],
+                ['description' => $role['description']],
+            );
+        }
     }
 }
