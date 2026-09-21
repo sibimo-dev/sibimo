@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VisionMissionController;
+use App\Services\LetterPdfService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -228,3 +230,18 @@ Route::middleware(['auth:sanctum', 'active'])
             'message' => 'Anda dapat mengakses endpoint terautentikasi.',
         ]);
     });
+
+// Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
+// Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
+// Tambah ?html=1 untuk versi browser (bisa Inspect Element).
+if (app()->environment('local')) {
+    Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
+        $view = "letters.{$template}";
+        abort_unless(view()->exists($view), 404);
+        $data = $service->sampleViewData($template);
+
+        return $request->boolean('html')
+            ? response($service->previewHtml($view, $data))
+            : $service->pdf($view, $data)->stream("{$template}.pdf");
+    })->where('template', '[a-z0-9\-]+');
+}
