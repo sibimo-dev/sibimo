@@ -26,6 +26,7 @@
         .kop-3 { font-size: 17.1pt; font-weight: bold; line-height: 20pt; }
         .kop-aksara { margin-top: -2pt; margin-bottom: -3pt; }
         .kop-aksara img { width: 250pt; height: auto; }
+        .kop-aksara.lurah img { width: 165pt; } /* aksara-lurah.png teksnya lebih pendek, jangan diregangkan ke 250pt */
         .kop-info { font-size: 11.4pt; font-weight: bold; line-height: 1.1; }
         .kop-email { font-size: 10.5pt; font-weight: bold; line-height: 1.1; }
         .kop-line { border-bottom: 2pt solid #000; margin-top: 18pt; }
@@ -56,9 +57,26 @@
         td.sep { width: 11pt; }
         td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 14pt; }
 
-        /* ===== TANDA TANGAN ===== */
-        .ttd { margin-top: 26pt; margin-left: 265pt; page-break-inside: avoid; }
-        .ttd div { line-height: 20pt; }
+        /* ===== TANDA TANGAN =====
+           PENTING: dipakai <table> + padding-top, BUKAN <div> + margin-top.
+           DomPDF punya bug di mana margin-top pada elemen yang di-page-break
+           (page-break-inside: avoid) tidak selalu dihitung ulang relatif
+           terhadap halaman baru, menyebabkan jarak kosong besar di atas blok
+           TTD saat ia terdorong ke halaman berikutnya. Table + padding lebih
+           andal karena padding dihitung sebagai bagian dari box elemen itu
+           sendiri, bukan offset dari posisi elemen sebelumnya. */
+        table.ttd {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+        table.ttd td { padding: 0; vertical-align: top; }
+        table.ttd td.ttd-spacer { width: 265pt; } /* kosong, menggeser blok ke kanan sesuai posisi lama */
+        table.ttd td.ttd-content {
+            width: auto;
+            line-height: 20pt;
+            padding-top: 26pt;
+        }
         .ttd-space { height: 52pt; }
 
         @yield('extra_css')
@@ -77,7 +95,7 @@
                 <div class="kop-2">{{ $kop['line2'] }}</div>
                 <div class="kop-3">{{ $kop['line3'] }}</div>
                 @sectionMissing('hide_aksara')
-                <div class="kop-aksara"><img src="{{ $kop['aksara'] }}" alt=""></div>
+                <div class="kop-aksara {{ $kop['is_lurah'] ?? false ? 'lurah' : '' }}"><img src="{{ $kop['aksara'] }}" alt=""></div>
                 @endif
                 <div class="kop-info">{{ $kop['address'] }}</div>
                 <div class="kop-info">{{ $kop['contact'] }}</div>
@@ -93,15 +111,20 @@
     @yield('content')
 
     {{-- ===== TANDA TANGAN ===== --}}
-    <div class="ttd">
-        <div>{{ $signature['city'] }}, @hasSection('date_long'){{ $signature['date_long'] }}@else{{ $signature['date'] }}@endif</div>
-        @foreach ($signature['prefix'] as $line)
-            <div>{{ $line }}</div>
-        @endforeach
-        <div>{{ $signature['position'] }}</div>
-        <div class="ttd-space"></div>
-        <div>{{ $signature['name'] }}</div>
-    </div>
+    <table class="ttd">
+        <tr>
+            <td class="ttd-spacer"></td>
+            <td class="ttd-content">
+                <div>{{ $signature['city'] }}, @hasSection('date_long'){{ $signature['date_long'] }}@else{{ $signature['date'] }}@endif</div>
+                @foreach ($signature['prefix'] as $line)
+                    <div>{{ $line }}</div>
+                @endforeach
+                <div>{{ $signature['position'] }}</div>
+                <div class="ttd-space"></div>
+                <div>{{ $signature['name'] }}</div>
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>

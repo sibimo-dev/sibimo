@@ -1,11 +1,4 @@
-{{--
-    Surat Keterangan Domisili (perusahaan / yayasan), kop tanpa aksara Jawa.
-    Isi kolom letter_types.blade_view dengan: letters.surat-keterangan-domisili
 
-    Data yang dipakai (dibentuk oleh LetterPdfService::viewData):
-      $nomor, $signer, $company[name, activity, building_status, building_use,
-      person_in_charge, employee_count, phone, address], $applicant (= pemilik), $signature
---}}
 @extends('letters.layouts.base')
 
 @section('title', 'Surat Keterangan Domisili')
@@ -25,7 +18,7 @@
 
 @section('content')
     <div class="judul">SURAT KETERANGAN DOMISILI</div>
-    <div class="nomor">NOMOR : {{ $nomor }}</div>
+    <div class="nomor">NOMOR : {{ $number }}</div>
 
     <p class="gap-top-lg">Yang bertanda tangan dibawah ini</p>
     <table class="data signer">
