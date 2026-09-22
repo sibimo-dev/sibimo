@@ -14,6 +14,7 @@ class LetterPdfService
     public const PAPER = 'folio';
     public const SIGNATURE_CITY = 'Bimomartani';
     public const SIGNATURE_LURAH = 'a.n LURAH BIMOMARTANI';
+    public const SIGNATURE_LURAH_TITLE = 'LURAH BIMOMARTANI';
 
     public const VILLAGE_SUFFIX = 'Bimomartani, Ngemplak, Sleman';
 
@@ -32,8 +33,12 @@ class LetterPdfService
         $address = $this->fullAddress($letterRequest->applicant_address ?? $citizen?->address);
 
         return [
-            'nomor' => $letterRequest->letter_number
+            // Dikirim dengan 2 nama key: 'number' (versi baru) dan 'nomor' (alias,
+            // supaya blade lama yang masih pakai $nomor tidak error). Setelah semua
+            // blade dipastikan pakai $number, alias 'nomor' ini boleh dihapus.
+            'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
+            'nomor' => $number,
 
             'signer' => [
                 'name' => $signer?->name,
@@ -44,11 +49,15 @@ class LetterPdfService
                 'name' => $letterRequest->applicant_name,
                 'birth' => $this->birth($birthPlace, $birthDate),
                 'nik' => $letterRequest->applicant_nik,
+                'kk_number' => $form['kk_number'] ?? $citizen?->kk_number,
                 'gender' => $form['gender'] ?? $citizen?->gender,
                 'marital_status' => $form['marital_status'] ?? $citizen?->marital_status,
                 'religion' => $form['religion'] ?? $citizen?->religion,
                 'occupation' => $form['occupation'] ?? $citizen?->occupation,
                 'address' => $address,
+                'rt' => $form['rt'] ?? $citizen?->rt,
+                'rw' => $form['rw'] ?? $citizen?->rw,
+                'phone' => $form['phone'] ?? $citizen?->phone,
             ],
 
             // surat keterangan usaha
@@ -58,6 +67,16 @@ class LetterPdfService
             ],
             'purpose' => $form['purpose'] ?? null,
             'destination' => $form['destination_agency'] ?? null,
+
+            // surat keterangan keramaian
+            'event' => [
+                'date' => $form['event_date'] ?? null,
+                'time' => $form['event_time'] ?? null,
+                'place' => $form['event_place'] ?? null,
+                'participants' => $form['event_participants'] ?? null,
+                'objective' => $form['event_objective'] ?? null,
+            ],
+            'responsible_person' => $form['responsible_person'] ?? null,
 
             // sktm umum + sktm sekolah
             'income' => $this->rupiah($form['income'] ?? null),
@@ -89,9 +108,28 @@ class LetterPdfService
                 'address' => $form['domicile_address'] ?? null,
             ],
 
+            // surat gugat cerai: pasangan yang digugat, alasan gugatan, dua saksi
+            'spouse' => [
+                'name' => $form['spouse_name'] ?? null,
+                'birth' => $this->birth($form['spouse_birth_place'] ?? null, $form['spouse_birth_date'] ?? null),
+                'occupation' => $form['spouse_occupation'] ?? null,
+                'address' => isset($form['spouse_address']) ? $this->fullAddress($form['spouse_address']) : null,
+                'marriage_cert_number' => $form['marriage_cert_number'] ?? null,
+            ],
+            'reasons' => $form['divorce_reasons'] ?? [],
+            'witnesses' => collect($form['witnesses'] ?? [])->map(fn ($w) => [
+                'name' => $w['name'] ?? null,
+                'birth' => $this->birth($w['birth_place'] ?? null, $w['birth_date'] ?? null),
+                'religion' => $w['religion'] ?? null,
+                'occupation' => $w['occupation'] ?? null,
+                'address' => isset($w['address']) ? $this->fullAddress($w['address']) : null,
+            ])->all(),
+
             // data mentah, kalau template lain butuh field di luar daftar di atas
             'form' => $form,
 
+            // kotak digit kode wilayah untuk formulir F.1-25 / F.1-31
+            'region' => $this->regionData(),
             'signature' => $this->signature($signer?->name, $signer?->position, $letterDate),
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signer?->position),
@@ -103,10 +141,13 @@ class LetterPdfService
     {
         $data = array_replace_recursive($this->sampleBase(), $this->sampleOverrides($template));
 
+        $data['number'] = $data['nomor'] = $this->sampleNumber($template);
+        $data['region'] = $this->regionData();
+
         $data['signature'] = $this->signature(
             $data['signer']['name'],
             $data['signer']['position'],
-            $data['date'],
+            $data['date'] ?? null,
         );
         $data['logo'] = $this->asset('logo-sleman.png');
         $data['kop'] = $this->kopData($data['signer']['position']);
@@ -135,6 +176,27 @@ class LetterPdfService
         return str_replace('</head>', $screen . '</head>', $html);
     }
 
+    /**
+     * Kode wilayah administrasi untuk kotak digit di formulir F.1-25 / F.1-31
+     * (@include('letters.region-code-grid')).
+     */
+    private function regionData(): array
+    {
+        return [
+            'province_code'  => str_split('34'),
+            'province_name'  => 'DI YOGYAKARTA',
+
+            'regency_code'   => str_split('04'),
+            'regency_name'   => 'SLEMAN',
+
+            'district_code'  => str_split('11'),
+            'district_name'  => 'NGEMPLAK',
+
+            'village_code'   => str_split('2002'),
+            'village_name'   => 'BIMOMARTANI',
+        ];
+    }
+
 
     /**
      * Data kop surat. Berbeda tergantung apakah penandatangan adalah
@@ -142,7 +204,7 @@ class LetterPdfService
      */
     private function kopData(?string $position): array
     {
-        $isLurah = $this->signaturePrefix($position) === [];
+        $isLurah = $this->signedByLurah($position);
 
         return [
             'line1'   => 'PEMERINTAH KABUPATEN SLEMAN',
@@ -151,34 +213,66 @@ class LetterPdfService
             'address' => 'Jl.Prambanan Cangkringan, Km.6.5, Bimomartani. Ngemplak, Sleman, DIY',
             'contact' => 'Kode Pos : 55584   Telepon : 08112654981',
             'email'   => null, // isi kalau kalurahan sudah punya email resmi
+            'is_lurah' => $isLurah, // dipakai base.blade untuk lebar gambar aksara (aksara-lurah.png lebih pendek)
             'aksara'  => $this->asset($isLurah ? 'aksara-lurah.png' : 'aksara-bimomartani.png'),
         ];
     }
 
+    /**
+     * Nomor contoh per-template untuk preview. Mendukung slug lama (bahasa
+     * Indonesia) maupun slug baru (bahasa Inggris) — sesuaikan/rapikan daftar
+     * ini kalau salah satu himpunan slug sudah tidak dipakai lagi.
+     */
+    private function sampleNumber(string $template): ?string
+    {
+        return match ($template) {
+            'domicile-certificate', 'surat-keterangan-domisili' => '581/ 4',
+            'sktm-school', 'sktm-sekolah' => '466/ 73',
+            'sktm-general', 'sktm-umum' => '470/ 74',
+            'relocation-cover-letter',
+            'resident-arrival-form',
+            'surat-keterangan-jalan' => '471.21/',
+            'fuel-recommendation-letter' => '471/',
+            default => '581/ 1',
+        };
+    }
+
     private function signature(?string $name, ?string $position, $date): array
     {
-        $date = Carbon::parse($date);
+        $parsed = $date ? Carbon::parse($date) : null;
 
         return [
             'city' => self::SIGNATURE_CITY,
-            'date' => $date->format('d/m/Y'),                              // 16/03/2026
-            'date_long' => $date->locale('id')->translatedFormat('d F Y'), // 16 Maret 2026
+            'date' => $parsed?->format('d/m/Y') ?? '',                              // 16/03/2026 atau ''
+            'date_long' => $parsed?->locale('id')->translatedFormat('d F Y') ?? '',  // 16 Maret 2026 atau ''
             'prefix' => $this->signaturePrefix($position),
-            'position' => $position,
+            'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
         ];
     }
 
-    private function signaturePrefix(?string $position): array
+    /** true jika Lurah menandatangani sendiri (bukan "a.n LURAH" oleh Carik/Kaur/dll). */
+    private function signedByLurah(?string $position): bool
     {
         $p = mb_strtolower((string) $position);
 
         if (str_contains($p, 'urusan') || str_starts_with($p, 'kaur')) {
-            return [self::SIGNATURE_LURAH, 'Carik', 'u.b.'];
+            return false;
         }
 
-        if (str_contains($p, 'lurah') || str_contains($p, 'kepala desa')) {
+        return str_contains($p, 'lurah') || str_contains($p, 'kepala desa');
+    }
+
+    private function signaturePrefix(?string $position): array
+    {
+        if ($this->signedByLurah($position)) {
             return [];
+        }
+
+        $p = mb_strtolower((string) $position);
+
+        if (str_contains($p, 'urusan') || str_starts_with($p, 'kaur')) {
+            return [self::SIGNATURE_LURAH, 'Carik', 'u.b.'];
         }
 
         return [self::SIGNATURE_LURAH];
@@ -228,28 +322,44 @@ class LetterPdfService
     private function sampleBase(): array
     {
         return [
-            'nomor' => '581/ 1',
-            'date' => '2026-01-06',
+            'number' => null,
+            'nomor' => null,
+            'date' => now()->toDateString(),
             'signer' => [
-                'name' => 'Rasyifa Anom Sudaryono Amd, Kes',
+                'name' => null,
+                // Default Kaur (bukan Lurah) — surat yang tidak override 'signer'
+                // (surat-keterangan-jalan, surat-keterangan-penghasilan,
+                // sktm-sekolah) mengandalkan default ini supaya kop tampil
+                // "PEMERINTAH KALURAHAN BIMOMARTANI" dan tanda tangan memakai
+                // rantai 3-tingkat (a.n LURAH BIMOMARTANI / Carik / u.b. /
+                // Kepala Urusan ...), BUKAN kop+ttd Lurah langsung.
                 'position' => 'Kepala Urusan Tata Laksana',
             ],
             'applicant' => [
-                'name' => 'Sumini Wulandari',
-                'birth' => $this->birth('Sleman', '1975-03-14'),
-                'nik' => '3404015403750001',
-                'gender' => 'Perempuan',
-                'marital_status' => 'Cerai Mati',
-                'religion' => 'Islam',
-                'occupation' => 'Mengurus Rumah Tangga',
-                'address' => 'Kalibulus RT 02 RW 05, Bimomartani, Ngemplak, Sleman',
+                'name' => null,
+                'birth' => null,
+                'nik' => null,
+                'kk_number' => null,
+                'gender' => null,
+                'marital_status' => null,
+                'religion' => null,
+                'occupation' => null,
+                'address' => null,
+                'rt' => null,
+                'rw' => null,
+                'phone' => null,
             ],
             'business' => [
-                'type' => 'Warung Makan',
-                'address' => 'Kalibulus RT 02 RW 05 Bimomartani Ngemplak Sleman',
+                'type' => null,
+                'address' => null,
             ],
-            'purpose' => 'Pengajuan KUR',
-            'destination' => 'BRI Ngemplak 2',
+            'purpose' => null,
+            'destination' => null,
+            'event' => [
+                'date' => null, 'time' => null, 'place' => null,
+                'participants' => null, 'objective' => null,
+            ],
+            'responsible_person' => null,
             'income' => null,
             'category' => null,
             'kkm_number' => null,
@@ -261,6 +371,12 @@ class LetterPdfService
                 'name' => null, 'activity' => null, 'building_status' => null, 'building_use' => null,
                 'person_in_charge' => null, 'employee_count' => null, 'phone' => null, 'address' => null,
             ],
+            'spouse' => [
+                'name' => null, 'birth' => null, 'occupation' => null,
+                'address' => null, 'marriage_cert_number' => null,
+            ],
+            'reasons' => [],
+            'witnesses' => [],
             'form' => [],
         ];
     }
@@ -268,73 +384,50 @@ class LetterPdfService
     private function sampleOverrides(string $template): array
     {
         return match ($template) {
-            'surat-keterangan-domisili' => [
-                'nomor' => '581/ 4',
-                'date' => '2026-03-16',
-                'signer' => ['name' => 'Yordan Ardi Tamara, S.Kom', 'position' => 'Ulu - Ulu'],
-                'applicant' => [
-                    'name' => 'Bambang Prasetyo',
-                    'birth' => $this->birth('Sleman', '1978-05-15'),
-                    'nik' => '3404011505780002',
-                    'gender' => 'Laki-Laki',
-                    'marital_status' => 'Kawin',
-                    'religion' => 'Islam',
-                    'occupation' => 'Wiraswasta',
-                    'address' => 'Ngemplak Asem RT 02 RW 26, Bimomartani, Ngemplak, Sleman',
-                ],
-                'company' => [
-                    'name' => 'PT Griya Nusantara Properti',
-                    'activity' => 'PROPERTI',
-                    'building_status' => 'Milik Sendiri',
-                    'building_use' => 'Kantor',
-                    'person_in_charge' => 'Bambang Prasetyo',
-                    'employee_count' => '19',
-                    'phone' => '081234567890',
-                    'address' => 'Pondok Dawung, RT 04 RW 23, Bimomartani, Ngemplak, Sleman, DIY',
-                ],
+            'surat-keterangan-domisili', 'domicile-certificate' => [
+                'signer' => ['position' => 'Ulu - Ulu'],
             ],
 
-            'sktm-sekolah' => [
-                'nomor' => '466/ 73',
-                'date' => '2026-07-30',
-                'applicant' => [
-                    'name' => 'Slamet Riyadi',
-                    'birth' => $this->birth('Sleman', '1980-08-17'),
-                    'nik' => '3404011708800003',
-                    'gender' => 'Laki-Laki',
-                    'marital_status' => 'Kawin Tercatat',
-                    'religion' => 'Islam',
-                    'occupation' => 'Buruh Harian Lepas',
-                    'address' => 'Pondok Suruh, Bimomartani, Ngemplak, Sleman',
-                ],
-                'income' => $this->rupiah(2000000),
-                'student' => [
-                    'name' => 'Rafi Aditya Riyadi',
-                    'birth' => $this->birth('Sleman', '2014-02-09'),
-                    'nik' => '3404010902140001',
-                    'gender' => 'Laki-Laki',
-                    'education' => 'SD',
-                    'class' => 'Kelas 5 / Semester 1',
-                    'address' => 'Pondok Suruh, Bimomartani, Ngemplak, Sleman',
-                ],
+            'sktm-sekolah', 'sktm-school' => [],
+
+            'sktm-umum', 'sktm-general' => [
+                'signer' => ['position' => 'Kepala Urusan Danarta'],
             ],
 
-            'sktm-umum' => [
-                'nomor' => '470/ 74',
-                'date' => '2026-08-05',
-                'signer' => ['name' => 'Nanda Mutiara Dewi S.Psi.', 'position' => 'Kepala Urusan Danarta'],
-                'applicant' => [
-                    'name' => 'Agus Hermawan',
-                    'birth' => $this->birth('Sleman', '1985-11-02'),
-                    'nik' => '3404010211850004',
-                    'gender' => 'Laki-Laki',
-                    'marital_status' => 'Kawin Tercatat',
-                    'religion' => 'Islam',
-                    'occupation' => 'Karyawan Honorer',
-                    'address' => 'Balong, Bimomartani, Ngemplak, Sleman',
-                ],
-                'purpose' => 'Persyaratan Beasiswa PIP An. Dimas Pratama',
-                'destination' => 'SDN Karanganyar',
+            'surat-keterangan-jalan', 'relocation-cover-letter', 'resident-arrival-form' => [],
+
+            'fuel-recommendation-letter' => [],
+
+            // FIX: ditambahkan alias slug 'event-permit-letter' supaya
+            // signer-nya jadi Jogoboyo, bukan jatuh ke default Kaur.
+            'surat-keterangan-keramaian', 'event-permit-letter' => [
+                'signer' => ['position' => 'Jogoboyo'],
+            ],
+
+            'surat-keterangan-penghasilan' => [],
+
+            // FIX: ditambahkan alias slug 'business-permit-letter' supaya
+            // signer-nya jadi Kamituwa, bukan jatuh ke default Kaur.
+            'surat-keterangan-usaha', 'business-permit-letter' => [
+                'signer' => ['position' => 'Kamituwa'],
+            ],
+
+            'divorce-lawsuit-letter' => [
+                'signer' => ['position' => 'Carik'],
+                // 2 slot kosong supaya form tetap menampilkan 2 baris saksi
+                'witnesses' => [null, null],
+            ],
+
+            'unmarried-status-letter' => [
+                'signer' => ['position' => 'Lurah'],
+            ],
+
+            'skck-referral-letter' => [
+                'signer' => ['position' => 'Lurah'],
+            ],
+
+            'general-statement-letter' => [
+                'signer' => ['position' => 'Lurah'],
             ],
 
             default => [],
