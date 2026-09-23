@@ -79,6 +79,25 @@
         }
         .ttd-space { height: 52pt; }
 
+        /* ===== TEMBUSAN =====
+           Opsional: surat yang butuh baris "Tembusan Dikirim Kepada" (mis.
+           surat tindak lanjut permohonan izin) mengisi @section('tembusan')
+           dengan baris <tr> bernomor; surat lain yang tidak mengisi section
+           ini tidak akan menampilkan blok ini sama sekali. Sengaja diletakkan
+           SETELAH tabel TTD (bukan di dalam @yield('content')) supaya urutan
+           tampil di halaman sama seperti contoh: tanda tangan dulu, tembusan
+           di bawahnya.
+           PENTING: nomor ditulis manual lewat kolom "num" di <table>, BUKAN
+           counter <ol>/<li> bawaan browser. DomPDF sering salah menghitung
+           tinggi baris <li> yang isinya kosong (nilai belum diisi), sehingga
+           nomor antar baris saling tumpuk/tubrukan. Table + baris eksplisit
+           tidak punya masalah ini karena tinggi tiap baris tidak bergantung
+           pada counter list. */
+        .tembusan { margin-top: 18pt; font-size: 10.8pt; }
+        table.tembusan-list { border-collapse: collapse; margin-top: 3pt; }
+        table.tembusan-list td { padding: 1.5pt 0; vertical-align: top; }
+        table.tembusan-list td.num { width: 14pt; }
+
         @yield('extra_css')
     </style>
 </head>
@@ -125,6 +144,17 @@
             </td>
         </tr>
     </table>
+
+    {{-- ===== TEMBUSAN (opsional) =====
+         Hanya tampil kalau template surat mengisi @section('tembusan'). --}}
+    @hasSection('tembusan')
+        <div class="tembusan">
+            <div>Tembusan Dikirim Kepada :</div>
+            <table class="tembusan-list">
+                @yield('tembusan')
+            </table>
+        </div>
+    @endif
 
 </body>
 </html>
