@@ -33,7 +33,6 @@ body {
 }
 .subjudul-form { text-align: center; font-size: 9pt; margin-top: 1pt; }
 
-/* Grid wilayah: label + N kotak kode kecil + 1 kotak nilai panjang */
 table.wgrid { width: 100%; border-collapse: collapse; margin-top: 3pt; }
 table.wgrid td { padding: 0; vertical-align: middle; }
 table.wgrid td.wg-label { width: 150pt; font-size: 9.5pt; padding-right: 0; }
@@ -43,20 +42,17 @@ table.wgrid table.wg-kode td {
     border: 1px solid #000; width: 17pt; height: 12pt;
     text-align: center; font-weight: bold; font-size: 9pt;
 }
-table.wgrid td.wg-val { border: 1px solid #000; padding-left: 4pt; height: 13pt; }
+table.wgrid td.wg-val { border: 1px solid #000; padding: 4pt 6pt; }
 .wg-star { font-size: 8pt; }
 
-/* Baris label:kotak sederhana, dipakai berulang, lebar disetel per pemakaian */
 table.frow { width: 100%; border-collapse: collapse; margin-top: 1.5pt; }
 table.frow td { padding: 1pt 0; vertical-align: middle; font-size: 9.5pt; }
 table.frow td.f-no { width: 15pt; }
-td.f-box { border: 1px solid #000; padding-left: 4pt; height: 12pt; }
+td.f-box { border: 1px solid #000; padding: 4pt 6pt; }
 
-/* Kotak digit kecil beruntun (telepon) - ukuran tetap, dipakai bila ruang terbatas */
 table.digit-box { border-collapse: collapse; display: inline-table; vertical-align: middle; }
 table.digit-box td { border: 1px solid #000; width: 13pt; height: 12pt; }
 
-/* Kotak digit yang melebar mengisi penuh sisa lebar baris (mis. nomor telepon) */
 table.digit-box-full { width: 100%; border-collapse: collapse; table-layout: fixed; }
 table.digit-box-full td { border: 1px solid #000; height: 12pt; text-align: center; }
 
@@ -81,10 +77,10 @@ table.ttd-multi .ttd-space { height: 50pt; }
     </style>
 </head>
 <body>
-
-    <div class="kode-form">{{ $kodeForm ?? '' }}</div>
+@if(!empty($kodeForm))
+    <div class="kode-form">{{ $kodeForm }}</div>
     <div class="clear"></div>
-
+@endif
     @yield('content')
 
 </body>
