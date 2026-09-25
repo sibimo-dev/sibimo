@@ -12,10 +12,14 @@ class CitizenSeeder extends Seeder
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 
         for ($i = 0; $i < 30; $i++) {
-            DB::table('citizens')->insert([
+            $nationalId = '999900000000' . str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT);
+
+            DB::table('citizens')->updateOrInsert(
+                ['national_id' => $nationalId],
+                [
                 'record_type' => 'PENDUDUK',
                 'record_event' => 'Lahir01',
-                'national_id' => fake()->unique()->numerify('################'), // 16 digit
+                'national_id' => $nationalId,
                 'family_card_number' => fake()->numerify('################'),
                 'dusun' => 'Dusun ' . (($i % 8) + 1),
                 'full_name' => fake('id_ID')->name(),
@@ -54,7 +58,8 @@ class CitizenSeeder extends Seeder
                     : fake()->randomElement(['Active', 'Active', 'Active', 'Pindah']),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+                ],
+            );
         }
     }
 }

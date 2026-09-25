@@ -126,6 +126,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
         Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
         Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
+
+        // Field Input Dinamis
+        Route::get('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'fields']);
+        Route::post('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'storeField']);
+        Route::put('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'updateField']);
+        Route::delete('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'destroyField']);
     });
 
     // Pengelolaan Surat

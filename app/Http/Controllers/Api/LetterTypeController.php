@@ -8,6 +8,7 @@ use App\Models\LetterTypeDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\LetterTypeField;
 
 class LetterTypeController extends Controller
 {
@@ -52,7 +53,7 @@ class LetterTypeController extends Controller
     public function show(int $letterType_id): JsonResponse
     {
         $letterType = LetterType::query()
-            ->with(['signer', 'documents'])
+            ->with(['signer', 'documents', 'fields'])
             ->withCount('documents')
             ->findOrFail($letterType_id);
 
@@ -120,6 +121,7 @@ class LetterTypeController extends Controller
     public function storeDocument(Request $request, $letterType_id): JsonResponse
     {
         $letterType_id = (int) $letterType_id;
+        LetterType::findOrFail($letterType_id);
     
         $validated = $request->validate([
             'document_name' => ['required', 'string', 'max:100'],
@@ -164,6 +166,76 @@ class LetterTypeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Dokumen persyaratan berhasil dihapus.',
+        ]);
+    }
+    // ===== Field Input Dinamis (nested) =====
+
+    public function fields(int $letterType_id): JsonResponse
+    {
+        $fields = LetterTypeField::where('letter_type_id', $letterType_id)
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data field surat berhasil diambil.',
+            'data' => $fields,
+        ]);
+    }
+
+    public function storeField(Request $request, int $letterType_id): JsonResponse
+    {
+        LetterType::findOrFail($letterType_id);
+
+        $validated = $request->validate([
+            'field_label' => ['required', 'string', 'max:150'],
+            'field_key' => ['required', 'string', 'max:100'],
+            'field_type' => ['required', Rule::in(['text', 'textarea', 'number', 'date', 'select'])],
+            'is_required' => ['boolean'],
+            'options' => ['nullable', 'array'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $validated['letter_type_id'] = $letterType_id;
+
+        $field = LetterTypeField::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Field surat berhasil ditambahkan.',
+            'data' => $field,
+        ], 201);
+    }
+
+    public function updateField(Request $request, int $letterTypeField_id): JsonResponse
+    {
+        $field = LetterTypeField::findOrFail($letterTypeField_id);
+
+        $validated = $request->validate([
+            'field_label' => ['sometimes', 'required', 'string', 'max:150'],
+            'field_key' => ['sometimes', 'required', 'string', 'max:100'],
+            'field_type' => ['sometimes', 'required', Rule::in(['text', 'textarea', 'number', 'date', 'select'])],
+            'is_required' => ['boolean'],
+            'options' => ['nullable', 'array'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $field->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Field surat berhasil diperbarui.',
+            'data' => $field,
+        ]);
+    }
+
+    public function destroyField(int $letterTypeField_id): JsonResponse
+    {
+        LetterTypeField::findOrFail($letterTypeField_id)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Field surat berhasil dihapus.',
         ]);
     }
 }
