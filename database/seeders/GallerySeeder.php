@@ -29,13 +29,17 @@ class GallerySeeder extends Seeder
         ];
 
         for ($i = 0; $i < 12; $i++) {
-            DB::table('galleries')->insert([
-                'title' => fake('id_ID')->sentence(3),
-                'description' => fake('id_ID')->sentence(10),
-                'image' => Storage::disk('public')->url('galleries/' . $galleryImages[$i % count($galleryImages)]),
-                'uploaded_by' => $userIds->random(),
-                'uploaded_at' => now(),
-            ]);
+            $image = Storage::disk('public')->url('galleries/' . $galleryImages[$i % count($galleryImages)]);
+
+            DB::table('galleries')->updateOrInsert(
+                ['image' => $image],
+                [
+                    'title' => 'Galeri Seeder ' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'description' => 'Galeri contoh untuk pengujian sistem SIBIMO.',
+                    'uploaded_by' => $userIds->first(),
+                    'uploaded_at' => now(),
+                ],
+            );
         }
     }
 }

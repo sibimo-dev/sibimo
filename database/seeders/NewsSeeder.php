@@ -30,19 +30,22 @@ class NewsSeeder extends Seeder
         ];
 
         for ($i = 0; $i < 15; $i++) {
-            $title = fake('id_ID')->sentence(6);
-            DB::table('news')->insert([
-                'category_id' => $categoryIds->random(),
-                'author_id' => $userIds->random(),
-                'title' => $title,
-                'slug' => Str::slug($title) . '-' . fake()->unique()->randomNumber(4),
-                'content' => fake('id_ID')->paragraphs(5, true),
-                'thumbnail' => Storage::disk('public')->url('news/' . $newsImages[$i % count($newsImages)]),
-                'status' => fake()->randomElement(['Draft', 'Published', 'Archived']),
-                'published_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $slug = 'seed-news-' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT);
+
+            DB::table('news')->updateOrInsert(
+                ['slug' => $slug],
+                [
+                    'category_id' => $categoryIds[$i % $categoryIds->count()],
+                    'author_id' => $userIds->first(),
+                    'title' => 'Berita Seeder ' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'content' => 'Berita contoh untuk pengujian sistem SIBIMO.',
+                    'thumbnail' => Storage::disk('public')->url('news/' . $newsImages[$i % count($newsImages)]),
+                    'status' => ['Draft', 'Published', 'Archived'][$i % 3],
+                    'published_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            );
         }
     }
 }

@@ -12,11 +12,13 @@ class NewsCategorySeeder extends Seeder
     {
         $categories = ['Pengumuman', 'Kegiatan Desa', 'Berita Umum', 'Bantuan Sosial'];
         foreach ($categories as $name) {
-            DB::table('news_categories')->insert([
-                'category_name' => $name,
-                'slug' => Str::slug($name),
-                'created_at' => now(),
-            ]);
+            DB::table('news_categories')->updateOrInsert(
+                ['slug' => Str::slug($name)],
+                [
+                    'category_name' => $name,
+                    'created_at' => now(),
+                ],
+            );
         }
     }
 }
