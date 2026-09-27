@@ -11,12 +11,14 @@ class BookCategorySeeder extends Seeder
     {
         $categories = ['Fiksi', 'Non-Fiksi', 'Pendidikan', 'Agama', 'Sejarah'];
         foreach ($categories as $name) {
-            DB::table('book_categories')->insert([
-                'category_name' => $name,
-                'description' => fake('id_ID')->sentence(8),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('book_categories')->updateOrInsert(
+                ['category_name' => $name],
+                [
+                    'description' => 'Kategori buku ' . $name . '.',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            );
         }
     }
 }

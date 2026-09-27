@@ -9,29 +9,38 @@ class ComplaintAttachmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $complaintIds = DB::table('complaints')->pluck('complaint_id');
+        $complaints = DB::table('complaints')
+            ->where('title', 'like', 'Complaint Seeder %')
+            ->get(['complaint_id', 'title']);
         $sourceImages = Storage::disk('public')->files('galleries');
 
-        foreach ($complaintIds as $complaintId) {
-            if (fake()->boolean(60)) {
-                $targetPath = 'complaints/' . fake()->uuid() . '.jpg';
+        foreach ($complaints as $complaint) {
+            $index = (int) preg_replace('/\D+/', '', $complaint->title);
+
+            if ($index % 2 === 1) {
+                $extension = 'jpg';
+                $targetPath = 'complaints/seed-complaint-' . str_pad((string) $index, 2, '0', STR_PAD_LEFT) . '.' . $extension;
 
                 if ($sourceImages) {
-                    $sourcePath = fake()->randomElement($sourceImages);
+                    $sourcePath = $sourceImages[($index - 1) % count($sourceImages)];
                     $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'jpg';
-                    $targetPath = 'complaints/' . fake()->uuid() . '.' . $extension;
+                    $targetPath = 'complaints/seed-complaint-' . str_pad((string) $index, 2, '0', STR_PAD_LEFT) . '.' . $extension;
                     Storage::disk('public')->copy($sourcePath, $targetPath);
                 } else {
                     Storage::disk('public')->put($targetPath, $this->fallbackImage());
                 }
 
                 $fileName = basename($targetPath);
-                DB::table('complaint_attachments')->insert([
-                    'complaint_id' => $complaintId,
-                    'file_name' => $fileName,
-                    'file_path' => Storage::disk('public')->url($targetPath),
-                    'uploaded_at' => now(),
-                ]);
+                DB::table('complaint_attachments')->updateOrInsert(
+                    [
+                        'complaint_id' => $complaint->complaint_id,
+                        'file_name' => $fileName,
+                    ],
+                    [
+                        'file_path' => Storage::disk('public')->url($targetPath),
+                        'uploaded_at' => now(),
+                    ],
+                );
             }
         }
     }

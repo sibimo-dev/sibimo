@@ -12,15 +12,19 @@ class BookSeeder extends Seeder
         $categoryIds = DB::table('book_categories')->pluck('category_id');
 
         for ($i = 0; $i < 20; $i++) {
-            DB::table('books')->insert([
-                'category_id' => $categoryIds->random(),
-                'title' => fake('id_ID')->sentence(4),
-                'author' => fake('id_ID')->name(),
-                'isbn' => fake()->isbn13(),
-                'stock' => fake()->numberBetween(1, 15),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $isbn = '978999900' . str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT);
+
+            DB::table('books')->updateOrInsert(
+                ['isbn' => $isbn],
+                [
+                    'category_id' => $categoryIds[$i % $categoryIds->count()],
+                    'title' => 'Buku Seeder ' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'author' => 'Penulis Seeder',
+                    'stock' => 5,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            );
         }
     }
 }

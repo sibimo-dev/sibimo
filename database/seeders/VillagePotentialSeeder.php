@@ -19,15 +19,22 @@ class VillagePotentialSeeder extends Seeder
 
         for ($i = 0; $i < 8; $i++) {
             [$category, $image] = $potentials[$i % count($potentials)];
+            $slug = 'seed-potential-' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT);
 
-            DB::table('village_potentials')->insert([
-                'category' => $category,
-                'title' => fake('id_ID')->sentence(4),
-                'description' => fake('id_ID')->paragraphs(3, true),
-                'image' => Storage::disk('public')->url('village-potentials/' . $image),
-                'location' => fake('id_ID')->address(),
-                'created_at' => now(),
-            ]);
+            DB::table('village_potentials')->updateOrInsert(
+                ['slug' => $slug],
+                [
+                    'category' => $category,
+                    'title' => 'Potensi Kalurahan ' . ($i + 1),
+                    'description' => 'Potensi unggulan Kalurahan Bimomartani untuk mendukung pemberdayaan masyarakat.',
+                    'image' => Storage::disk('public')->url('village-potentials/' . $image),
+                    'location' => 'Kalurahan Bimomartani',
+                    'short_desc' => 'Potensi unggulan Kalurahan Bimomartani.',
+                    'contact' => 'Kalurahan Bimomartani',
+                    'extra_info' => json_encode(['seeded' => true, 'index' => $i + 1]),
+                    'created_at' => now(),
+                ],
+            );
         }
     }
 }
