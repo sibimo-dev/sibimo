@@ -234,9 +234,11 @@ Route::middleware(['auth:sanctum', 'active'])
 // Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
 // Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
 // Tambah ?html=1 untuk versi browser (bisa Inspect Element).
+// Surat yang ada di sub-folder (mis. letters/letter-c/) tetap dipanggil dengan slug saja,
+// nama view lengkapnya dicari lewat LetterPdfService::viewName().
 if (app()->environment('local')) {
     Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
-        $view = "letters.{$template}";
+        $view = $service->viewName($template);
         abort_unless(view()->exists($view), 404);
         $data = $service->sampleViewData($template);
 
