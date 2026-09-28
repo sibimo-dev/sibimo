@@ -56,6 +56,21 @@ class LetterPdfService
         'surat-penawaran-sewa',
     ];
 
+    public const MARRIAGE_LETTERS = [
+        'registration-form'   => 'Data Isian Pendaftaran Nikah',
+        'n1'                  => 'Pengantar Nikah (N1)',
+        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
+        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
+        'n5'                  => 'Surat Izin Orang Tua (N5)',
+        'n6'                  => 'Surat Keterangan Kematian (N6)',
+        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
+        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
+        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
+        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
+        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
+    ];
+
 
     public function viewData(LetterRequest $letterRequest): array
     {
@@ -86,6 +101,7 @@ class LetterPdfService
             'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
             'nomor' => $number,
+            'marriage' => $this->marriageData($form, $number, $letterDate),
 
             'form_code' => $formCode,
             'kodeForm' => $formCode,
@@ -564,6 +580,101 @@ class LetterPdfService
         return collect([$place, $formatted])->filter()->implode(', ') ?: null;
     }
 
+    private function marriageData(array $form, ?string $number, $letterDate): array
+    {
+        $date = $letterDate ? Carbon::parse($letterDate) : null;
+
+        $bride     = $this->marriagePerson($form, 'bride');
+        $groom     = $this->marriagePerson($form, 'groom');
+        $father    = $this->marriagePerson($form, 'bride_father');
+        $mother    = $this->marriagePerson($form, 'bride_mother');
+        $guardian  = $this->marriagePerson($form, 'guardian');
+        $exHusband = $this->marriagePerson($form, 'ex_husband');
+
+        $bride['bin']    ??= $father['name'];
+        $bride['gender'] ??= 'Perempuan';
+        $groom['gender'] ??= 'Laki-laki';
+
+        $judgeReason = $form['judge_guardian_reason'] ?? null;
+        $relation    = $form['guardian_relation'] ?? null;
+        if (blank($guardian['name']) && blank($judgeReason)) {
+            $guardian = $father;
+            $relation ??= 'Ayah kandung';
+        }
+
+        return [
+            'letter_number' => $form['letter_number'] ?? $number,
+            'akad' => [
+                'day'   => $form['akad_day']
+                    ?? (isset($form['akad_date'])
+                        ? Carbon::parse($form['akad_date'])->locale('id')->translatedFormat('l') : null),
+                'date'  => $this->longDate($form['akad_date'] ?? null),
+                'time'  => $form['akad_time'] ?? null,
+                'place' => $form['akad_place'] ?? null,
+            ],
+            'bride'        => $bride,
+            'groom'        => $groom,
+            'bride_father' => $father,
+            'bride_mother' => $mother,
+            'guardian'     => $guardian + ['relation' => $relation, 'reason' => $form['guardian_reason'] ?? null],
+            'ex_husband'   => $exHusband + [
+                'died_at'    => $form['ex_husband_died_at'] ?? null,
+                'died_place' => $form['ex_husband_died_place'] ?? null,
+            ],
+            'judge_guardian_reason' => $judgeReason,
+            'health' => [
+                'destination' => $form['health_destination'] ?? null,
+                'need'        => $form['health_need'] ?? null,
+                'note'        => $form['health_note'] ?? null,
+                'conduct'     => $form['conduct'] ?? null,
+                'valid_from'  => $date?->copy()->locale('id')->translatedFormat('d F'),
+                'valid_until' => $date?->copy()->addMonths(3)->locale('id')->translatedFormat('d F Y'),
+            ],
+            'numpang' => [
+                'letter_number' => $form['numpang_letter_number'] ?? null,
+                'date'          => $this->longDate($form['numpang_date'] ?? null),
+            ],
+            'unmarried_certificate' => [
+                'letter_number' => $form['unmarried_certificate_number'] ?? null,
+                'date'          => $this->longDate($form['unmarried_certificate_date'] ?? null),
+            ],
+        ];
+    }
+
+    private function longDate($date): ?string
+    {
+        return $date ? Carbon::parse($date)->locale('id')->translatedFormat('d F Y') : null;
+    }
+
+    private function birthLong(?string $place, $date): ?string
+    {
+        return collect([$place, $this->longDate($date)])->filter()->implode(', ') ?: null;
+    }
+
+    private function marriagePerson(array $form, string $prefix): array
+    {
+        $f = fn (string $key) => $form["{$prefix}_{$key}"] ?? null;
+
+        return [
+            'name'        => $f('name'),
+            'bin'         => $f('bin'),
+            'nik'         => $f('nik'),
+            'gender'      => $f('gender'),
+            'birth'       => $this->birthLong($f('birth_place'), $f('birth_date')),
+            'citizenship' => $f('citizenship'),
+            'religion'    => $f('religion'),
+            'occupation'  => $f('occupation'),
+            'education'   => $f('education'),
+            'address'     => $f('address'), // sengaja TIDAK pakai fullAddress()
+            'status'      => $f('status'),
+        ];
+    }
+
+    private function sampleMarriageForm(): array
+    {
+        return [];
+    }
+
     /**
      * Pecah satu tanggal jadi nama hari, tanggal, nama bulan, dan tahun
      * (semua berbahasa Indonesia) untuk kalimat pembuka surat kuasa.
@@ -869,6 +980,8 @@ class LetterPdfService
             'stayApplication' => null,
             'residentRequest' => null,
 
+            'marriage' => null,
+
             'form' => [],
         ];
     }
@@ -929,6 +1042,19 @@ class LetterPdfService
 
             'general-statement-letter' => [
                 'signer' => ['position' => 'Lurah'],
+            ],
+
+            // surat pernikahan perempuan
+            'registration-form', 'n1', 'n2', 'n4', 'n5', 'n6',
+            'guardian-statement', 'judge-guardian', 'health-referral',
+            'unmarried-statement', 'numpang-nikah' => [
+                'signer' => ['position' => 'Kamituwa'],
+                'marriage' => $this->marriageData($this->sampleMarriageForm(), null, null),
+            ],
+            // Surat Keterangan Belum Kawin: kop dan TTD Lurah, bukan Kamituwa
+            'unmarried-certificate' => [
+                'signer' => ['position' => 'Lurah'],
+                'marriage' => $this->marriageData($this->sampleMarriageForm(), null, null),
             ],
 
             // Surat pernyataan sendiri oleh warga (bukan diterbitkan/ditandatangani
