@@ -4,8 +4,7 @@
     <meta charset="utf-8">
     <title>@yield('title', 'Surat')</title>
     <style>
-        /* Margin halaman. Ukuran kertas diatur dari LetterPdfService::PAPER */
-        @page { margin: 2cm 2cm 2cm 2cm; }
+        @page { margin: 1.3cm 2cm 1.3cm 2cm; }
 
         body {
             margin: 0;
@@ -15,23 +14,29 @@
             color: #000;
         }
 
-        /* ===== KOP SURAT ===== */
         table.kop { width: 100%; border-collapse: collapse; }
         table.kop td { padding: 0; vertical-align: top; }
-        table.kop td.kop-logo { width: 75pt; padding-top: 6pt; }
-        td.kop-logo img { width: 63pt; height: 82pt; }
-        table.kop td.kop-text { text-align: center; padding-top: 9pt; }
-        .kop-1 { font-size: 13.3pt; font-weight: bold; line-height: 11.5pt; }
-        .kop-2 { font-size: 15.2pt; font-weight: bold; line-height: 21pt; }
-        .kop-3 { font-size: 17.1pt; font-weight: bold; line-height: 20pt; }
-        .kop-aksara { margin-top: -2pt; margin-bottom: -3pt; }
-        .kop-aksara img { width: 250pt; height: auto; }
-        .kop-aksara.lurah img { width: 165pt; } /* aksara-lurah.png teksnya lebih pendek, jangan diregangkan ke 250pt */
-        .kop-info { font-size: 11.4pt; font-weight: bold; line-height: 1.1; }
-        .kop-email { font-size: 10.5pt; font-weight: bold; line-height: 1.1; }
-        .kop-line { border-bottom: 2pt solid #000; margin-top: 18pt; }
+        table.kop td.kop-logo { width: 70pt; padding-top: 2pt; }
+        td.kop-logo img { width: 58pt; height: 75pt; }
+        table.kop td.kop-text { text-align: center; padding-top: 4pt; }
+        .kop-1 { font-size: 10.5pt; font-weight: bold; line-height: 9.5pt; }
+        .kop-2 { font-size: 12pt; font-weight: bold; line-height: 15pt; }
+        .kop-3 { font-size: 13.5pt; font-weight: bold; line-height: 15pt; }
+        .kop-aksara { margin-top: -2pt; margin-bottom: -2pt; }
+        .kop-aksara img { width: 170pt; height: auto; }
+        .kop-aksara.lurah img { width: 115pt; }
+        .kop-info { font-size: 9pt; font-weight: bold; line-height: 1.05; }
+        .kop-email { font-size: 8.5pt; font-weight: bold; line-height: 1.05; }
+        .kop-line { border-bottom: 2pt solid #000; margin-top: 8pt; }
 
-        /* ===== JUDUL ===== */
+        table.kop-dukcapil td.kop-logo { width: 78pt; vertical-align: middle; }
+        table.kop-dukcapil td.kop-logo img { width: 66pt; height: 86pt; }
+        table.kop-dukcapil td.kop-text { vertical-align: middle; padding-left: 10pt; }
+        .kopd-1 { font-size: 12.5pt; font-weight: bold; line-height: 15pt; }
+        .kopd-2 { font-size: 14.5pt; font-weight: bold; line-height: 18pt; }
+        .kopd-info { font-size: 9pt; font-weight: bold; line-height: 1.25; }
+        .kop-line.dukcapil { margin-top: 6pt; }
+
         .judul {
             margin-top: 10pt;
             text-align: center;
@@ -41,12 +46,10 @@
         }
         .nomor { text-align: center; font-weight: bold; margin-top: 3pt; }
 
-        /* ===== ISI ===== */
         p { margin: 0; }
         p.gap-top { margin-top: 9pt; }
         p.gap-top-lg { margin-top: 18pt; }
 
-        /* Tabel data "Label : Nilai" (menjorok 66pt, garis putus-putus di bawah nilai) */
         table.data {
             width: 388pt;
             margin-left: 66pt;
@@ -57,21 +60,13 @@
         td.sep { width: 11pt; }
         td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 14pt; }
 
-        /* ===== TANDA TANGAN =====
-           PENTING: dipakai <table> + padding-top, BUKAN <div> + margin-top.
-           DomPDF punya bug di mana margin-top pada elemen yang di-page-break
-           (page-break-inside: avoid) tidak selalu dihitung ulang relatif
-           terhadap halaman baru, menyebabkan jarak kosong besar di atas blok
-           TTD saat ia terdorong ke halaman berikutnya. Table + padding lebih
-           andal karena padding dihitung sebagai bagian dari box elemen itu
-           sendiri, bukan offset dari posisi elemen sebelumnya. */
         table.ttd {
             width: 100%;
             border-collapse: collapse;
             page-break-inside: avoid;
         }
         table.ttd td { padding: 0; vertical-align: top; }
-        table.ttd td.ttd-spacer { width: 265pt; } /* kosong, menggeser blok ke kanan sesuai posisi lama */
+        table.ttd td.ttd-spacer { width: 265pt; }
         table.ttd td.ttd-content {
             width: auto;
             line-height: 20pt;
@@ -84,7 +79,23 @@
 </head>
 <body>
 
-    {{-- ===== KOP ===== --}}
+    @if (($kop['type'] ?? 'kalurahan') === 'dukcapil')
+    <table class="kop kop-dukcapil">
+        <tr>
+            <td class="kop-logo">
+                <img src="{{ $logo }}" alt="Logo Kabupaten Sleman">
+            </td>
+            <td class="kop-text">
+                <div class="kopd-1">{{ $kop['line1'] }}</div>
+                <div class="kopd-2">{{ $kop['line2'] }}</div>
+                <div class="kopd-info">{{ $kop['address'] }}</div>
+                <div class="kopd-info">{{ $kop['contact'] }}</div>
+                <div class="kopd-info">{{ $kop['web_email'] }}</div>
+            </td>
+        </tr>
+    </table>
+    <div class="kop-line dukcapil"></div>
+    @else
     <table class="kop">
         <tr>
             <td class="kop-logo">
@@ -106,25 +117,28 @@
         </tr>
     </table>
     <div class="kop-line"></div>
+    @endif
 
-    {{-- ===== ISI SURAT (diisi tiap template) ===== --}}
     @yield('content')
 
-    {{-- ===== TANDA TANGAN ===== --}}
-    <table class="ttd">
-        <tr>
-            <td class="ttd-spacer"></td>
-            <td class="ttd-content">
-                <div>{{ $signature['city'] }}, @hasSection('date_long'){{ $signature['date_long'] }}@else{{ $signature['date'] }}@endif</div>
-                @foreach ($signature['prefix'] as $line)
-                    <div>{{ $line }}</div>
-                @endforeach
-                <div>{{ $signature['position'] }}</div>
-                <div class="ttd-space"></div>
-                <div>{{ $signature['name'] }}</div>
-            </td>
-        </tr>
-    </table>
+    @hasSection('custom_signature')
+        @yield('custom_signature')
+    @else
+        <table class="ttd">
+            <tr>
+                <td class="ttd-spacer"></td>
+                <td class="ttd-content">
+                    <div>{{ $signature['city'] }}, @hasSection('date_long'){{ $signature['date_long'] }}@else{{ $signature['date'] }}@endif</div>
+                    @foreach ($signature['prefix'] as $line)
+                        <div>{{ $line }}</div>
+                    @endforeach
+                    <div>{{ $signature['position'] }}</div>
+                    <div class="ttd-space"></div>
+                    <div>{{ $signature['name'] }}</div>
+                </td>
+            </tr>
+        </table>
+    @endif
 
 </body>
 </html>
