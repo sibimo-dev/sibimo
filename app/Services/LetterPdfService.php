@@ -8,27 +8,25 @@ use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
 
 /**
- * MERGE NOTE:
- * - Dasar file ini adalah hasil merge sebelumnya (fitur kamu + fitur teman:
- *   kodeForm/form_code, researcher, recipient/ref_number, lease, tembusan,
- *   date_parts, condition, KOP_ALWAYS_KALURAHAN_SLUGS, signaturePrefix()
- *   versi Carik-tanpa-u.b., husband/wife, family_members, attorney/deceased,
- *   dst).
- * - Di atas itu ditambahkan revisi terbarumu:
- *   1) BLANK_PLACEHOLDER + signature() memakai placeholder titik-titik
- *      (bukan string kosong) kalau surat belum authorized_at.
- *   2) $letterDate tidak lagi fallback ke now() di viewData() — tanggal TTD
- *      betul-betul kosong/placeholder kalau surat belum resmi ditandatangani.
- *      ('year' dan 'date_parts' TETAP fallback ke tanggal hari ini karena
- *      dipakai kalimat pembuka surat kuasa antar-warga yang tidak melalui
- *      proses authorized_at kalurahan — Carbon::parse(null) = now()).
- *   3) 3 section baru: travelOrder (SPPD), stayApplication (Permohonan
- *      Tinggal Sementara), residentRequest (SKTS) + helper method masing-
- *      masing + entri di sampleNumber()/sampleBase()/sampleOverrides().
+ * MERGE NOTE (gabungan File 1 + File 2):
+ * - Dari File 1 dipertahankan: MARRIAGE_LETTERS, key 'marriage' di viewData(),
+ *   marriageData(), marriagePerson(), longDate(), birthLong(), sampleMarriageForm(),
+ *   dan entri sampleOverrides() untuk surat pernikahan perempuan
+ *   (registration-form, n1, n2, ... numpang-nikah).
+ * - Dari File 2 dipertahankan: parameter $template di viewData(), VIEW_FOLDERS,
+ *   viewName(), MARRIED_LETTER_SLUGS + marriedLetterData()/personBlock(),
+ *   SIGNATURE_DIRECT_SLUGS, KALURAHAN_KOP_TEMPLATES, DATE_PLACEHOLDER,
+ *   surat akta kelahiran (birthLetterFromForm dst), letter-c/land/endorser/
+ *   application, regionData($blank), signature(..., $directPrefix), kopData(..., $kalurahanKop).
+ * - Revisi terbaru: 'unmarried-certificate' (Surat Keterangan Belum Kawin) di
+ *   MARRIAGE_LETTERS/marriageData()/sampleOverrides(); marriedLetterData() memakai
+ *   longDate() untuk tanggal; fallback applicant_name, registration & village
+ *   letter_number di viewData().
+ * - Kedua set surat pernikahan (lama: slug n1/n2/..; baru: slug *-letter di folder
+ *   married-man) berjalan berdampingan tanpa bentrok slug.
  */
 class LetterPdfService
 {
-
     public const PAPER = 'folio';
     public const SIGNATURE_CITY = 'Bimomartani';
     public const SIGNATURE_LURAH = 'a.n LURAH BIMOMARTANI';
@@ -39,15 +37,12 @@ class LetterPdfService
     /** Placeholder titik-titik untuk field yang belum terisi (tanggal TTD, dll). */
     private const BLANK_PLACEHOLDER = '..........................';
 
+    public const DATE_PLACEHOLDER = self::BLANK_PLACEHOLDER;
+
     /**
      * Slug letter_type yang kopnya HARUS selalu format "PEMERINTAH KALURAHAN
-     * BIMOMARTANI" biasa, walau signer surat ini di-assign sebagai Lurah
-     * langsung (yang biasanya bikin kopData() beralih ke kop "LURAH
-     * BIMOMARTANI" pribadi). Dipakai supaya kop dan TTD bisa berbeda: TTD
-     * tetap ikut jabatan signer asli (bisa langsung Lurah, tanpa a.n/Carik),
-     * tapi kop tidak ikut berubah.
-     * ASUMSI: $letterType punya kolom/accessor 'slug' — sesuaikan nama
-     * kolomnya kalau berbeda di model LetterType milikmu.
+     * BIMOMARTANI" biasa, walau signer-nya Lurah langsung. TTD tetap ikut
+     * jabatan signer asli, tapi kop tidak berubah.
      */
     private const KOP_ALWAYS_KALURAHAN_SLUGS = [
         'permit-followup-letter',
@@ -56,8 +51,66 @@ class LetterPdfService
         'surat-penawaran-sewa',
     ];
 
+    /** Slug yang TTD-nya cukup "a.n LURAH" (tanpa rantai Carik / u.b.). */
+    private const SIGNATURE_DIRECT_SLUGS = [
+        'birth-attestation-letter',
+        'birth-certificate-referral-letter',
+        'birth-certificate-power-of-attorney',
+        'spousal-relationship-responsibility-statement',
+    ];
 
-    public function viewData(LetterRequest $letterRequest): array
+    /** Template yang kopnya selalu "PEMERINTAH KALURAHAN BIMOMARTANI". */
+    private const KALURAHAN_KOP_TEMPLATES = [
+        'land-price-certificate-letter',
+        'land-origin-certificate-letter',
+    ];
+
+    private const VIEW_FOLDERS = [
+        'letter-c-data-statement-letter' => 'letter-c',
+        'power-of-attorney-letter' => 'letter-c',
+        'land-price-certificate-letter' => 'letter-c',
+        'land-origin-certificate-letter' => 'letter-c',
+        'general-certificate-letter' => 'married-man',
+        'marriage-application-letter' => 'married-man',
+        'marriage-lodging-certificate-letter' => 'married-man',
+        'never-married-certificate-letter' => 'married-man',
+        'not-remarried-statement-letter' => 'married-man',
+        'death-certificate-for-marriage-letter' => 'married-man',
+        'bride-groom-consent-letter' => 'married-man',
+        'parental-consent-letter' => 'married-man',
+        'marriage-introduction-letter' => 'married-man',
+        'marriage-registration-data-sheet' => 'married-man',
+    ];
+
+    private const MARRIED_LETTER_SLUGS = [
+        'general-certificate-letter',
+        'marriage-application-letter',
+        'marriage-lodging-certificate-letter',
+        'never-married-certificate-letter',
+        'not-remarried-statement-letter',
+        'death-certificate-for-marriage-letter',
+        'bride-groom-consent-letter',
+        'parental-consent-letter',
+        'marriage-introduction-letter',
+        'marriage-registration-data-sheet',
+    ];
+
+    public const MARRIAGE_LETTERS = [
+        'registration-form'   => 'Data Isian Pendaftaran Nikah',
+        'n1'                  => 'Pengantar Nikah (N1)',
+        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
+        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
+        'n5'                  => 'Surat Izin Orang Tua (N5)',
+        'n6'                  => 'Surat Keterangan Kematian (N6)',
+        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
+        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
+        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
+        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
+        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
+    ];
+
+    public function viewData(LetterRequest $letterRequest, ?string $template = null): array
     {
         $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
 
@@ -65,34 +118,47 @@ class LetterPdfService
         $citizen = $letterRequest->citizen;
         $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
 
-        // Tidak lagi fallback ke now(): kalau surat belum resmi ditandatangani
-        // (authorized_at masih null), tanggal pada blok TTD tampil placeholder
-        // titik-titik (lihat signature()), bukan tanggal hari ini.
+        // Tidak fallback ke now(): kalau belum authorized_at, tanggal TTD tampil
+        // placeholder titik-titik (lihat signature()).
         $letterDate = $letterRequest->authorized_at;
 
         $birthPlace = $form['birth_place'] ?? $citizen?->birth_place;
         $birthDate = $form['birth_date'] ?? $citizen?->birth_date;
         $address = $this->fullAddress($letterRequest->applicant_address ?? $citizen?->address);
+        $templateSlug = $template ?? $letterRequest->letterType?->slug;
+        $signerPosition = $signer?->position;
+        if (
+            in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)
+            && in_array(
+                strtolower(trim($signerPosition ?? '')),
+                ['kaur tata laksana', 'kepala urusan tata laksana'],
+                true
+            )
+        ) {
+            $signerPosition = 'KAMITUWA';
+        }
 
-        // Kode formulir tetap (mis. "F-1.06" / "F.1.07"). Diisi ke dua nama
-        // key ('form_code' dan 'kodeForm') karena blade lama & blade baru
-        // pakai nama variabel yang berbeda untuk hal yang sama.
-        $formCode = $letterRequest->letterType?->form_code ?? null;
+        $kalurahanKop = $this->usesKalurahanKop($templateSlug)
+            || in_array($templateSlug, self::KOP_ALWAYS_KALURAHAN_SLUGS, true);
 
-        return [
-            // Dikirim dengan 2 nama key: 'number' (versi baru) dan 'nomor' (alias,
-            // supaya blade lama yang masih pakai $nomor tidak error). Setelah semua
-            // blade dipastikan pakai $number, alias 'nomor' ini boleh dihapus.
+        // Kode formulir tetap (mis. "F-1.06"); diisi ke 2 key ('form_code' & 'kodeForm').
+        $formCode = $form['kode_form'] ?? $letterRequest->letterType?->form_code ?? null;
+
+        $data = [
+            // 'number' (baru) dan 'nomor' (alias untuk blade lama).
             'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
             'nomor' => $number,
+
+            // surat pernikahan (set lama: n1, n2, dst)
+            'marriage' => $this->marriageData($form, $number, $letterDate),
 
             'form_code' => $formCode,
             'kodeForm' => $formCode,
 
             'signer' => [
                 'name' => $signer?->name,
-                'position' => $signer?->position,
+                'position' => $signerPosition,
             ],
 
             'applicant' => [
@@ -108,7 +174,6 @@ class LetterPdfService
                 'rt' => $form['rt'] ?? $citizen?->rt,
                 'rw' => $form['rw'] ?? $citizen?->rw,
                 'phone' => $form['phone'] ?? $citizen?->phone,
-                // surat pernyataan tidak memiliki dokumen kependudukan (F.1-04)
                 'mother_name' => $form['mother_name'] ?? $citizen?->mother_name,
                 'father_name' => $form['father_name'] ?? $citizen?->father_name,
             ],
@@ -181,8 +246,7 @@ class LetterPdfService
                 'address' => isset($w['address']) ? $this->fullAddress($w['address']) : null,
             ])->all(),
 
-            // surat pernyataan beda nama/identitas: identitas lain yang berbeda
-            // dari data KTP pemohon (mis. tercantum di ijazah/akta, dsb)
+            // surat pernyataan beda nama/identitas
             'other_identity' => [
                 'name' => $form['other_name'] ?? null,
                 'address' => isset($form['other_address']) ? $this->fullAddress($form['other_address']) : null,
@@ -215,9 +279,7 @@ class LetterPdfService
                 'shdk' => $c['shdk'] ?? null,
             ])->all(),
 
-            // F-1.06 (population-document-statement-letter): rincian anggota
-            // keluarga (sesuai KK) yang ditampilkan di tabel "dengan rincian
-            // KK sebagai berikut".
+            // F-1.06: rincian anggota keluarga (sesuai KK)
             'family_members' => collect($form['family_members'] ?? [])->map(fn ($m) => [
                 'name' => $m['name'] ?? null,
                 'nik' => $m['nik'] ?? null,
@@ -225,8 +287,7 @@ class LetterPdfService
                 'note' => $m['note'] ?? null,
             ])->all(),
 
-            // F-1.06: rincian perubahan elemen "Pendidikan Terakhir" & "Pekerjaan"
-            // (tabel A).
+            // F-1.06: tabel A (Pendidikan Terakhir & Pekerjaan)
             'education_job_changes' => collect($form['education_job_changes'] ?? [])->map(fn ($c) => [
                 'education' => [
                     'before' => $c['education_before'] ?? null,
@@ -241,10 +302,7 @@ class LetterPdfService
                 'note' => $c['note'] ?? null,
             ])->all(),
 
-            // F-1.06: rincian perubahan elemen "Agama" & elemen "Lainnya"
-            // (tabel B). Nama elemen "Lainnya" (mis. "Status Perkawinan")
-            // diisi lewat 'other_element_label', bukan per-baris, karena di
-            // formulir aslinya cuma ditulis sekali di judul kolom.
+            // F-1.06: tabel B (Agama & elemen "Lainnya")
             'religion_other_changes' => collect($form['religion_other_changes'] ?? [])->map(fn ($c) => [
                 'religion' => [
                     'before' => $c['religion_before'] ?? null,
@@ -268,9 +326,7 @@ class LetterPdfService
                 'faculty' => $form['faculty'] ?? null,
             ],
 
-            // dipakai untuk "Kepada Yth" (surat balasan penelitian, surat tindak
-            // lanjut permohonan izin, surat penawaran sewa, dll). 'recipient_address'
-            // -> baris "Di :".
+            // "Kepada Yth" (surat balasan penelitian, tindak lanjut izin, penawaran sewa, dll)
             'recipient' => $form['recipient_name'] ?? null,
             'recipient_address' => $form['recipient_address'] ?? null,
             'ref_number' => $form['ref_letter_number'] ?? null,
@@ -282,16 +338,10 @@ class LetterPdfService
                 'duration_years' => $form['lease_duration_years'] ?? null,
             ],
 
-            // daftar "Tembusan Dikirim Kepada" (mis. surat tindak lanjut
-            // permohonan izin). Array bebas, dirender @foreach di blade
-            // masing-masing surat lewat @section('tembusan').
+            // daftar "Tembusan Dikirim Kepada"
             'tembusan' => $form['tembusan'] ?? [],
 
-            // surat kuasa waris (heir-power-of-attorney-letter) & surat kuasa
-            // pelayanan administrasi kependudukan (population-service-
-            // authorization-letter) sama-sama pakai key 'attorney', jadi
-            // field-nya digabung: 'gender' dipakai surat kuasa waris,
-            // 'occupation' dipakai surat kuasa administrasi kependudukan.
+            // surat kuasa waris & surat kuasa administrasi kependudukan (field digabung)
             'attorney' => [
                 'name' => $form['attorney_name'] ?? null,
                 'nik' => $form['attorney_nik'] ?? null,
@@ -300,35 +350,75 @@ class LetterPdfService
                 'occupation' => $form['attorney_occupation'] ?? null,
                 'address' => isset($form['attorney_address']) ? $this->fullAddress($form['attorney_address']) : null,
             ],
-            // surat kuasa waris: data almarhum/almarhumah pewaris
+            // data almarhum/almarhumah pewaris
             'deceased' => [
                 'name' => $form['deceased_name'] ?? null,
-                'death_place' => $form['death_place'] ?? null,
+                'death_place' => $form['deceased_death_place'] ?? $form['death_place'] ?? null,
             ],
-            // surat kuasa administrasi kependudukan: alasan/kondisi pemberi
-            // kuasa tidak bisa hadir sendiri
+            // alasan/kondisi pemberi kuasa tidak bisa hadir sendiri
             'condition' => $form['condition'] ?? null,
 
-            // pecahan hari/tanggal/bulan/tahun untuk kalimat pembuka surat kuasa
-            // (mis. "Pada hari ini Rabu, Tanggal 23 Bulan September Tahun 2026").
+            'endorser' => [
+                'office' => $form['endorser_office'] ?? null,
+                'name' => $form['endorser_name'] ?? null,
+            ],
+
             // Sengaja tetap fallback ke tanggal hari ini walau $letterDate null
-            // (surat kuasa antar-warga tidak melalui proses authorized_at
-            // kalurahan) — lihat dateParts().
+            // (surat kuasa antar-warga tidak melalui authorized_at) — lihat dateParts().
             'date_parts' => $this->dateParts($letterDate),
 
-            // tahun berjalan untuk baris tanggal yang sengaja dikosongkan
-            // (diisi tangan) pada surat kuasa waris. Carbon::parse(null) = now(),
-            // jadi tetap terisi tahun berjalan walau surat belum authorized_at.
+            // Carbon::parse(null) = now(), jadi tetap terisi tahun berjalan.
             'year' => Carbon::parse($letterDate)->format('Y'),
 
-            // surat perintah perjalanan dinas (SPPD)
+            // SPPD
             'travelOrder' => $this->travelOrderFromForm($form),
 
             // permohonan tinggal sementara
             'stayApplication' => $this->stayApplicationFromForm($form),
 
-            // surat permohonan menjadi penduduk sementara (SKTS)
+            // permohonan menjadi penduduk sementara (SKTS)
             'residentRequest' => $this->residentRequestFromForm($form),
+
+            // surat akta kelahiran
+            'birth' => $this->birthLetterFromForm($form, [
+                'name' => $letterRequest->applicant_name,
+                'nik' => $letterRequest->applicant_nik,
+                'birth_place' => $birthPlace,
+                'birth_date' => $birthDate,
+                'occupation' => $form['occupation'] ?? $citizen?->occupation,
+                'address' => $address,
+                'rt' => $form['rt'] ?? $citizen?->rt,
+                'rw' => $form['rw'] ?? $citizen?->rw,
+                'phone' => $form['phone'] ?? $citizen?->phone,
+                'kk_number' => $form['kk_number'] ?? $citizen?->kk_number,
+            ]),
+
+            'application' => [
+                'type' => $form['application_type'] ?? null,
+                'dukuh_name' => $form['dukuh_name'] ?? null,
+            ],
+
+            'hamlet_head_name' => $form['dukuh_name'] ?? null,
+
+            'letter_c' => [
+                'hamlet' => $form['letter_c_hamlet'] ?? null,
+                'owner_name' => $form['letter_c_owner_name'] ?? null,
+            ],
+
+            'land' => [
+                'certificate_number' => $form['land_certificate_number'] ?? null,
+                'area' => $form['land_area'] ?? null,
+                'area_in_words' => $form['land_area_in_words'] ?? null,
+                'owner_name' => $form['land_owner_name'] ?? null,
+                'hamlet' => $form['land_hamlet'] ?? null,
+                'village' => $form['land_village'] ?? null,
+                'district' => $form['land_district'] ?? null,
+                'regency' => $form['land_regency'] ?? null,
+                'price_min' => $this->rupiah($form['land_price_min'] ?? null),
+                'price_max' => $this->rupiah($form['land_price_max'] ?? null),
+                'measurement_letter_number' => $form['land_measurement_letter_number'] ?? null,
+                'measurement_letter_date' => $this->longDate($form['land_measurement_letter_date'] ?? null),
+            ],
 
             // data mentah, kalau template lain butuh field di luar daftar di atas
             'form' => $form,
@@ -338,63 +428,139 @@ class LetterPdfService
 
             // kotak digit kode wilayah untuk formulir F.1-25 / F.1-31
             'region' => $this->regionData(),
-            'signature' => $this->signature($signer?->name, $signer?->position, $letterDate),
-            'logo' => $this->asset('logo-sleman.png'),
-            'kop' => $this->kopData(
-                in_array($letterRequest->letterType?->slug, self::KOP_ALWAYS_KALURAHAN_SLUGS, true)
-                    ? null
-                    : $signer?->position
+            'signature' => $this->signature(
+                $signer?->name,
+                $signerPosition,
+                $letterDate,
+                in_array($templateSlug, self::SIGNATURE_DIRECT_SLUGS, true),
             ),
+            'logo' => $this->asset('logo-sleman.png'),
+            'kop' => $this->kopData($signerPosition, $kalurahanKop),
         ];
-    }
 
+        if (in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)) {
+            $data = array_merge($data, $this->marriedLetterData($form));
+
+            // Nama pemohon di TTD surat permohonan: fallback ke nama pemohon di LetterRequest.
+            $data['applicant_name'] = $data['applicant_name'] ?? $letterRequest->applicant_name;
+
+            // Petugas Kamituwa & nomor registrasi: fallback ke penanda tangan & nomor surat.
+            $data['registration']['officer_name'] ??= $signer?->name;
+            $data['registration']['number'] ??= $number;
+
+            // Nomor surat desa di lembar data isian: fallback ke nomor surat.
+            $data['village']['letter_number'] ??= $number;
+
+            $data['applicant'] = array_merge($data['applicant'], [
+                'full_name_alias' => $form['name_alias'] ?? $letterRequest->applicant_name,
+                'bin_or_binti' => $form['bin_or_binti'] ?? null,
+                'birth_place_date' => $data['applicant']['birth'],
+                'nationality' => $form['nationality'] ?? 'WNI',
+                'education' => $form['education'] ?? $citizen?->education,
+                'last_education' => $form['education'] ?? $citizen?->education,
+                'status' => $data['applicant']['marital_status'],
+                'previous_spouse_name' => $form['previous_spouse_name'] ?? null,
+                'note' => $form['note'] ?? null,
+                'purpose' => $form['purpose'] ?? null,
+                'additional_note' => $form['additional_note'] ?? null,
+            ]);
+
+            $data['spouse'] = array_merge($data['spouse'], [
+                'full_name_alias' => $form['spouse_name'] ?? $data['spouse']['name'],
+                'bin' => $form['spouse_bin'] ?? null,
+                'binti' => $form['spouse_binti'] ?? null,
+                'nik' => $form['spouse_nik'] ?? null,
+                'nationality' => $form['spouse_nationality'] ?? 'WNI',
+                'religion' => $form['spouse_religion'] ?? null,
+                'birth_place_date' => $data['spouse']['birth'],
+            ]);
+
+            $data['deceased'] = array_merge($data['deceased'], [
+                'full_name_alias' => $form['deceased_full_name_alias'] ?? $form['deceased_name'] ?? $data['deceased']['name'],
+                'binti' => $form['deceased_binti'] ?? null,
+                'bin' => $form['deceased_bin'] ?? null,
+                'nik' => $form['deceased_nik'] ?? null,
+                'birth_place_date' => $this->birth($form['deceased_birth_place'] ?? null, $form['deceased_birth_date'] ?? null),
+                'nationality' => $form['deceased_nationality'] ?? 'WNI',
+                'religion' => $form['deceased_religion'] ?? null,
+                'occupation' => $form['deceased_occupation'] ?? null,
+                'address' => isset($form['deceased_address']) ? $this->fullAddress($form['deceased_address']) : null,
+                'death_date' => $this->longDate($form['deceased_death_date'] ?? null),
+                'death_place' => $form['deceased_death_place'] ?? $data['deceased']['death_place'],
+            ]);
+
+            $data['signature'] = array_merge($data['signature'], [
+                'position' => $data['signature']['position'] ?? $signerPosition,
+                'name' => $signer?->name,
+                'holder_name' => $letterRequest->applicant_name,
+                'signer_name' => $signer?->name,
+            ]);
+        }
+
+        return $data;
+    }
 
     public function sampleViewData(string $template = 'surat-keterangan-usaha'): array
     {
         $data = array_replace_recursive($this->sampleBase(), $this->sampleOverrides($template));
 
+        if (
+            in_array($template, self::MARRIED_LETTER_SLUGS, true)
+            && in_array(
+                strtolower(trim($data['signer']['position'] ?? '')),
+                ['kaur tata laksana', 'kepala urusan tata laksana'],
+                true
+            )
+        ) {
+            $data['signer']['position'] = 'KAMITUWA';
+        }
+
         $data['number'] = $data['nomor'] = $this->sampleNumber($template);
 
-        // Kode formulir: sampleFormCode() dulu (dipakai template lama seperti
-        // population-document-statement-letter / unregistered-marriage-
-        // responsibility-letter); kalau template tidak punya entri di situ,
-        // pakai apa pun yang sudah di-set lewat sampleOverrides() (mis.
-        // 'kodeForm' => 'F.1.07' untuk population-service-authorization-letter).
+        // sampleFormCode() dulu; kalau tidak ada, pakai yang di-set lewat sampleOverrides().
         $formCode = $this->sampleFormCode($template) ?? $data['form_code'] ?? $data['kodeForm'] ?? null;
         $data['form_code'] = $formCode;
         $data['kodeForm'] = $formCode;
 
-        $data['region'] = $this->regionData();
-        $data['village'] = self::VILLAGE_SUFFIX;
+        $data['region'] = $this->regionData($template === 'ktp-application-form');
+        if (! in_array($template, self::MARRIED_LETTER_SLUGS, true)) {
+            $data['village'] = self::VILLAGE_SUFFIX;
+        } else {
+            $data['village'] = $data['village'] ?? [
+                'name' => 'BIMOMARTANI', 'subdistrict' => 'NGEMPLAK', 'regency' => 'SLEMAN',
+                'letter_number' => null, 'letter_date' => null, 'head_name' => null,
+            ];
+        }
+
         $data['year'] = now()->format('Y');
 
-        // Untuk preview, TTD/kop bisa pakai contoh jabatan berbeda dari yang
-        // ditampilkan di body surat (mis. body sengaja dikosongkan menunggu
-        // input asli, tapi TTD tetap perlu contoh lengkap untuk cek rantai
-        // a.n Lurah/Carik/u.b.). Set 'signature_position' di sampleOverrides()
-        // kalau butuh perbedaan ini; kalau tidak diset, keduanya tetap sama
-        // seperti sebelumnya.
+        // TTD/kop bisa memakai contoh jabatan berbeda dari body surat
+        // ('signature_position' / 'kop_position' di sampleOverrides()).
         $signaturePosition = $data['signature_position'] ?? $data['signer']['position'];
-
-        // Kop surat dan TTD sebenarnya dua hal terpisah: sebuah surat bisa saja
-        // ditandatangani langsung oleh Lurah (TTD tanpa "a.n") tapi kopnya tetap
-        // memakai format "PEMERINTAH KALURAHAN BIMOMARTANI" biasa, bukan format
-        // kop "LURAH BIMOMARTANI" pribadi. Default-nya kop tetap mengikuti
-        // $signaturePosition seperti sebelumnya; set 'kop_position' di
-        // sampleOverrides() kalau surat ini butuh kop yang berbeda dari TTD-nya.
         $kopPosition = $data['kop_position'] ?? $signaturePosition;
+        $kalurahanKop = $this->usesKalurahanKop($template)
+            || in_array($template, self::KOP_ALWAYS_KALURAHAN_SLUGS, true);
 
         $data['signature'] = $this->signature(
             $data['signer']['name'],
             $signaturePosition,
             $data['date'] ?? null,
+            in_array($template, self::SIGNATURE_DIRECT_SLUGS, true),
         );
+
         $data['logo'] = $this->asset('logo-sleman.png');
-        $data['kop'] = $this->kopData($kopPosition);
+        $data['kop'] = $this->kopData($kopPosition, $kalurahanKop);
         $data['date_parts'] = $this->dateParts($data['date'] ?? null);
         unset($data['date'], $data['signature_position'], $data['kop_position']);
 
         return $data;
+    }
+
+    public function viewName(string $template): string
+    {
+        $folder = self::VIEW_FOLDERS[$template] ?? null;
+
+        return 'letters.' . ($folder ? $folder . '.' : '') . $template;
     }
 
     /** PDF asli hasil DomPDF (ini yang dicetak/di-download). */
@@ -402,7 +568,6 @@ class LetterPdfService
     {
         return Pdf::loadView($view, $data)->setPaper(self::PAPER, 'portrait');
     }
-
 
     public function previewHtml(string $view, array $data): string
     {
@@ -418,11 +583,27 @@ class LetterPdfService
     }
 
     /**
-     * Kode wilayah administrasi untuk kotak digit di formulir F.1-25 / F.1-31
-     * (@include('letters.region-code-grid')).
+     * Kode wilayah administrasi untuk kotak digit di formulir F.1-25 / F.1-31.
+     * $blank = true menghasilkan kotak kosong (mis. ktp-application-form).
      */
-    private function regionData(): array
+    private function regionData(bool $blank = false): array
     {
+        if ($blank) {
+            return [
+                'province_code'  => array_fill(0, 2, ''),
+                'province_name'  => '',
+
+                'regency_code'   => array_fill(0, 2, ''),
+                'regency_name'   => '',
+
+                'district_code'  => array_fill(0, 2, ''),
+                'district_name'  => '',
+
+                'village_code'   => array_fill(0, 4, ''),
+                'village_name'   => '',
+            ];
+        }
+
         return [
             'province_code'  => str_split('34'),
             'province_name'  => 'DI YOGYAKARTA',
@@ -438,14 +619,19 @@ class LetterPdfService
         ];
     }
 
+    private function usesKalurahanKop(?string $template): bool
+    {
+        return $template !== null && in_array($template, self::KALURAHAN_KOP_TEMPLATES, true);
+    }
 
     /**
-     * Data kop surat. Berbeda tergantung apakah penandatangan adalah
-     * Lurah langsung, atau pejabat lain yang menandatangani "a.n. Lurah".
+     * Data kop surat. Berbeda tergantung apakah penandatangan adalah Lurah
+     * langsung, atau pejabat lain yang menandatangani "a.n. Lurah".
+     * $kalurahanKop = true memaksa kop "PEMERINTAH KALURAHAN BIMOMARTANI".
      */
-    private function kopData(?string $position): array
+    private function kopData(?string $position, bool $kalurahanKop = false): array
     {
-        $isLurah = $this->signedByLurah($position);
+        $isLurah = $this->signedByLurah($position) && ! $kalurahanKop;
 
         return [
             'line1'   => 'PEMERINTAH KABUPATEN SLEMAN',
@@ -454,15 +640,14 @@ class LetterPdfService
             'address' => 'Jl.Prambanan Cangkringan, Km.6.5, Bimomartani. Ngemplak, Sleman, DIY',
             'contact' => 'Kode Pos : 55584   Telepon : 08112654981',
             'email'   => null, // isi kalau kalurahan sudah punya email resmi
-            'is_lurah' => $isLurah, // dipakai base.blade untuk lebar gambar aksara (aksara-lurah.png lebih pendek)
+            'is_lurah' => $isLurah, // dipakai base.blade untuk lebar gambar aksara
             'aksara'  => $this->asset($isLurah ? 'aksara-lurah.png' : 'aksara-bimomartani.png'),
         ];
     }
 
     /**
-     * Nomor contoh per-template untuk preview. Mendukung slug lama (bahasa
-     * Indonesia) maupun slug baru (bahasa Inggris) — sesuaikan/rapikan daftar
-     * ini kalau salah satu himpunan slug sudah tidak dipakai lagi.
+     * Nomor contoh per-template untuk preview. Mendukung slug lama (Indonesia)
+     * maupun slug baru (Inggris).
      */
     private function sampleNumber(string $template): ?string
     {
@@ -479,41 +664,50 @@ class LetterPdfService
             'travel-permit-letter-lurah',
             'travel-permit-letter-vill' => '471.21/',
             'fuel-recommendation-letter' => '471/',
-            'population-document-statement-letter' => null, // pakai form_code, bukan nomor urut
+            'land-price-certificate-letter',
+            'land-origin-certificate-letter' => '593/',
+            'population-document-statement-letter' => null, // pakai form_code
             'heir-power-of-attorney-letter' => null, // surat kuasa antar-warga, tidak bernomor
-            'research-response-letter' => null, // kosong, diisi manual/dari sibimo publik
-            'marriage-certificate-duplicate-letter' => null, // kosong, diisi manual/dari sibimo publik
-            'general-cover-letter' => null, // kosong, diisi manual/dari sibimo publik
+            'research-response-letter' => null,
+            'marriage-certificate-duplicate-letter' => null,
+            'general-cover-letter' => null,
             'permit-followup-letter', 'surat-tindak-lanjut-izin' => '010/',
             'lease-offer-letter', 'surat-penawaran-sewa' => '.........................',
-            // Ketiga template baru punya nomor sendiri di dalam array
-            // travelOrder/stayApplication/residentRequest masing-masing,
-            // jadi $number/$nomor top-level ini tidak dipakai oleh view-nya.
+
+            // Tiga template ini punya nomor sendiri di array masing-masing.
             'duty-travel-order-letter',
             'temporary-stay-application-form',
             'temporary-resident-request' => null,
+
+            'birth-certificate-referral-letter' => '472/',
+            'birth-attestation-letter' => '472.11/',
+            'birth-certificate-application-form',
+            'birth-report-form',
+            'birth-report-statement',
+            'spousal-relationship-responsibility-statement',
+            'out-of-domicile-birth-report',
+            'late-birth-registration-approval-decree',
+            'birth-registration-report',
+            'birth-certificate-power-of-attorney' => null,
             default => '581/ 1',
         };
     }
 
     /**
-     * Kode formulir tetap (mis. "F-1.06") untuk preview surat model formulir
-     * resmi. Kembalikan null untuk surat keterangan bernomor urut biasa
-     * (termasuk yang kode formulirnya di-set langsung lewat sampleOverrides(),
-     * seperti population-service-authorization-letter).
+     * Kode formulir tetap untuk preview surat model formulir resmi.
+     * null = surat bernomor urut biasa (atau kode di-set lewat sampleOverrides()).
      */
     private function sampleFormCode(string $template): ?string
     {
         return match ($template) {
-            // FIX: kode formulir yang benar (sesuai contoh cetakan) adalah
-            // "F-1.06", bukan "F.1-04".
             'population-document-statement-letter' => 'F-1.06',
             'unregistered-marriage-responsibility-letter' => 'F.1.07',
+            'birth-report-form' => 'F2 02',
             default => null,
         };
     }
 
-    private function signature(?string $name, ?string $position, $date): array
+    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false): array
     {
         $parsed = $date ? Carbon::parse($date) : null;
 
@@ -521,7 +715,7 @@ class LetterPdfService
             'city' => self::SIGNATURE_CITY,
             'date' => $parsed?->format('d/m/Y') ?? self::BLANK_PLACEHOLDER,
             'date_long' => $parsed?->locale('id')->translatedFormat('d F Y') ?? self::BLANK_PLACEHOLDER,
-            'prefix' => $this->signaturePrefix($position),
+            'prefix' => $this->signaturePrefix($position, $directPrefix),
             'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
         ];
@@ -539,7 +733,7 @@ class LetterPdfService
         return str_contains($p, 'lurah') || str_contains($p, 'kepala desa');
     }
 
-    private function signaturePrefix(?string $position): array
+    private function signaturePrefix(?string $position, bool $direct = false): array
     {
         if ($this->signedByLurah($position)) {
             return [];
@@ -552,8 +746,12 @@ class LetterPdfService
             return [self::SIGNATURE_LURAH];
         }
 
-        // Semua pejabat lain (Kaur, Kamituwa, Jogoboyo, Ulu-Ulu, dst.) berada
-        // di bawah Carik, sehingga rantainya: a.n Lurah -> Carik -> u.b. [jabatan].
+        // Slug tertentu: cukup "a.n LURAH" tanpa rantai Carik / u.b.
+        if ($direct) {
+            return [self::SIGNATURE_LURAH];
+        }
+
+        // Pejabat lain berada di bawah Carik: a.n Lurah -> Carik -> u.b. [jabatan].
         return [self::SIGNATURE_LURAH, 'Carik', 'u.b.'];
     }
 
@@ -564,11 +762,104 @@ class LetterPdfService
         return collect([$place, $formatted])->filter()->implode(', ') ?: null;
     }
 
+    private function marriageData(array $form, ?string $number, $letterDate): array
+    {
+        $date = $letterDate ? Carbon::parse($letterDate) : null;
+
+        $bride     = $this->marriagePerson($form, 'bride');
+        $groom     = $this->marriagePerson($form, 'groom');
+        $father    = $this->marriagePerson($form, 'bride_father');
+        $mother    = $this->marriagePerson($form, 'bride_mother');
+        $guardian  = $this->marriagePerson($form, 'guardian');
+        $exHusband = $this->marriagePerson($form, 'ex_husband');
+
+        $bride['bin']    ??= $father['name'];
+        $bride['gender'] ??= 'Perempuan';
+        $groom['gender'] ??= 'Laki-laki';
+
+        $judgeReason = $form['judge_guardian_reason'] ?? null;
+        $relation    = $form['guardian_relation'] ?? null;
+        if (blank($guardian['name']) && blank($judgeReason)) {
+            $guardian = $father;
+            $relation ??= 'Ayah kandung';
+        }
+
+        return [
+            'letter_number' => $form['letter_number'] ?? $number,
+            'akad' => [
+                'day'   => $form['akad_day']
+                    ?? (isset($form['akad_date'])
+                        ? Carbon::parse($form['akad_date'])->locale('id')->translatedFormat('l') : null),
+                'date'  => $this->longDate($form['akad_date'] ?? null),
+                'time'  => $form['akad_time'] ?? null,
+                'place' => $form['akad_place'] ?? null,
+            ],
+            'bride'        => $bride,
+            'groom'        => $groom,
+            'bride_father' => $father,
+            'bride_mother' => $mother,
+            'guardian'     => $guardian + ['relation' => $relation, 'reason' => $form['guardian_reason'] ?? null],
+            'ex_husband'   => $exHusband + [
+                'died_at'    => $form['ex_husband_died_at'] ?? null,
+                'died_place' => $form['ex_husband_died_place'] ?? null,
+            ],
+            'judge_guardian_reason' => $judgeReason,
+            'health' => [
+                'destination' => $form['health_destination'] ?? null,
+                'need'        => $form['health_need'] ?? null,
+                'note'        => $form['health_note'] ?? null,
+                'conduct'     => $form['conduct'] ?? null,
+                'valid_from'  => $date?->copy()->locale('id')->translatedFormat('d F'),
+                'valid_until' => $date?->copy()->addMonths(3)->locale('id')->translatedFormat('d F Y'),
+            ],
+            'numpang' => [
+                'letter_number' => $form['numpang_letter_number'] ?? null,
+                'date'          => $this->longDate($form['numpang_date'] ?? null),
+            ],
+            'unmarried_certificate' => [
+                'letter_number' => $form['unmarried_certificate_number'] ?? null,
+                'date'          => $this->longDate($form['unmarried_certificate_date'] ?? null),
+            ],
+        ];
+    }
+
+    private function longDate($date): ?string
+    {
+        return $date ? Carbon::parse($date)->locale('id')->translatedFormat('d F Y') : null;
+    }
+
+    private function birthLong(?string $place, $date): ?string
+    {
+        return collect([$place, $this->longDate($date)])->filter()->implode(', ') ?: null;
+    }
+
+    private function marriagePerson(array $form, string $prefix): array
+    {
+        $f = fn (string $key) => $form["{$prefix}_{$key}"] ?? null;
+
+        return [
+            'name'        => $f('name'),
+            'bin'         => $f('bin'),
+            'nik'         => $f('nik'),
+            'gender'      => $f('gender'),
+            'birth'       => $this->birthLong($f('birth_place'), $f('birth_date')),
+            'citizenship' => $f('citizenship'),
+            'religion'    => $f('religion'),
+            'occupation'  => $f('occupation'),
+            'education'   => $f('education'),
+            'address'     => $f('address'), // sengaja TIDAK pakai fullAddress()
+            'status'      => $f('status'),
+        ];
+    }
+
+    private function sampleMarriageForm(): array
+    {
+        return [];
+    }
+
     /**
-     * Pecah satu tanggal jadi nama hari, tanggal, nama bulan, dan tahun
-     * (semua berbahasa Indonesia) untuk kalimat pembuka surat kuasa.
-     * $date null -> jatuh ke tanggal hari ini (surat kuasa antar-warga tidak
-     * melalui proses authorized_at kalurahan).
+     * Pecah satu tanggal jadi nama hari, tanggal, nama bulan, dan tahun (bahasa
+     * Indonesia). $date null -> jatuh ke tanggal hari ini.
      */
     private function dateParts($date): array
     {
@@ -589,7 +880,6 @@ class LetterPdfService
         return $digits === '' ? null : 'Rp. ' . number_format((int) $digits, 0, ',', '.') . ',-';
     }
 
-
     private function fullAddress(?string $address): ?string
     {
         $address = trim((string) $address);
@@ -603,7 +893,6 @@ class LetterPdfService
             : $address . ', ' . self::VILLAGE_SUFFIX;
     }
 
-
     private function asset(string $file): string
     {
         $path = public_path("images/letters/{$file}");
@@ -615,10 +904,122 @@ class LetterPdfService
         return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
     }
 
+    private function personBlock(array $form, string $prefix, ?string $binLabel = null, array $extra = []): array
+    {
+        $get = fn (string $field) => $form["{$prefix}_{$field}"] ?? null;
+
+        $data = [
+            'full_name_alias' => $get('name'),
+            'nik' => $get('nik'),
+            'birth_place_date' => $this->birth($get('birth_place'), $get('birth_date')),
+            'nationality' => $get('nationality') ?? 'WNI',
+            'religion' => $get('religion'),
+            'occupation' => $get('occupation'),
+            'address' => isset($form["{$prefix}_address"]) ? $this->fullAddress($form["{$prefix}_address"]) : null,
+        ];
+
+        if ($binLabel) {
+            $data[$binLabel] = $get($binLabel);
+        }
+
+        return array_merge($data, $extra);
+    }
+
+    private function marriedLetterData(array $form): array
+    {
+        $village = [
+            'name' => $form['village_name'] ?? 'BIMOMARTANI',
+            'subdistrict' => $form['village_subdistrict'] ?? 'NGEMPLAK',
+            'regency' => $form['village_regency'] ?? 'SLEMAN',
+            'letter_number' => $form['village_letter_number'] ?? null,
+            'letter_date' => $this->longDate($form['village_letter_date'] ?? null),
+            'head_name' => $form['village_head_name'] ?? null,
+        ];
+
+        $ceremonyDay = $form['ceremony_day'] ?? (isset($form['ceremony_date'])
+            ? Carbon::parse($form['ceremony_date'])->locale('id')->translatedFormat('l')
+            : null);
+        $ceremonyDate = $this->longDate($form['ceremony_date'] ?? null);
+
+        $ceremony = [
+            'day' => $ceremonyDay,
+            'date' => $ceremonyDate,
+            'time' => $form['ceremony_time'] ?? null,
+            'place' => $form['ceremony_place'] ?? null,
+            'date_time' => collect([$ceremonyDay, $ceremonyDate])->filter()->implode(', ') ?: null,
+        ];
+
+        $registration = [
+            'number' => $form['registration_number'] ?? null,
+            'date' => $this->longDate($form['registration_date'] ?? null),
+            'position' => $form['registration_position'] ?? null,
+            'officer_name' => $form['registration_officer_name'] ?? null,
+        ];
+
+        $groom = $this->personBlock($form, 'groom', 'bin', [
+            'status' => $form['groom_status'] ?? null,
+            'last_education' => $form['groom_last_education'] ?? null,
+            'previous_spouse_name' => $form['groom_previous_spouse_name'] ?? null,
+            'previous_spouse_parent_name' => $form['groom_previous_spouse_parent_name'] ?? null,
+            'previous_spouse_bin' => $form['groom_previous_spouse_bin'] ?? null,
+            'previous_spouse_nik' => $form['groom_previous_spouse_nik'] ?? null,
+            'previous_spouse_birth_place_date' => $this->birth(
+                $form['groom_previous_spouse_birth_place'] ?? null,
+                $form['groom_previous_spouse_birth_date'] ?? null,
+            ),
+            'previous_spouse_nationality' => $form['groom_previous_spouse_nationality'] ?? null,
+            'previous_spouse_religion' => $form['groom_previous_spouse_religion'] ?? null,
+            'previous_spouse_occupation' => $form['groom_previous_spouse_occupation'] ?? null,
+            'previous_spouse_address' => $form['groom_previous_spouse_address'] ?? null,
+            'previous_spouse_death_date' => $this->longDate($form['groom_previous_spouse_death_date'] ?? null),
+            'previous_spouse_death_place' => $form['groom_previous_spouse_death_place'] ?? null,
+        ]);
+        $groom['name'] = $groom['full_name_alias'];
+
+        $bride = $this->personBlock($form, 'bride', 'binti', [
+            'status' => $form['bride_status'] ?? null,
+            'last_education' => $form['bride_last_education'] ?? null,
+            'previous_spouse_name' => $form['bride_previous_spouse_name'] ?? null,
+            'previous_spouse_bin' => $form['bride_previous_spouse_bin'] ?? null,
+            'previous_spouse_nik' => $form['bride_previous_spouse_nik'] ?? null,
+            'previous_spouse_death_date' => $this->longDate($form['bride_previous_spouse_death_date'] ?? null),
+            'previous_spouse_death_place' => $form['bride_previous_spouse_death_place'] ?? null,
+        ]);
+        $bride['name'] = $bride['full_name_alias'];
+
+        $groomFather = $this->personBlock($form, 'groom_father', 'bin');
+        $groomFather['name'] = $groomFather['full_name_alias'];
+        $groomMother = $this->personBlock($form, 'groom_mother', 'binti');
+        $groomMother['name'] = $groomMother['full_name_alias'];
+        $brideFather = $this->personBlock($form, 'bride_father', 'bin');
+        $brideFather['name'] = $brideFather['full_name_alias'];
+        $brideMother = $this->personBlock($form, 'bride_mother', 'binti');
+        $brideMother['name'] = $brideMother['full_name_alias'];
+
+        return [
+            'village' => $village,
+            'ceremony' => $ceremony,
+            'registration' => $registration,
+            'subdistrict' => $form['subdistrict'] ?? $village['subdistrict'],
+            'groom_name' => $groom['name'],
+            'bride_name' => $bride['name'],
+            'applicant_name' => $form['applicant_name'] ?? null,
+            'groom' => $groom,
+            'bride' => $bride,
+            'groomFather' => $groomFather,
+            'groomMother' => $groomMother,
+            'brideFather' => $brideFather,
+            'brideMother' => $brideMother,
+
+            'father' => $this->personBlock($form, 'father', 'bin'),
+            'mother' => $this->personBlock($form, 'mother', 'binti'),
+            'child' => $this->personBlock($form, 'child', 'bin_or_binti'),
+            'child_spouse' => $this->personBlock($form, 'child_spouse', 'bin_or_binti'),
+        ];
+    }
+
     /**
-     * Petakan $form (form_data dari LetterRequest) ke struktur $travelOrder
-     * yang dipakai duty-travel-order-letter.blade.php. Sesuaikan nama field
-     * form ('travel_*') dengan skema form_data yang sebenarnya dipakai.
+     * Petakan $form ke struktur $travelOrder (duty-travel-order-letter.blade.php).
      */
     private function travelOrderFromForm(array $form): array
     {
@@ -658,8 +1059,7 @@ class LetterPdfService
     }
 
     /**
-     * Petakan $form ke struktur $stayApplication yang dipakai
-     * temporary-stay-application-form.blade.php.
+     * Petakan $form ke struktur $stayApplication (temporary-stay-application-form.blade.php).
      */
     private function stayApplicationFromForm(array $form): array
     {
@@ -712,8 +1112,7 @@ class LetterPdfService
     }
 
     /**
-     * Petakan $form ke struktur $residentRequest yang dipakai
-     * temporary-resident-request.blade.php.
+     * Petakan $form ke struktur $residentRequest (temporary-resident-request.blade.php).
      */
     private function residentRequestFromForm(array $form): array
     {
@@ -760,6 +1159,129 @@ class LetterPdfService
         ];
     }
 
+    private function birthLetterFromForm(array $form, array $fallback = []): array
+    {
+        $type = $form['birth_type'] ?? null;
+
+        $childBirth = $form['child_birth_date'] ?? null;
+
+        $reporter = $this->birthLetterPerson($form, 'reporter', $fallback) + [
+            'phone' => $form['reporter_phone'] ?? $fallback['phone'] ?? null,
+            'relationship' => $form['reporter_relationship'] ?? null,
+            'application_date' => $this->birthLetterDate($form['application_date'] ?? null, true),
+            'report_date' => $this->birthLetterDate($form['report_date'] ?? null, true),
+        ];
+
+        $witnesses = collect($form['birth_witnesses'] ?? [])->map(fn ($w) => [
+            'nik' => $w['nik'] ?? null,
+            'name' => $w['name'] ?? null,
+            'age' => $w['age'] ?? null,
+            'address' => $w['address'] ?? null,
+        ])->all();
+
+        $witnesses = array_pad($witnesses, 2, ['nik' => null, 'name' => null, 'age' => null, 'address' => null]);
+
+        return [
+            'type' => $type,
+            'application_number' => $form['application_number'] ?? null,
+            'family_card_number' => $form['kk_number'] ?? $fallback['kk_number'] ?? null,
+            'head_of_family_name' => $form['head_of_family_name'] ?? null,
+
+            'report_kind' => $form['report_kind'] ?? match ($type) {
+                'new' => 'Lahir Baru',
+                'late' => 'Lahir Lama',
+                default => null,
+            },
+            'registrar_name' => $form['registrar_name'] ?? null,
+
+            'documents' => array_values($form['required_documents'] ?? []),
+
+            'child' => [
+                'nik' => $form['child_nik'] ?? null,
+                'name' => $form['child_name'] ?? null,
+                'gender' => $form['child_gender'] ?? null,
+                'delivery_place' => $form['child_delivery_place'] ?? null,
+                'delivery_address' => $form['child_delivery_address'] ?? null,
+                'birth_place' => $form['child_birth_place'] ?? null,
+                'birth_day_name' => $childBirth
+                    ? Carbon::parse($childBirth)->locale('id')->translatedFormat('l')
+                    : null,
+                'birth_date' => $this->birthLetterDate($childBirth, true),
+                'birth_time' => $form['child_birth_time'] ?? null,
+                'plurality' => $form['child_plurality'] ?? null,
+                'birth_order' => $form['child_birth_order'] ?? null,
+                'birth_attendant' => $form['child_birth_attendant'] ?? null,
+                'weight' => $form['child_weight'] ?? null,
+                'length' => $form['child_length'] ?? null,
+                'gestational_age' => $form['child_gestational_age'] ?? null,
+                'delivery_method' => $form['child_delivery_method'] ?? null,
+                'delivery_cost' => $form['child_delivery_cost'] ?? null,
+            ],
+
+            'mother' => $this->birthLetterPerson($form, 'mother'),
+            'father' => $this->birthLetterPerson($form, 'father'),
+
+            'marriage' => [
+                'certificate_number' => $form['marriage_cert_number'] ?? null,
+                'date' => $this->birthLetterDate($form['marriage_date'] ?? null, true),
+                'record_place' => $form['marriage_record_place'] ?? null,
+                'record_date' => $this->birthLetterDate($form['marriage_record_date'] ?? null, true),
+            ],
+
+            'reporter' => $reporter,
+            'witnesses' => $witnesses,
+
+            'hamlet' => [
+                'name' => $form['hamlet_name'] ?? null,
+                'head_name' => $form['hamlet_head_name'] ?? null,
+            ],
+
+            'decree' => [
+                'number' => $form['decree_number'] ?? null,
+                'place' => $form['decree_place'] ?? 'Sleman',
+                'agency_head_name' => $form['agency_head_name'] ?? null,
+                'agency_head_nip' => $form['agency_head_nip'] ?? null,
+            ],
+        ];
+    }
+
+    private function birthLetterPerson(array $form, string $prefix, array $fb = []): array
+    {
+        $get = fn (string $key) => $form["{$prefix}_{$key}"] ?? $fb[$key] ?? null;
+
+        $rawBirth = $get('birth_date');
+
+        return [
+            'nik' => $get('nik'),
+            'name' => $get('name'),
+            'birth_place' => $get('birth_place'),
+            'birth_date' => $this->birthLetterDate($rawBirth),
+            'age' => $get('age') ?? ($rawBirth ? Carbon::parse($rawBirth)->age : null),
+            'occupation' => $get('occupation'),
+            'address' => $get('address'),
+            'rt_rw' => $this->birthLetterRtRw($get('rt'), $get('rw')),
+            'nationality' => $get('nationality'),
+            'ethnicity' => $get('ethnicity'),
+        ];
+    }
+
+    private function birthLetterDate($date, bool $long = false): ?string
+    {
+        if (! $date) {
+            return null;
+        }
+
+        $parsed = Carbon::parse($date);
+
+        return $long
+            ? $parsed->locale('id')->translatedFormat('d F Y')
+            : $parsed->format('d/m/Y');
+    }
+
+    private function birthLetterRtRw($rt, $rw): string
+    {
+        return 'RT: ' . $rt . str_repeat("\u{00A0}", 6) . 'RW: ' . $rw;
+    }
 
     private function sampleBase(): array
     {
@@ -771,12 +1293,8 @@ class LetterPdfService
             'date' => now()->toDateString(),
             'signer' => [
                 'name' => null,
-                // Default Kaur (bukan Lurah) — surat yang tidak override 'signer'
-                // (surat-keterangan-jalan, surat-keterangan-penghasilan,
-                // sktm-sekolah) mengandalkan default ini supaya kop tampil
-                // "PEMERINTAH KALURAHAN BIMOMARTANI" dan tanda tangan memakai
-                // rantai 3-tingkat (a.n LURAH BIMOMARTANI / Carik / u.b. /
-                // Kepala Urusan ...), BUKAN kop+ttd Lurah langsung.
+                // Default Kaur (bukan Lurah) — kop "PEMERINTAH KALURAHAN BIMOMARTANI"
+                // dan TTD rantai 3-tingkat (a.n LURAH / Carik / u.b. / Kaur ...).
                 'position' => 'Kepala Urusan Tata Laksana',
             ],
             'applicant' => [
@@ -852,8 +1370,8 @@ class LetterPdfService
             'religion_other_changes' => [],
             'other_element_label' => null,
 
-            // attorney digabung: 'gender' dipakai heir-power-of-attorney-letter,
-            // 'occupation' dipakai population-service-authorization-letter.
+            // attorney digabung: 'gender' untuk heir-power-of-attorney-letter,
+            // 'occupation' untuk population-service-authorization-letter.
             'attorney' => [
                 'name' => null, 'nik' => null, 'birth' => null,
                 'gender' => null, 'occupation' => null, 'address' => null,
@@ -862,12 +1380,53 @@ class LetterPdfService
                 'name' => null, 'death_place' => null,
             ],
             'condition' => null,
+            'endorser' => [
+                'office' => null, 'name' => null,
+            ],
 
-            // default kosong untuk 3 template baru; diisi penuh lewat
-            // sampleOverrides() saat $template cocok.
+            // default kosong; diisi penuh lewat sampleOverrides() saat $template cocok.
             'travelOrder' => null,
             'stayApplication' => null,
             'residentRequest' => null,
+
+            // surat pernikahan set lama (n1, n2, dst) — diisi lewat sampleOverrides()
+            'marriage' => null,
+
+            'birth' => $this->birthLetterFromForm([]),
+
+            'application' => [
+                'type' => null,
+                'dukuh_name' => null,
+            ],
+            'hamlet_head_name' => null,
+
+            'letter_c' => [
+                'hamlet' => null, 'owner_name' => null,
+            ],
+
+            'land' => [
+                'certificate_number' => null, 'area' => null, 'area_in_words' => null,
+                'owner_name' => null, 'hamlet' => null, 'village' => null,
+                'district' => null, 'regency' => null, 'price_min' => null, 'price_max' => null,
+                'measurement_letter_number' => null, 'measurement_letter_date' => null,
+            ],
+
+            'ceremony' => ['day' => null, 'date' => null, 'time' => null, 'place' => null, 'date_time' => null],
+            'registration' => ['number' => null, 'date' => null, 'position' => null, 'officer_name' => null],
+            'subdistrict' => null,
+            'groom_name' => null,
+            'bride_name' => null,
+            'applicant_name' => null,
+            'groom' => null,
+            'bride' => null,
+            'groomFather' => null,
+            'groomMother' => null,
+            'brideFather' => null,
+            'brideMother' => null,
+            'father' => null,
+            'mother' => null,
+            'child' => null,
+            'child_spouse' => null,
 
             'form' => [],
         ];
@@ -889,9 +1448,7 @@ class LetterPdfService
             'surat-keterangan-jalan', 'travel-permit-letter', 'travel-permit-letter-gov',
             'relocation-cover-letter', 'resident-arrival-form' => [],
 
-            // Versi 2 Surat Keterangan Jalan: ditandatangani langsung oleh Lurah
-            // (bukan a.n. LURAH oleh Kaur). kopData()/signature() otomatis pakai
-            // kop+ttd Lurah begitu $signer['position'] mengandung 'lurah'.
+            // Versi 2 Surat Keterangan Jalan: ditandatangani langsung oleh Lurah.
             'surat-keterangan-jalan-lurah', 'travel-permit-letter-lurah',
             'travel-permit-letter-vill' => [
                 'signer' => ['position' => 'Lurah'],
@@ -899,16 +1456,12 @@ class LetterPdfService
 
             'fuel-recommendation-letter' => [],
 
-            // FIX: ditambahkan alias slug 'event-permit-letter' supaya
-            // signer-nya jadi Jogoboyo, bukan jatuh ke default Kaur.
             'surat-keterangan-keramaian', 'event-permit-letter' => [
                 'signer' => ['position' => 'Jogoboyo'],
             ],
 
             'surat-keterangan-penghasilan' => [],
 
-            // FIX: ditambahkan alias slug 'business-permit-letter' supaya
-            // signer-nya jadi Kamituwa, bukan jatuh ke default Kaur.
             'surat-keterangan-usaha', 'business-permit-letter' => [
                 'signer' => ['position' => 'Kamituwa'],
             ],
@@ -931,88 +1484,89 @@ class LetterPdfService
                 'signer' => ['position' => 'Lurah'],
             ],
 
-            // Surat pernyataan sendiri oleh warga (bukan diterbitkan/ditandatangani
-            // pejabat kalurahan) -- tidak perlu override 'signer'. Blade-nya
-            // standalone (tidak extends letters.layouts.base) jadi otomatis
-            // tanpa kop, tidak butuh flag apa pun di sini.
+            // surat pernikahan perempuan (set lama)
+            'registration-form', 'n1', 'n2', 'n4', 'n5', 'n6',
+            'guardian-statement', 'judge-guardian', 'health-referral',
+            'unmarried-statement', 'numpang-nikah' => [
+                'signer' => ['position' => 'Kamituwa'],
+                'marriage' => $this->marriageData($this->sampleMarriageForm(), null, null),
+            ],
+            // Surat Keterangan Belum Kawin: kop dan TTD Lurah, bukan Kamituwa
+            'unmarried-certificate' => [
+                'signer' => ['position' => 'Lurah'],
+                'marriage' => $this->marriageData($this->sampleMarriageForm(), null, null),
+            ],
+
+            // Surat pernyataan sendiri oleh warga — standalone, tanpa kop/signer pejabat.
             'population-document-statement-letter' => [],
             'identity-discrepancy-statement-letter' => [],
             'unregistered-marriage-responsibility-letter' => [],
 
-            // Surat kuasa antar-warga (pemberi & penerima kuasa) untuk mengurus
-            // sidang waris -- standalone juga, tidak butuh kop/signer pejabat.
+            // Surat kuasa antar-warga untuk sidang waris — standalone.
             'heir-power-of-attorney-letter' => [],
 
-            // signer pakai default 'Kepala Urusan Tata Laksana' dari sampleBase(),
-            // sesuai contoh surat (an Lurah Bimomartani / Carik / u.b. / Kaur Tata Laksana).
-            // recipient, ref_number, dan researcher sengaja dikosongkan (null) —
-            // data ini nanti datang dari inputan form sibimo publik, bukan data contoh.
+            // signer pakai default Kaur Tata Laksana dari sampleBase().
             'research-response-letter' => [],
 
-            // surat permohonan duplikat buku nikah — Jabatan di body sengaja
-            // dikosongkan (null) karena nanti diisi dari inputan form sibimo
-            // publik. TTD tetap pakai contoh 'Kamituwa' (via signature_position)
-            // supaya rantai a.n Lurah/Carik/u.b. kelihatan lengkap di preview;
-            // pada surat asli nanti keduanya otomatis sama-sama terisi dari
-            // data signer yang sebenarnya.
+            // Jabatan di body dikosongkan; TTD tetap pakai contoh 'Kamituwa'.
             'marriage-certificate-duplicate-letter' => [
                 'signer' => ['position' => null],
                 'signature_position' => 'Kamituwa',
             ],
 
-            // surat pengantar umum — Jabatan di body sengaja dikosongkan (null),
-            // TTD tetap pakai contoh default 'Kepala Urusan Tata Laksana' (via
-            // signature_position) supaya rantai a.n Lurah/Carik/u.b. kelihatan
-            // lengkap di preview, sesuai contoh surat.
+            // Jabatan di body dikosongkan; TTD pakai default Kaur Tata Laksana.
             'general-cover-letter' => [
                 'signer' => ['position' => null],
                 'signature_position' => 'Kepala Urusan Tata Laksana',
             ],
 
-            // surat kuasa dalam pelayanan administrasi kependudukan — tidak
-            // memakai kop/TTD berjenjang (bukan ditandatangani pejabat kalurahan),
-            // jadi cukup set kode formulirnya saja. applicant, attorney, dan
-            // condition sengaja dikosongkan (null), diisi dari inputan sibimo publik.
+            // Surat kuasa pelayanan administrasi kependudukan — cukup set kode formulir.
             'population-service-authorization-letter' => [
                 'kodeForm' => 'F.1.07',
             ],
 
-            // surat tindak lanjut permohonan izin — balasan Lurah atas surat
-            // permohonan izin keramaian/acara warga. Body (Yth, No. surat
-            // saudara, Hari/Tanggal/Waktu/Acara/Tempat, tembusan) sengaja
-            // dikosongkan (null/[]), diisi dari inputan form sibimo publik.
-            // Ditandatangani langsung oleh Lurah (bukan "a.n LURAH .. / Carik"),
-            // jadi signer position di-set 'Lurah' supaya signedByLurah() true
-            // dan TTD cukup menampilkan "LURAH BIMOMARTANI" tanpa baris a.n/Carik.
-            // Tapi kop suratnya TETAP format "PEMERINTAH KALURAHAN BIMOMARTANI"
-            // biasa (bukan kop "LURAH BIMOMARTANI" pribadi), jadi 'kop_position'
-            // sengaja diisi posisi non-Lurah supaya kopData() tidak ikut
-            // terpengaruh oleh signer TTD di atas.
+            // Surat tindak lanjut izin: TTD langsung Lurah, kop tetap Kalurahan.
             'permit-followup-letter', 'surat-tindak-lanjut-izin' => [
                 'signer' => ['position' => 'Lurah'],
                 'kop_position' => 'Kepala Urusan Tata Laksana',
             ],
 
-            // surat penawaran sewa kontrak gedung — Kalurahan menawarkan
-            // perpanjangan sewa sebuah gedung miliknya ke pihak penyewa lama.
-            // Body (Yth, nama/jabatan/alamat penandatangan, tanggal berakhir
-            // sewa, nominal & terbilang) sengaja TIDAK diambil dari $form —
-            // sesuai arahan, bagian-bagian itu cukup ditulis dot placeholder
-            // langsung di blade-nya. Ditandatangani langsung Lurah (tanpa
-            // a.n/Carik), kop tetap format "PEMERINTAH KALURAHAN BIMOMARTANI".
+            // Surat penawaran sewa: TTD langsung Lurah, kop tetap Kalurahan.
             'lease-offer-letter', 'surat-penawaran-sewa' => [
                 'signer' => ['position' => 'Lurah'],
                 'kop_position' => 'Kepala Urusan Tata Laksana',
             ],
 
-            // ============================================================
-            // Surat Perintah Perjalanan Dinas (SPPD)
-            // TEMPLATE KOSONG (tidak ada data contoh yang ditampilkan) —
-            // semua field string di-set ke '' (bukan null, supaya blade yang
-            // menulis {{ $x }} tanpa "?? ''" tidak error), dan tetap mengirim
-            // array 'travelOrder' penuh (bukan dihapus) supaya key-key di
-            // dalamnya tetap ada saat blade mengaksesnya.
-            // ============================================================
+            'birth-certificate-referral-letter',
+            'birth-attestation-letter' => [
+                'signer' => ['position' => 'Kamituwa'],
+            ],
+
+            'spousal-relationship-responsibility-statement' => [
+                'signer' => ['position' => 'Ulu - Ulu'],
+            ],
+            'birth-certificate-power-of-attorney' => [
+                'signer' => ['position' => 'Kamituwa'],
+            ],
+            'out-of-domicile-birth-report',
+            'late-birth-registration-approval-decree',
+            'birth-registration-report' => [],
+
+            'ktp-application-form' => [
+                'kodeForm' => 'F-107',
+                'date' => null,
+            ],
+
+            'land-price-certificate-letter', 'land-origin-certificate-letter' => [
+                'signer' => ['position' => 'Lurah'],
+                'date' => null,
+            ],
+
+            'letter-c-data-statement-letter', 'power-of-attorney-letter' => [
+                'date' => null,
+            ],
+
+            // SPPD — TEMPLATE KOSONG ('' bukan null, supaya {{ $x }} tanpa "?? ''" tidak error).
             'duty-travel-order-letter' => [
                 'signer' => ['position' => 'Kepala Urusan Tata Laksana'],
                 'travelOrder' => [
@@ -1060,15 +1614,7 @@ class LetterPdfService
                 ],
             ],
 
-            // ============================================================
             // Permohonan Tinggal Sementara — TEMPLATE KOSONG.
-            // Semua field diisi '' (bukan dihapus / null), termasuk yang
-            // sebelumnya punya default (regency/district/village) —
-            // sengaja dikosongkan juga supaya benar-benar tidak ada data
-            // apa pun yang tampil, murni kotak-kotak kosong template.
-            // 'familyMembers' tetap array kosong [] (blade sudah menangani
-            // 5 baris kosong lewat @for di template).
-            // ============================================================
             'temporary-stay-application-form' => [
                 'stayApplication' => [
                     'regency'  => '',
@@ -1118,10 +1664,7 @@ class LetterPdfService
                 ],
             ],
 
-            // ============================================================
-            // Surat Permohonan Menjadi Penduduk Sementara (SKTS) —
-            // TEMPLATE KOSONG, sama seperti di atas.
-            // ============================================================
+            // Surat Permohonan Menjadi Penduduk Sementara (SKTS) — TEMPLATE KOSONG.
             'temporary-resident-request' => [
                 'residentRequest' => [
                     'applicantName' => '',
