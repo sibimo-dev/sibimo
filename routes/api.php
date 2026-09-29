@@ -126,6 +126,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
         Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
         Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
+
+        // Field Input Dinamis
+        Route::get('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'fields']);
+        Route::post('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'storeField']);
+        Route::put('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'updateField']);
+        Route::delete('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'destroyField']);
     });
 
     // Pengelolaan Surat
@@ -233,15 +239,32 @@ Route::middleware(['auth:sanctum', 'active'])
 
 // Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
 // Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
+//         http://localhost:8000/api/dev/letters/birth-report-form
 // Tambah ?html=1 untuk versi browser (bisa Inspect Element).
+//
+// Nama view di-resolve otomatis: folder khusus dicek dulu (letters.birth.*),
+// baru letters.* biasa. Surat kelompok baru tinggal ditambah ke daftar folder
+// di bawah ini kalau nanti dibuatkan subfolder sendiri.
 if (app()->environment('local')) {
     Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
-        $view = "letters.{$template}";
-        abort_unless(view()->exists($view), 404);
+        $view = collect(['birth'])
+            ->map(fn (string $folder) => "letters.{$folder}.{$template}")
+            ->push("letters.{$template}")
+            ->first(fn (string $candidate) => view()->exists($candidate));
+
+        abort_unless($view, 404);
         $data = $service->sampleViewData($template);
 
         return $request->boolean('html')
             ? response($service->previewHtml($view, $data))
             : $service->pdf($view, $data)->stream("{$template}.pdf");
     })->where('template', '[a-z0-9\-]+');
+    Route::get('/dev/letters/marriage/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
+        abort_unless(view()->exists('letters.marriage.letters.' . $letter), 404);
+        $data = $service->sampleViewData($letter) + ['letter' => $letter];
+
+        return $request->boolean('html')
+            ? response($service->previewHtml('letters.marriage.single', $data))
+            : $service->pdf('letters.marriage.single', $data)->stream("{$letter}.pdf");
+    })->where('letter', '[a-z0-9\-]+');
 }

@@ -10,6 +10,8 @@ use App\Models\LetterType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class LetterRequestController extends Controller
 {
@@ -44,9 +46,11 @@ class LetterRequestController extends Controller
             'applicant_address' => ['required', 'string'],
             'notes' => ['nullable', 'string'],
             'source' => ['nullable', Rule::in(['Online', 'Manual (Kelurahan)'])],
+            'form_data' => ['nullable', 'array'],
         ]);
 
         $letterType = LetterType::findOrFail($validated['letter_type_id']);
+        $this->validateFormData($letterType, $validated['form_data'] ?? []);
 
         // signature_type ikut default dari letter_type, bisa diubah lagi saat otorisasi
         $validated['signature_type'] = $letterType->signature_method === 'digital' ? 'digital' : 'manual';
@@ -115,12 +119,19 @@ class LetterRequestController extends Controller
         $validated = $request->validate([
             'status' => ['required', Rule::in(['verified', 'rejected'])],
             'notes' => ['nullable', 'string'],
-            'verified_by' => ['required', 'exists:users,user_id'],
         ]);
+
+        if ($letterRequest->status !== 'submitted') {
+            throw ValidationException::withMessages([
+                'status' => 'Permohonan hanya dapat diverifikasi saat berstatus submitted.',
+            ]);
+        }
+
+        $verifiedBy = $request->user()->user_id;
 
         $letterRequest->update([
             'status' => $validated['status'],
-            'verified_by' => $validated['verified_by'],
+            'verified_by' => $verifiedBy,
             'notes' => $validated['notes'] ?? $letterRequest->notes,
             'verified_at' => now(),
         ]);
@@ -129,7 +140,16 @@ class LetterRequestController extends Controller
             'letter_request_id' => $letterRequest->letter_request_id,
             'status' => $validated['status'],
             'note' => $validated['notes'] ?? null,
-            'change_by' => $validated['verified_by'],
+            'change_by' => $verifiedBy,
+        ]);
+
+        $letterRequest->load([
+            'citizen',
+            'letterType.signer',
+            'verifier',
+            'authorizedSigner',
+            'attachments.letterTypeDocument',
+            'statusHistories',
         ]);
 
         return response()->json([
@@ -146,10 +166,16 @@ class LetterRequestController extends Controller
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['verified', 'authorized'])],
+            'status' => ['required', Rule::in(['authorized'])],
             'authorized_by_signer_id' => ['required_if:status,authorized', 'nullable', 'exists:staff,staff_id'],
             'signature_type' => ['required_if:status,authorized', 'nullable', Rule::in(['digital', 'manual'])],
         ]);
+
+        if ($letterRequest->status !== 'verified') {
+            throw ValidationException::withMessages([
+                'status' => 'Permohonan hanya dapat diotorisasi saat berstatus verified.',
+            ]);
+        }
 
         $updateData = [
             'status' => $validated['status'],
@@ -171,7 +197,14 @@ class LetterRequestController extends Controller
             'change_by' => $request->user()->user_id ?? null,
         ]);
 
-        $letterRequest->load(['authorizedSigner', 'letterType']);
+        $letterRequest->load([
+            'citizen',
+            'letterType.signer',
+            'verifier',
+            'authorizedSigner',
+            'attachments.letterTypeDocument',
+            'statusHistories',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -206,30 +239,77 @@ class LetterRequestController extends Controller
     // ===== Lampiran dokumen =====
     public function storeAttachment(Request $request, int $letterRequest_id): JsonResponse
     {
-        $validated = $request->validate([
-            'letter_type_document_id' => ['required', 'exists:letter_type_documents,letter_type_document_id'],
-            'file_name' => ['required', 'string', 'max:225'],
-            'file_path' => ['required', 'string', 'max:225'],
-        ]);
-        $validated['letter_request_id'] = $letterRequest_id;
+        $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
-        $attachment = LetterRequestAttachment::create($validated);
+        $validated = $request->validate([
+            'letter_type_document_id' => [
+                'required',
+                Rule::exists('letter_type_documents', 'letter_type_document_id')
+                    ->where(fn ($query) => $query->where('letter_type_id', $letterRequest->letter_type_id)),
+            ],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        ]);
+
+        $storedPath = $request->file('file')->store("letter-requests/{$letterRequest_id}", 'public');
+
+        $attachment = LetterRequestAttachment::create([
+            'letter_request_id' => $letterRequest_id,
+            'letter_type_document_id' => $validated['letter_type_document_id'],
+            'file_name' => $request->file('file')->getClientOriginalName(),
+            'file_path' => Storage::disk('public')->url($storedPath),
+            'uploaded_at' => now(),
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Lampiran berhasil diunggah.',
-            'data' => $attachment,
+            'data' => $attachment->load('letterTypeDocument'),
         ], 201);
     }
 
     public function attachments(int $letterRequest_id): JsonResponse
     {
-        $attachments = LetterRequestAttachment::where('letter_request_id', $letterRequest_id)->get();
+        $attachments = LetterRequestAttachment::with('letterTypeDocument')
+            ->where('letter_request_id', $letterRequest_id)
+            ->get();
 
         return response()->json([
             'success' => true,
             'message' => 'Data lampiran berhasil diambil.',
             'data' => $attachments,
         ]);
+    }
+
+    private function validateFormData(LetterType $letterType, array $formData): void
+    {
+        $fields = $letterType->fields()->get();
+        $allowedKeys = $fields->pluck('field_key')->all();
+        $unknownKeys = array_diff(array_keys($formData), $allowedKeys);
+
+        if ($unknownKeys !== []) {
+            throw ValidationException::withMessages([
+                'form_data' => 'Terdapat field yang tidak terdaftar pada tipe surat: ' . implode(', ', $unknownKeys),
+            ]);
+        }
+
+        $errors = [];
+        foreach ($fields as $field) {
+            $value = $formData[$field->field_key] ?? null;
+            if ($field->is_required && ($value === null || $value === '')) {
+                $errors["form_data.{$field->field_key}"] = "Field {$field->field_label} wajib diisi.";
+                continue;
+            }
+
+            if ($field->field_type === 'select' && $value !== null && $value !== '') {
+                $options = array_map('strval', $field->options ?? []);
+                if (!in_array((string) $value, $options, true)) {
+                    $errors["form_data.{$field->field_key}"] = "Nilai field {$field->field_label} tidak valid.";
+                }
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 }

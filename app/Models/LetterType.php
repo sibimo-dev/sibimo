@@ -46,6 +46,11 @@ class LetterType extends Model
         return $this->documents_count ?? $this->documents()->count();
     }
 
+    public function fields()
+    {
+        return $this->hasMany(LetterTypeField::class, 'letter_type_id', 'letter_type_id')->orderBy('sort_order');
+    }
+
     public function documents()
     {
         return $this->hasMany(LetterTypeDocument::class, 'letter_type_id', 'letter_type_id');

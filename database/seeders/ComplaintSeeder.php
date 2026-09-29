@@ -9,19 +9,22 @@ class ComplaintSeeder extends Seeder
     public function run(): void
     {
         for ($i = 0; $i < 15; $i++) {
-            $status = fake()->randomElement(['Submitted', 'In Progress', 'Resolved', 'Rejected']);
+            $status = ['Submitted', 'In Progress', 'Resolved', 'Rejected'][$i % 4];
             $hasReporter = $i % 3 !== 0;
+            $title = 'Complaint Seeder ' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT);
 
-            DB::table('complaints')->insert([
-                'reporter_name' => $hasReporter ? fake('id_ID')->name() : null,
-                'reporter_phone' => $hasReporter ? fake()->numerify('08##########') : null,
-                'category' => fake()->randomElement(['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other']),
-                'title' => fake('id_ID')->sentence(5),
-                'description' => fake('id_ID')->paragraph(4),
-                'status' => $status,
-                'submitted_at' => now(),
-                'resolved_at' => in_array($status, ['Resolved', 'Rejected']) ? now() : null,
-            ]);
+            DB::table('complaints')->updateOrInsert(
+                ['title' => $title],
+                [
+                    'reporter_name' => $hasReporter ? 'Pelapor Seeder ' . ($i + 1) : null,
+                    'reporter_phone' => $hasReporter ? '089900000' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) : null,
+                    'category' => ['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other'][$i % 5],
+                    'description' => 'Aduan contoh untuk pengujian sistem SIBIMO.',
+                    'status' => $status,
+                    'submitted_at' => now(),
+                    'resolved_at' => in_array($status, ['Resolved', 'Rejected']) ? now() : null,
+                ],
+            );
         }
     }
 }

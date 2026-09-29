@@ -51,49 +51,21 @@ class LetterPdfService
         'surat-penawaran-sewa',
     ];
 
-    /** Slug yang TTD-nya cukup "a.n LURAH" (tanpa rantai Carik / u.b.). */
-    private const SIGNATURE_DIRECT_SLUGS = [
-        'birth-attestation-letter',
-        'birth-certificate-referral-letter',
-        'birth-certificate-power-of-attorney',
-        'spousal-relationship-responsibility-statement',
+    public const MARRIAGE_LETTERS = [
+        'registration-form'   => 'Data Isian Pendaftaran Nikah',
+        'n1'                  => 'Pengantar Nikah (N1)',
+        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
+        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
+        'n5'                  => 'Surat Izin Orang Tua (N5)',
+        'n6'                  => 'Surat Keterangan Kematian (N6)',
+        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
+        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
+        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
+        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
+        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
     ];
 
-    /** Template yang kopnya selalu "PEMERINTAH KALURAHAN BIMOMARTANI". */
-    private const KALURAHAN_KOP_TEMPLATES = [
-        'land-price-certificate-letter',
-        'land-origin-certificate-letter',
-    ];
-
-    private const VIEW_FOLDERS = [
-        'letter-c-data-statement-letter' => 'letter-c',
-        'power-of-attorney-letter' => 'letter-c',
-        'land-price-certificate-letter' => 'letter-c',
-        'land-origin-certificate-letter' => 'letter-c',
-        'general-certificate-letter' => 'married-man',
-        'marriage-application-letter' => 'married-man',
-        'marriage-lodging-certificate-letter' => 'married-man',
-        'never-married-certificate-letter' => 'married-man',
-        'not-remarried-statement-letter' => 'married-man',
-        'death-certificate-for-marriage-letter' => 'married-man',
-        'bride-groom-consent-letter' => 'married-man',
-        'parental-consent-letter' => 'married-man',
-        'marriage-introduction-letter' => 'married-man',
-        'marriage-registration-data-sheet' => 'married-man',
-    ];
-
-    private const MARRIED_LETTER_SLUGS = [
-        'general-certificate-letter',
-        'marriage-application-letter',
-        'marriage-lodging-certificate-letter',
-        'never-married-certificate-letter',
-        'not-remarried-statement-letter',
-        'death-certificate-for-marriage-letter',
-        'bride-groom-consent-letter',
-        'parental-consent-letter',
-        'marriage-introduction-letter',
-        'marriage-registration-data-sheet',
-    ];
 
     public const MARRIAGE_LETTERS = [
         'registration-form'   => 'Data Isian Pendaftaran Nikah',
@@ -149,6 +121,7 @@ class LetterPdfService
             'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
             'nomor' => $number,
+            'marriage' => $this->marriageData($form, $number, $letterDate),
 
             // surat pernikahan (set lama: n1, n2, dst)
             'marriage' => $this->marriageData($form, $number, $letterDate),
@@ -1389,44 +1362,7 @@ class LetterPdfService
             'stayApplication' => null,
             'residentRequest' => null,
 
-            // surat pernikahan set lama (n1, n2, dst) — diisi lewat sampleOverrides()
             'marriage' => null,
-
-            'birth' => $this->birthLetterFromForm([]),
-
-            'application' => [
-                'type' => null,
-                'dukuh_name' => null,
-            ],
-            'hamlet_head_name' => null,
-
-            'letter_c' => [
-                'hamlet' => null, 'owner_name' => null,
-            ],
-
-            'land' => [
-                'certificate_number' => null, 'area' => null, 'area_in_words' => null,
-                'owner_name' => null, 'hamlet' => null, 'village' => null,
-                'district' => null, 'regency' => null, 'price_min' => null, 'price_max' => null,
-                'measurement_letter_number' => null, 'measurement_letter_date' => null,
-            ],
-
-            'ceremony' => ['day' => null, 'date' => null, 'time' => null, 'place' => null, 'date_time' => null],
-            'registration' => ['number' => null, 'date' => null, 'position' => null, 'officer_name' => null],
-            'subdistrict' => null,
-            'groom_name' => null,
-            'bride_name' => null,
-            'applicant_name' => null,
-            'groom' => null,
-            'bride' => null,
-            'groomFather' => null,
-            'groomMother' => null,
-            'brideFather' => null,
-            'brideMother' => null,
-            'father' => null,
-            'mother' => null,
-            'child' => null,
-            'child_spouse' => null,
 
             'form' => [],
         ];
@@ -1484,7 +1420,7 @@ class LetterPdfService
                 'signer' => ['position' => 'Lurah'],
             ],
 
-            // surat pernikahan perempuan (set lama)
+            // surat pernikahan perempuan
             'registration-form', 'n1', 'n2', 'n4', 'n5', 'n6',
             'guardian-statement', 'judge-guardian', 'health-referral',
             'unmarried-statement', 'numpang-nikah' => [
@@ -1497,7 +1433,10 @@ class LetterPdfService
                 'marriage' => $this->marriageData($this->sampleMarriageForm(), null, null),
             ],
 
-            // Surat pernyataan sendiri oleh warga — standalone, tanpa kop/signer pejabat.
+            // Surat pernyataan sendiri oleh warga (bukan diterbitkan/ditandatangani
+            // pejabat kalurahan) -- tidak perlu override 'signer'. Blade-nya
+            // standalone (tidak extends letters.layouts.base) jadi otomatis
+            // tanpa kop, tidak butuh flag apa pun di sini.
             'population-document-statement-letter' => [],
             'identity-discrepancy-statement-letter' => [],
             'unregistered-marriage-responsibility-letter' => [],
