@@ -10,14 +10,16 @@ class ServiceSeeder extends Seeder
     public function run(): void
     {
         for ($i = 0; $i < 6; $i++) {
-            DB::table('service')->insert([
-                'title' => fake('id_ID')->sentence(3),
-                'description' => fake('id_ID')->paragraph(2),
-                'icon' => 'icons/service-' . ($i + 1) . '.svg',
-                'sort_order' => $i,
-                'is_active' => 1,
-                'created_at' => now(),
-            ]);
+            DB::table('service')->updateOrInsert(
+                ['icon' => 'icons/service-' . ($i + 1) . '.svg'],
+                [
+                    'title' => 'Layanan Desa ' . ($i + 1),
+                    'description' => 'Informasi layanan administrasi Kalurahan Bimomartani.',
+                    'sort_order' => $i,
+                    'is_active' => 1,
+                    'created_at' => now(),
+                ],
+            );
         }
     }
 }

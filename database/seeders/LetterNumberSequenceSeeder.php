@@ -9,15 +9,18 @@ class LetterNumberSequenceSeeder extends Seeder
 {
     public function run(): void
     {
-        $letterTypeIds = DB::table('letter_types')->pluck('letter_type_id');
+        $year = (int) now()->format('Y');
 
-        foreach ($letterTypeIds as $letterTypeId) {
-            DB::table('letter_number_sequences')->insert([
-                'letter_type_id' => $letterTypeId,
-                'year' => (int) now()->format('Y'),
-                'last_sequence' => fake()->numberBetween(0, 20),
-                'updated_at' => now(),
-            ]);
-        }
+        DB::table('letter_types')
+            ->orderBy('letter_type_id')
+            ->pluck('letter_type_id')
+            ->each(function (int $letterTypeId) use ($year): void {
+                DB::table('letter_number_sequences')->insertOrIgnore([
+                    'letter_type_id' => $letterTypeId,
+                    'year' => $year,
+                    'last_sequence' => 0,
+                    'updated_at' => now(),
+                ]);
+            });
     }
 }

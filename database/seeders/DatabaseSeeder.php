@@ -10,35 +10,40 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'full_name' => 'Superadmin SIBIMO',
-            'username' => 'superadmin',
-            'email' => 'superadmin@sibimo.test',
-            'password' => Hash::make('password123'),
-            'role' => 'Superadmin',
-            'phone_number' => '081234567899',
-            'is_active' => true,
-        ]);
+        $users = [
+            [
+                'full_name' => 'Superadmin SIBIMO',
+                'username' => 'superadmin',
+                'email' => 'superadmin@sibimo.test',
+                'role' => 'Superadmin',
+                'phone_number' => '081234567899',
+            ],
+            [
+                'full_name' => 'Administrator SIBIMO',
+                'username' => 'admin',
+                'email' => 'admin@sibimo.test',
+                'role' => 'Admin',
+                'phone_number' => '081234567890',
+            ],
+            [
+                'full_name' => 'Operator SIBIMO',
+                'username' => 'operator',
+                'email' => 'operator@sibimo.test',
+                'role' => 'Operator',
+                'phone_number' => '081234567891',
+            ],
+        ];
 
-        User::factory()->create([
-            'full_name' => 'Administrator SIBIMO',
-            'username' => 'admin',
-            'email' => 'admin@sibimo.test',
-            'password' => Hash::make('password123'),
-            'role' => 'Admin',
-            'phone_number' => '081234567890',
-            'is_active' => true,
-        ]);
-
-        User::factory()->create([
-            'full_name' => 'Operator SIBIMO',
-            'username' => 'operator',
-            'email' => 'operator@sibimo.test',
-            'password' => Hash::make('password123'),
-            'role' => 'Operator',
-            'phone_number' => '081234567891',
-            'is_active' => true,
-        ]);
+        foreach ($users as $user) {
+            User::updateOrCreate(
+                ['username' => $user['username']],
+                [
+                    ...$user,
+                    'password' => Hash::make('password123'),
+                    'is_active' => true,
+                ],
+            );
+        }
 
         $this->call([
             RoleSeeder::class,
@@ -56,6 +61,7 @@ class DatabaseSeeder extends Seeder
             BookCategorySeeder::class,
             BookSeeder::class,
             FeedbackSeeder::class,
+            LetterTypeFieldSeeder::class,
             LetterTypeDocumentSeeder::class,
             LetterNumberSequenceSeeder::class,
             HistorySeeder::class,

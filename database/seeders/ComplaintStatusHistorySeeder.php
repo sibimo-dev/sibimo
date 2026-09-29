@@ -8,15 +8,22 @@ class ComplaintStatusHistorySeeder extends Seeder
 {
     public function run(): void
     {
-        $userIds = DB::table('users')->pluck('user_id');
-        $complaints = DB::table('complaints')->get(['complaint_id', 'status']);
+        $userId = DB::table('users')->value('user_id');
+        $complaints = DB::table('complaints')
+            ->where('title', 'like', 'Complaint Seeder %')
+            ->get(['complaint_id', 'status']);
+
+        $complaintIds = $complaints->pluck('complaint_id');
+        DB::table('complaint_status_histories')
+            ->whereIn('complaint_id', $complaintIds)
+            ->delete();
 
         foreach ($complaints as $complaint) {
             DB::table('complaint_status_histories')->insert([
                 'complaint_id' => $complaint->complaint_id,
-                'user_id' => $userIds->random(),
+                'user_id' => $userId,
                 'status' => $complaint->status,
-                'note' => fake()->boolean(50) ? fake('id_ID')->sentence(6) : null,
+                'note' => 'Riwayat status contoh dari seeder.',
                 'changed_at' => now(),
             ]);
         }

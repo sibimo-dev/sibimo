@@ -10,13 +10,17 @@ class FeedbackSeeder extends Seeder
     public function run(): void
     {
         for ($i = 0; $i < 15; $i++) {
-            DB::table('feedbacks')->insert([
-                'full_name' => fake('id_ID')->name(),
-                'email' => fake()->safeEmail(),
-                'message' => fake('id_ID')->paragraph(3),
-                'status' => fake()->randomElement(['Unread', 'Read', 'Replied']),
-                'submitted_at' => now(),
-            ]);
+            $email = 'seed-feedback-' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) . '@sibimo.test';
+
+            DB::table('feedbacks')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'full_name' => 'Feedback Seeder ' . ($i + 1),
+                    'message' => 'Feedback contoh untuk pengujian sistem SIBIMO.',
+                    'status' => ['Unread', 'Read', 'Replied'][$i % 3],
+                    'submitted_at' => now(),
+                ],
+            );
         }
     }
 }

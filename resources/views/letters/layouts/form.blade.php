@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>@yield('title', 'Formulir')</title>
     <style>
-        @page { margin: 1cm 1.3cm 1cm 1.3cm; }
+        @page { margin: 1cm 2cm 1cm 2cm; }
 
 body {
     margin: 0;
