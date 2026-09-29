@@ -250,4 +250,12 @@ if (app()->environment('local')) {
             ? response($service->previewHtml($view, $data))
             : $service->pdf($view, $data)->stream("{$template}.pdf");
     })->where('template', '[a-z0-9\-]+');
+    Route::get('/dev/letters/marriage/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
+        abort_unless(view()->exists('letters.marriage.letters.' . $letter), 404);
+        $data = $service->sampleViewData($letter) + ['letter' => $letter];
+
+        return $request->boolean('html')
+            ? response($service->previewHtml('letters.marriage.single', $data))
+            : $service->pdf('letters.marriage.single', $data)->stream("{$letter}.pdf");
+    })->where('letter', '[a-z0-9\-]+');
 }
