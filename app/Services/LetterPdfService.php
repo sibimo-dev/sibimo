@@ -113,6 +113,21 @@ class LetterPdfService
         'marriage-introduction-letter',
         'marriage-registration-data-sheet',
     ];
+    public const MARRIAGE_LETTERS = [
+        'registration-form'   => 'Data Isian Pendaftaran Nikah',
+        'n1'                  => 'Pengantar Nikah (N1)',
+        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
+        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
+        'n5'                  => 'Surat Izin Orang Tua (N5)',
+        'n6'                  => 'Surat Keterangan Kematian (N6)',
+        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
+        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
+        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
+        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
+        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
+    ];
+
 
     public const MARRIAGE_LETTERS = [
         'registration-form'   => 'Data Isian Pendaftaran Nikah',
