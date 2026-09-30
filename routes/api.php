@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VisionMissionController;
 use App\Services\LetterPdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -239,28 +240,39 @@ Route::middleware(['auth:sanctum', 'active'])
 
 // Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
 // Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
-//         http://localhost:8000/api/dev/letters/birth-report-form
+//         http://localhost:8000/api/dev/letters/land-origin-certificate-letter
+//         http://localhost:8000/api/dev/letters/marriage/n1
 // Tambah ?html=1 untuk versi browser (bisa Inspect Element).
 //
-// Nama view di-resolve otomatis: folder khusus dicek dulu (letters.birth.*),
-// baru letters.* biasa. Surat kelompok baru tinggal ditambah ke daftar folder
-// di bawah ini kalau nanti dibuatkan subfolder sendiri.
+// Nama view di-resolve otomatis: lewat LetterPdfService::viewName() (VIEW_FOLDERS),
+// lalu letters.{template}, lalu semua subfolder di resources/views/letters.
 if (app()->environment('local')) {
     Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
-        $view = collect(['birth'])
-            ->map(fn (string $folder) => "letters.{$folder}.{$template}")
-            ->push("letters.{$template}")
-            ->first(fn (string $candidate) => view()->exists($candidate));
+        $candidates = collect([
+                $service->viewName($template),
+                "letters.{$template}",
+            ])
+            ->merge(
+                collect(File::directories(resource_path('views/letters')))
+                    ->map(fn ($dir) => 'letters.' . basename($dir) . '.' . $template)
+            )
+            ->unique()
+            ->values();
 
-        abort_unless($view, 404);
+        $view = $candidates->first(fn ($c) => view()->exists($c));
+
+        abort_unless($view, 404, "View '{$template}' tidak ditemukan. Dicoba: " . $candidates->implode(', '));
+
         $data = $service->sampleViewData($template);
 
         return $request->boolean('html')
             ? response($service->previewHtml($view, $data))
             : $service->pdf($view, $data)->stream("{$template}.pdf");
     })->where('template', '[a-z0-9\-]+');
+
     Route::get('/dev/letters/marriage/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
         abort_unless(view()->exists('letters.marriage.letters.' . $letter), 404);
+
         $data = $service->sampleViewData($letter) + ['letter' => $letter];
 
         return $request->boolean('html')
