@@ -15,6 +15,7 @@ class PermissionMiddleware
         string $permission
     ): Response {
         $user = $request->user();
+        $permissions = array_values(array_filter(explode('|', $permission)));
 
         if (!$user) {
             return response()->json([
@@ -47,7 +48,7 @@ class PermissionMiddleware
                     'role_permissions.permission_id'
                 )
                 ->where('role_permissions.role_id', $roleId)
-                ->where('permissions.slug', $permission)
+                ->whereIn('permissions.slug', $permissions)
                 ->exists();
         }
 
@@ -65,7 +66,7 @@ class PermissionMiddleware
                 'user_permissions.permission_id'
             )
             ->where('user_permissions.user_id', $user->user_id)
-            ->where('permissions.slug', $permission)
+            ->whereIn('permissions.slug', $permissions)
             ->exists();
 
         /*
