@@ -1,15 +1,3 @@
-{{--
-    Form F-1.02 - Formulir Pendaftaran Peristiwa Kependudukan
-    (population occurrence registration form).
-
-    File location : resources/views/letters/population-occurrence-registration-form.blade.php
-    Slug          : population-occurrence-registration-form
-    Data source   : $populationOccurrence (see LetterPdfService::populationOccurrenceFromForm())
-
-    Standalone template (no kop, no extends), pure manual CSS.
-    Layout replicates the official scanned form: Helvetica (Arial-metric), sizes in pt,
-    12-column request table with the same row structure as the original.
---}}
 @php
     $occurrence = $populationOccurrence ?? [];
     $person = $occurrence['applicant'] ?? [];
@@ -191,8 +179,6 @@
             text-transform: uppercase;
         }
 
-        /* Kolom angka romawi: total 39pt (24 + 15 padding) = sama dengan .f-pad,
-           jadi teks judul lurus dengan nomor "1." di bawahnya. */
         .section-table .h-num {
             width: 24pt;
             padding-left: 15pt;
@@ -246,12 +232,6 @@
             width: 448pt;
             margin-left: 15pt;
         }
-
-        /* Column widths are set per class on EVERY cell of the column
-           (DomPDF auto layout needs this; widths already minus cell padding). */
-        /* Kolom tanda (V) dan kolom kode (A/B/1/2) digabung jadi satu sel supaya huruf/angka
-           benar-benar di tengah. Kelompok I: tanda "V" di luar tabel (11pt). Kelompok I
-           (Kartu Keluarga) dibuat lebih lebar dari II, III, IV yang lebarnya sama. */
         .w1m { width: 11pt; }
         .w1c { width: 26.5pt; }
         .w1l { width: 90pt; }
@@ -338,9 +318,6 @@
         .d-pad {
             width: 34pt;
         }
-
-        /* Kolom bulatan kiri & kanan sama: 18pt + 7pt jarak ke tulisan (padding-right).
-           Lebar label dikurangi 7pt / 5pt supaya total lebar tabel tidak berubah. */
         .d-circle,
         .d-circle-right {
             width: 18pt;
