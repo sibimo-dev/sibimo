@@ -7,6 +7,7 @@ use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
 use App\Models\LetterType;
+use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -77,6 +78,33 @@ class LetterRequestController extends Controller
             'message' => 'Detail permohonan surat berhasil diambil.',
             'data' => $letterRequest,
         ]);
+    }
+
+    public function pdf(Request $request, int $letterRequest_id, LetterPdfService $pdfService)
+    {
+        $letterRequest = LetterRequest::query()
+            ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner'])
+            ->findOrFail($letterRequest_id);
+
+        $template = $pdfService->rootTemplateForType($letterRequest->letterType);
+
+        if (! $template) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Template PDF untuk tipe surat ini belum tersedia.',
+            ], 422);
+        }
+
+        $pdf = $pdfService->pdf(
+            $pdfService->viewName($template),
+            $pdfService->viewData($letterRequest, $template),
+        );
+
+        $filename = ($letterRequest->request_code ?: 'surat') . '.pdf';
+
+        return $request->boolean('download')
+            ? $pdf->download($filename)
+            : $pdf->stream($filename);
     }
 
     public function update(Request $request, int $letterRequest_id): JsonResponse

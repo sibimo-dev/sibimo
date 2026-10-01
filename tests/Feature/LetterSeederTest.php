@@ -38,6 +38,11 @@ it('seeds a complete and connected letter fixture set', function () {
         ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(46)
         ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(46);
 
+    expect(DB::table('letter_types')
+        ->whereIn('code', ['SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK', 'SKDPAK', 'SBP'])
+        ->whereNotNull('blade_view')
+        ->count())->toBe(11);
+
     expect(DB::table('letter_type_fields as fields')
         ->leftJoin('letter_types as types', 'types.letter_type_id', '=', 'fields.letter_type_id')
         ->whereNull('types.letter_type_id')

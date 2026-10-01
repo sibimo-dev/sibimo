@@ -74,6 +74,20 @@ class LetterTypeSeeder extends Seeder
             ['SKKM', 'Surat Keterangan Kematian', 'Keterangan', 'digital'],
         ];
 
+        $bladeViews = [
+            'SKBK' => 'letters.unmarried-status-letter',
+            'SKU' => 'letters.business-permit-letter',
+            'SKUM' => 'letters.general-statement-letter',
+            'SKD' => 'letters.domicile-certificate',
+            'SKTM' => 'letters.sktm-general',
+            'SKP' => 'letters.income-permit-letter',
+            'SKK' => 'letters.event-permit-letter',
+            'SKJ' => 'letters.travel-permit-letter',
+            'SKCK' => 'letters.skck-referral-letter',
+            'SKDPAK' => 'letters.population-service-authorization-letter',
+            'SBP' => 'letters.research-response-letter',
+        ];
+
         foreach ($types as [$code, $name, $category, $signatureMethod]) {
             DB::table('letter_types')->updateOrInsert(
                 ['code' => $code],
@@ -81,7 +95,7 @@ class LetterTypeSeeder extends Seeder
                     'letter_name' => $name,
                     'category' => $category,
                     'description' => "Layanan {$name}.",
-                    'blade_view' => null,
+                    'blade_view' => $bladeViews[$code] ?? null,
                     'number_prefix' => $code . '/',
                     'processing_time' => '1 hari',
                     'signature_method' => $signatureMethod,
