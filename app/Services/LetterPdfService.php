@@ -25,6 +25,35 @@ use Illuminate\Support\Carbon;
  *   letter_number di viewData().
  * - Kedua set surat pernikahan (lama: slug n1/n2/..; baru: slug *-letter di folder
  *   married-man) berjalan berdampingan tanpa bentrok slug.
+ *
+ * CATATAN PERBAIKAN:
+ * - MARRIAGE_LETTERS sebelumnya terdeklarasi 2x (fatal error) -> sisa 1.
+ * - VIEW_FOLDERS, MARRIED_LETTER_SLUGS, SIGNATURE_DIRECT_SLUGS, KALURAHAN_KOP_TEMPLATES
+ *   hilang saat merge -> sudah diisi ulang (versi terbaru).
+ * - Key 'marriage' ganda di viewData() -> sisa 1.
+ * - sampleBase() kini memuat application, hamlet_head_name, letter_c, dan land
+ *   (sebelumnya preview error "Undefined variable $land").
+ * - sampleBase() kini memuat 'birth' (birthLetterFromForm([])) supaya preview surat
+ *   akta kelahiran tidak error "Undefined variable $birth".
+ * - viewName() kini memetakan slug MARRIAGE_LETTERS (n1, n2, judge-guardian, dst)
+ *   ke folder letters/marriage/letters/ (sebelumnya error "View ... tidak ditemukan").
+ * - Data contoh preview surat tanah (land-price-certificate-letter &
+ *   land-origin-certificate-letter) di sampleOverrides() dikosongkan (null).
+ *
+ * GABUNGAN DENGAN VERSI TEMAN (KIA):
+ * - Ditambahkan dari versi teman: kiaApplicationFromForm(), key 'kia' di
+ *   viewData()/sampleBase(), entri sampleOverrides() 'kia-application-form', dan
+ *   'surat-keterangan-jalan-lurah' di sampleNumber().
+ * - Key 'marriage' ganda di viewData() versi teman TIDAK dibawa (sisa 1).
+ * - Tanggal 'date' di kiaApplicationFromForm() kini memakai locale('id').
+ *
+ * PENAMBAHAN:
+ * - Formulir Biodata Penduduk WNI Per Keluarga (F-1.01): LANDSCAPE_SLUGS +
+ *   isLandscape(); pdf() & previewHtml() mendukung landscape; sampleNumber() -> null
+ *   dan sampleFormCode() -> 'F-1.01' untuk 'family-biodata-form'.
+ * - Formulir Pendaftaran Peristiwa Kependudukan (F-1.02): konstanta
+ *   POPULATION_OCCURRENCE_*_KEYS, populationOccurrenceFromForm(), key
+ *   'populationOccurrence' di viewData()/sampleBase()/sampleOverrides().
  */
 class LetterPdfService
 {
@@ -114,34 +143,81 @@ class LetterPdfService
         'marriage-registration-data-sheet',
     ];
     public const MARRIAGE_LETTERS = [
-        'registration-form'   => 'Data Isian Pendaftaran Nikah',
-        'n1'                  => 'Pengantar Nikah (N1)',
-        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
-        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
-        'n5'                  => 'Surat Izin Orang Tua (N5)',
-        'n6'                  => 'Surat Keterangan Kematian (N6)',
-        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
-        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
-        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
-        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+        'registration-form'     => 'Data Isian Pendaftaran Nikah',
+        'n1'                    => 'Pengantar Nikah (N1)',
+        'n2'                    => 'Permohonan Kehendak Nikah (N2)',
+        'n4'                    => 'Persetujuan Calon Pengantin (N4)',
+        'n5'                    => 'Surat Izin Orang Tua (N5)',
+        'n6'                    => 'Surat Keterangan Kematian (N6)',
+        'guardian-statement'    => 'Surat Keterangan Wali Nikah',
+        'judge-guardian'        => 'Surat Keterangan Wali Hakim',
+        'health-referral'       => 'Surat Keterangan (Pengantar Puskesmas)',
+        'unmarried-statement'   => 'Surat Pernyataan Belum Menikah Lagi',
         'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
-        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
+        'numpang-nikah'         => 'Surat Keterangan Numpang Nikah',
     ];
 
+    /**
+     * Key jenis permohonan formulir F-1.02 (population-occurrence-registration-form).
+     * Website publik mengirimnya sebagai array di field `application_types`.
+     */
+    public const POPULATION_OCCURRENCE_REQUEST_KEYS = [
+        // I. Kartu Keluarga
+        'family_card_new_family',
+        'family_card_head_change',
+        'family_card_split',
+        'family_card_move_in',
+        'family_card_citizen_abroad_return',
+        'family_card_vulnerable_group',
+        'family_card_join_existing',
+        'family_card_important_occurrence',
+        'family_card_data_element_change',
+        'family_card_lost',
+        'family_card_damaged',
+        // II. KTP-el
+        'id_card_new',
+        'id_card_move_in',
+        'id_card_lost',
+        'id_card_damaged',
+        'id_card_itap_extension',
+        'id_card_citizenship_change',
+        'id_card_out_of_domicile',
+        'id_card_transmigration',
+        // III. Kartu Identitas Anak / KIA
+        'child_card_new',
+        'child_card_lost',
+        'child_card_damaged',
+        'child_card_itap_extension',
+        'child_card_other',
+        // IV. Perubahan data
+        'data_change_family_card',
+        'data_change_id_card',
+        'data_change_child_card',
+    ];
 
-    public const MARRIAGE_LETTERS = [
-        'registration-form'   => 'Data Isian Pendaftaran Nikah',
-        'n1'                  => 'Pengantar Nikah (N1)',
-        'n2'                  => 'Permohonan Kehendak Nikah (N2)',
-        'n4'                  => 'Persetujuan Calon Pengantin (N4)',
-        'n5'                  => 'Surat Izin Orang Tua (N5)',
-        'n6'                  => 'Surat Keterangan Kematian (N6)',
-        'guardian-statement'  => 'Surat Keterangan Wali Nikah',
-        'judge-guardian'      => 'Surat Keterangan Wali Hakim',
-        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',
-        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
-        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
-        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',
+    /**
+     * Key persyaratan yang dilampirkan formulir F-1.02.
+     * Website publik mengirimnya sebagai array di field `attached_documents`.
+     */
+    public const POPULATION_OCCURRENCE_DOCUMENT_KEYS = [
+        // kolom kiri
+        'old_family_card',
+        'marriage_certificate',
+        'divorce_certificate',
+        'move_out_certificate',
+        'move_abroad_certificate',
+        'damaged_id_card',
+        'travel_document',
+        'police_loss_report',
+        // kolom kanan
+        'occurrence_evidence',
+        'unregistered_marriage_statement',
+        'death_certificate',
+        'loss_damage_cause_statement',
+        'foreign_mission_move_certificate',
+        'family_acceptance_statement',
+        'child_custody_power_of_attorney',
+        'residence_permit_card',
     ];
 
     public function rootTemplateForType(?LetterType $letterType): ?string
@@ -198,7 +274,6 @@ class LetterPdfService
             'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
             'nomor' => $number,
-            'marriage' => $this->marriageData($form, $number, $letterDate),
 
             // surat pernikahan (set lama: n1, n2, dst)
             'marriage' => $this->marriageData($form, $number, $letterDate),
@@ -423,11 +498,21 @@ class LetterPdfService
             // SPPD
             'travelOrder' => $this->travelOrderFromForm($form),
 
+            // KIA (Kartu Identitas Anak)
+            'kia' => $this->kiaApplicationFromForm($form),
+
             // permohonan tinggal sementara
             'stayApplication' => $this->stayApplicationFromForm($form),
 
             // permohonan menjadi penduduk sementara (SKTS)
             'residentRequest' => $this->residentRequestFromForm($form),
+
+            // formulir pendaftaran peristiwa kependudukan (F-1.02)
+            'populationOccurrence' => $this->populationOccurrenceFromForm($form, [
+                'name' => $letterRequest->applicant_name,
+                'nik' => $letterRequest->applicant_nik,
+                'kk_number' => $form['kk_number'] ?? $citizen?->kk_number,
+            ], $letterDate),
 
             // surat akta kelahiran
             'birth' => $this->birthLetterFromForm($form, [
@@ -608,15 +693,31 @@ class LetterPdfService
 
     public function viewName(string $template): string
     {
-        $folder = self::VIEW_FOLDERS[$template] ?? null;
+        // Surat pernikahan set lama (n1, n2, judge-guardian, dst) ada di
+        // resources/views/letters/marriage/letters/, jadi otomatis dipetakan ke sana.
+        $folder = self::VIEW_FOLDERS[$template]
+            ?? (array_key_exists($template, self::MARRIAGE_LETTERS) ? 'marriage.letters' : null);
 
         return 'letters.' . ($folder ? $folder . '.' : '') . $template;
+    }
+
+    /** true jika view ini termasuk slug yang dicetak landscape. */
+    private function isLandscape(string $view): bool
+    {
+        foreach (self::LANDSCAPE_SLUGS as $slug) {
+            if ($view === $this->viewName($slug)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** PDF asli hasil DomPDF (ini yang dicetak/di-download). */
     public function pdf(string $view, array $data): DomPdf
     {
-        return Pdf::loadView($view, $data)->setPaper(self::PAPER, 'portrait');
+        return Pdf::loadView($view, $data)
+            ->setPaper(self::PAPER, $this->isLandscape($view) ? 'landscape' : 'portrait');
     }
 
     /**
@@ -765,10 +866,13 @@ class LetterPdfService
     {
         $html = view($view, $data)->render();
 
+        $page = $this->isLandscape($view)
+            ? 'width:33.02cm;min-height:21.59cm;padding:0.9cm'
+            : 'width:21.59cm;min-height:33.02cm;padding:2cm';
+
         $screen = '<style>'
             . 'html{background:#d9d9d9}'
-            . 'body{box-sizing:border-box;width:21.59cm;min-height:33.02cm;margin:20px auto;'
-            . 'padding:2cm;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.3)}'
+            . "body{box-sizing:border-box;{$page};margin:20px auto;background:#fff;box-shadow:0 0 8px rgba(0,0,0,.3)}"
             . '</style>';
 
         return str_replace('</head>', $screen . '</head>', $html);
@@ -859,12 +963,20 @@ class LetterPdfService
             'land-price-certificate-letter',
             'land-origin-certificate-letter' => '593/',
             'population-document-statement-letter' => null, // pakai form_code
+            'population-occurrence-registration-form' => null, // pakai form_code (F-1.02)
             'heir-power-of-attorney-letter' => null, // surat kuasa antar-warga, tidak bernomor
             'research-response-letter' => null,
             'marriage-certificate-duplicate-letter' => null,
             'general-cover-letter' => null,
             'permit-followup-letter', 'surat-tindak-lanjut-izin' => '010/',
             'lease-offer-letter', 'surat-penawaran-sewa' => '.........................',
+            'relocation-cover-letter' => '471.21/',
+            'relocation-certificate-form' => '471.21/',
+            'general-statement-letter' => '470/49',
+            'general-statement-letter-gov' => '470/51',
+
+            // Formulir F-1.01 tidak bernomor; pakai form_code.
+            'family-biodata-form' => null,
 
             // Tiga template ini punya nomor sendiri di array masing-masing.
             'duty-travel-order-letter',
@@ -893,8 +1005,10 @@ class LetterPdfService
     {
         return match ($template) {
             'population-document-statement-letter' => 'F-1.06',
+            'population-occurrence-registration-form' => 'F-1.02',
             'unregistered-marriage-responsibility-letter' => 'F.1.07',
             'birth-report-form' => 'F2 02',
+            'family-biodata-form' => 'F-1.01',
             default => null,
         };
     }
@@ -1211,6 +1325,31 @@ class LetterPdfService
     }
 
     /**
+     * Petakan $form ke struktur $kia (kia-application-form.blade.php).
+     */
+    private function kiaApplicationFromForm(array $form): array
+    {
+        return [
+            'nik'               => $form['nik'] ?? null,
+            'name'              => $form['name'] ?? null,
+            'birth'             => $this->birth($form['birth_place'] ?? null, $form['birth_date'] ?? null),
+            'gender'            => $form['gender'] ?? null,
+            'blood_type'        => $form['blood_type'] ?? null,
+            'kk_number'         => $form['kk_number'] ?? null,
+            'household_head'    => $form['household_head'] ?? null,
+            'birth_cert_number' => $form['birth_cert_number'] ?? null,
+            'religion'          => $form['religion'] ?? null,
+            'citizenship'       => $form['citizenship'] ?? 'WNI',
+            'address'           => $form['address'] ?? null,
+            'rt'                => $form['rt'] ?? null,
+            'rw'                => $form['rw'] ?? null,
+            'village'           => $form['village'] ?? null,
+            'district'          => $form['district'] ?? null,
+            'date'              => $form['submission_date'] ?? now()->locale('id')->translatedFormat('d F Y'),
+        ];
+    }
+
+    /**
      * Petakan $form ke struktur $travelOrder (duty-travel-order-letter.blade.php).
      */
     private function travelOrderFromForm(array $form): array
@@ -1348,6 +1487,38 @@ class LetterPdfService
 
             'hamletHeadNumber' => $form['hamlet_head_number'] ?? null,
             'hamletHeadDate'   => $form['hamlet_head_date'] ?? null,
+        ];
+    }
+
+    /**
+     * Petakan $form ke struktur $populationOccurrence
+     * (population-occurrence-registration-form.blade.php, formulir F-1.02).
+     *
+     * Input dari website publik:
+     * - applicant_name, applicant_nik, kk_number : opsional (fallback ke $fallback)
+     * - application_types  : array key dari POPULATION_OCCURRENCE_REQUEST_KEYS
+     * - attached_documents : array key dari POPULATION_OCCURRENCE_DOCUMENT_KEYS
+     * - application_date   : opsional (fallback ke $letterDate, lalu titik-titik)
+     */
+    private function populationOccurrenceFromForm(array $form, array $fallback = [], $letterDate = null): array
+    {
+        $requestTypes = (array) ($form['application_types'] ?? []);
+        $documents = (array) ($form['attached_documents'] ?? []);
+
+        return [
+            'applicant' => [
+                'name' => $form['applicant_name'] ?? $fallback['name'] ?? null,
+                'nik' => $form['applicant_nik'] ?? $fallback['nik'] ?? null,
+                'family_card_number' => $form['kk_number'] ?? $fallback['kk_number'] ?? null,
+            ],
+            'selected' => collect(self::POPULATION_OCCURRENCE_REQUEST_KEYS)
+                ->mapWithKeys(fn (string $key) => [$key => in_array($key, $requestTypes, true)])
+                ->all(),
+            'attached_documents' => collect(self::POPULATION_OCCURRENCE_DOCUMENT_KEYS)
+                ->mapWithKeys(fn (string $key) => [$key => in_array($key, $documents, true)])
+                ->all(),
+            'application_date' => $this->longDate($form['application_date'] ?? $letterDate)
+                ?? self::BLANK_PLACEHOLDER,
         ];
     }
 
@@ -1580,8 +1751,40 @@ class LetterPdfService
             'travelOrder' => null,
             'stayApplication' => null,
             'residentRequest' => null,
+            'populationOccurrence' => null,
+            'kia' => null,
+
+            // surat akta kelahiran (birth-*): struktur lengkap dengan nilai kosong,
+            // supaya preview tidak error "Undefined variable $birth".
+            'birth' => $this->birthLetterFromForm([]),
 
             'marriage' => null,
+
+            // letter-c / land-* (surat keterangan tanah). Sebelumnya tidak ada di
+            // sampleBase() sehingga preview error "Undefined variable $land".
+            'application' => [
+                'type' => null,
+                'dukuh_name' => null,
+            ],
+            'hamlet_head_name' => null,
+            'letter_c' => [
+                'hamlet' => null,
+                'owner_name' => null,
+            ],
+            'land' => [
+                'certificate_number' => null,
+                'area' => null,
+                'area_in_words' => null,
+                'owner_name' => null,
+                'hamlet' => null,
+                'village' => null,
+                'district' => null,
+                'regency' => null,
+                'price_min' => null,
+                'price_max' => null,
+                'measurement_letter_number' => null,
+                'measurement_letter_date' => null,
+            ],
 
             'form' => [],
         ];
@@ -1660,6 +1863,20 @@ class LetterPdfService
             'identity-discrepancy-statement-letter' => [],
             'unregistered-marriage-responsibility-letter' => [],
 
+            // Formulir F-1.02 diisi & ditandatangani pemohon sendiri (standalone, tanpa kop).
+            // Preview = formulir kosong: tanpa tanda V / lingkaran terisi, tanggal titik-titik.
+            'population-occurrence-registration-form' => [
+                'date' => null,
+                'populationOccurrence' => $this->populationOccurrenceFromForm([]),
+            ],
+
+            // Formulir Biodata Penduduk WNI (Per Keluarga) F-1.01 — standalone, landscape,
+            // TEMPLATE KOSONG (8 baris anggota keluarga kosong bernomor).
+            'family-biodata-form' => [
+                'kodeForm' => 'F-1.01',
+                'form' => ['members' => []],
+            ],
+
             // Surat kuasa antar-warga untuk sidang waris — standalone.
             'heir-power-of-attorney-letter' => [],
 
@@ -1715,9 +1932,26 @@ class LetterPdfService
                 'date' => null,
             ],
 
+            // Surat Keterangan Harga Tanah & Asal-Usul Tanah: preview TEMPLATE KOSONG
+            // (semua data null; key sudah tersedia di sampleBase()).
             'land-price-certificate-letter', 'land-origin-certificate-letter' => [
                 'signer' => ['position' => 'Lurah'],
                 'date' => null,
+                'hamlet_head_name' => null,
+                'land' => [
+                    'certificate_number' => null,
+                    'area' => null,
+                    'area_in_words' => null,
+                    'owner_name' => null,
+                    'hamlet' => null,
+                    'village' => null,
+                    'district' => null,
+                    'regency' => null,
+                    'price_min' => null,
+                    'price_max' => null,
+                    'measurement_letter_number' => null,
+                    'measurement_letter_date' => null,
+                ],
             ],
 
             'letter-c-data-statement-letter', 'power-of-attorney-letter' => [
@@ -1770,6 +2004,11 @@ class LetterPdfService
                     'returnArrivalAt'     => '',
                     'returnArrivalDate'   => '',
                 ],
+            ],
+
+            // KIA — TEMPLATE KOSONG.
+            'kia-application-form' => [
+                'kia' => $this->kiaApplicationFromForm([]),
             ],
 
             // Permohonan Tinggal Sementara — TEMPLATE KOSONG.
