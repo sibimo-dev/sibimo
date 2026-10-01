@@ -89,12 +89,7 @@
         <tr>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val">{{ $applicant['address'] }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">&nbsp;</td>
-            <td class="sep">&nbsp;</td>
-            <td class="val">&nbsp;</td>
+            <td class="val multiline-value">@include('letters.partials.value-lines', ['value' => $applicant['address']])</td>
         </tr>
         <tr>
             <td class="lbl">Jenis Usaha</td>
@@ -104,7 +99,7 @@
         <tr>
             <td class="lbl">Alamat Usaha</td>
             <td class="sep">:</td>
-            <td class="val">{{ $business['address'] }}</td>
+            <td class="val multiline-value">@include('letters.partials.value-lines', ['value' => $business['address']])</td>
         </tr>
     </table>
 
