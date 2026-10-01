@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VisionMissionController;
 use App\Services\LetterPdfService;
+use App\Services\DeathTemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -143,6 +144,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'storeAttachment']);
         Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
     });
+
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/{letterRequest_id}/pdf',
+        [LetterRequestController::class, 'pdf'],
+    );
 
     Route::middleware('permission:verifikasi-surat')->post(
         'letter-requests/{letterRequest_id}/verify',
@@ -279,4 +285,19 @@ if (app()->environment('local')) {
             ? response($service->previewHtml('letters.marriage.single', $data))
             : $service->pdf('letters.marriage.single', $data)->stream("{$letter}.pdf");
     })->where('letter', '[a-z0-9\-]+');
+
+    // Preview template kematian berdiri sendiri dari LetterPdfService.
+    // Tambah ?html=1 untuk melihat versi HTML di browser.
+    Route::get('/dev/death-letters/{template}', function (
+        Request $request,
+        string $template,
+        DeathTemplateService $service,
+    ) {
+        abort_unless($service->hasTemplate($template), 404);
+        $data = $service->sampleData($template);
+
+        return $request->boolean('html')
+            ? response()->view($service->viewName($template), $data)
+            : $service->pdf($template, $data)->stream("{$template}.pdf");
+    })->where('template', '[a-z0-9\-]+');
 }
