@@ -26,7 +26,9 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VisionMissionController;
 use App\Services\LetterPdfService;
+use App\Services\DeathTemplateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -139,6 +141,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
     });
 
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/{letterRequest_id}/pdf',
+        [LetterRequestController::class, 'pdf'],
+    );
+
     Route::middleware('permission:verifikasi-surat')->post(
         'letter-requests/{letterRequest_id}/verify',
         [LetterRequestController::class, 'verify'],
@@ -235,20 +242,29 @@ Route::middleware(['auth:sanctum', 'active'])
 
 // Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
 // Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
-//         http://localhost:8000/api/dev/letters/birth-report-form
+//         http://localhost:8000/api/dev/letters/land-origin-certificate-letter
+//         http://localhost:8000/api/dev/letters/marriage/n1
 // Tambah ?html=1 untuk versi browser (bisa Inspect Element).
 //
-// Nama view di-resolve otomatis: folder khusus dicek dulu (letters.birth.*),
-// baru letters.* biasa. Surat kelompok baru tinggal ditambah ke daftar folder
-// di bawah ini kalau nanti dibuatkan subfolder sendiri.
+// Nama view di-resolve otomatis: lewat LetterPdfService::viewName() (VIEW_FOLDERS),
+// lalu letters.{template}, lalu semua subfolder di resources/views/letters.
 if (app()->environment('local')) {
     Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
-        $view = collect(['birth'])
-            ->map(fn (string $folder) => "letters.{$folder}.{$template}")
-            ->push("letters.{$template}")
-            ->first(fn (string $candidate) => view()->exists($candidate));
+        $candidates = collect([
+                $service->viewName($template),
+                "letters.{$template}",
+            ])
+            ->merge(
+                collect(File::directories(resource_path('views/letters')))
+                    ->map(fn ($dir) => 'letters.' . basename($dir) . '.' . $template)
+            )
+            ->unique()
+            ->values();
 
-        abort_unless($view, 404);
+        $view = $candidates->first(fn ($c) => view()->exists($c));
+
+        abort_unless($view, 404, "View '{$template}' tidak ditemukan. Dicoba: " . $candidates->implode(', '));
+
         $data = $service->sampleViewData($template);
 
         return $request->boolean('html')
@@ -263,4 +279,19 @@ if (app()->environment('local')) {
             ? response($service->previewHtml('letters.marriage-women.single', $data))
             : $service->pdf('letters.marriage-women.single', $data)->stream("{$letter}.pdf");
     })->where('letter', '[a-z0-9\-]+');
+
+    // Preview template kematian berdiri sendiri dari LetterPdfService.
+    // Tambah ?html=1 untuk melihat versi HTML di browser.
+    Route::get('/dev/death-letters/{template}', function (
+        Request $request,
+        string $template,
+        DeathTemplateService $service,
+    ) {
+        abort_unless($service->hasTemplate($template), 404);
+        $data = $service->sampleData($template);
+
+        return $request->boolean('html')
+            ? response()->view($service->viewName($template), $data)
+            : $service->pdf($template, $data)->stream("{$template}.pdf");
+    })->where('template', '[a-z0-9\-]+');
 }
