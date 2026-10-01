@@ -3,7 +3,7 @@
     .uc table.rows td.val { border-bottom: 1px dashed #000; }
     .uc td.lbl { width: 120pt; }
 @endpush
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $b = $m['bride']; $uc = $m['unmarried_certificate']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $b = $m['bride']; $uc = $m['unmarried_certificate']; @endphp
 <div class="uc">
 @include($pp.'kop')
 

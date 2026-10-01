@@ -1,4 +1,4 @@
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $b = $m['bride']; $h = $m['health']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $b = $m['bride']; $h = $m['health']; @endphp
 @include($pp.'kop')
 
 <div class="judul">SURAT KETERANGAN</div>

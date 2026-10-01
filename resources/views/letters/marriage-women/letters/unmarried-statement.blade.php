@@ -3,7 +3,7 @@
     table.pt td { padding: 0 0 3pt 0; vertical-align: top; }
     table.pt td.pn { width: 18pt; }
 @endpush
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $b = $m['bride']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $b = $m['bride']; @endphp
 <div class="judul u">SURAT PERNYATAAN BELUM MENIKAH LAGI</div>
 <p style="margin-top:22pt">Yang bertanda tangan di bawah ini, saya :</p>
 <div style="margin-top:6pt">

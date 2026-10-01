@@ -1,5 +1,5 @@
 @use('App\Support\PersonRows')
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; @endphp
 @include($pp.'model-header', ['lampiran' => 'IX', 'model' => 'N5'])
 
 <div class="judul u">SURAT IZIN ORANG TUA</div>

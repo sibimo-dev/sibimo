@@ -90,10 +90,6 @@ Route::middleware([
 
     });
 
-Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
-Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
-Route::post('/complaints', [ComplaintController::class, 'storePublic']);
-Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
@@ -259,12 +255,12 @@ if (app()->environment('local')) {
             ? response($service->previewHtml($view, $data))
             : $service->pdf($view, $data)->stream("{$template}.pdf");
     })->where('template', '[a-z0-9\-]+');
-    Route::get('/dev/letters/marriage/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
-        abort_unless(view()->exists('letters.marriage.letters.' . $letter), 404);
+    Route::get('/dev/letters/marriage-women/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
+        abort_unless(view()->exists('letters.marriage-women.letters.' . $letter), 404);
         $data = $service->sampleViewData($letter) + ['letter' => $letter];
 
         return $request->boolean('html')
-            ? response($service->previewHtml('letters.marriage.single', $data))
-            : $service->pdf('letters.marriage.single', $data)->stream("{$letter}.pdf");
+            ? response($service->previewHtml('letters.marriage-women.single', $data))
+            : $service->pdf('letters.marriage-women.single', $data)->stream("{$letter}.pdf");
     })->where('letter', '[a-z0-9\-]+');
 }
