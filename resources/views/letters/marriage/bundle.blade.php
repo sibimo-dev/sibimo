@@ -1,4 +1,5 @@
 @extends('letters.marriage.layout')
+@section('title', 'Berkas Pernikahan')
 @section('content')
     @foreach ($letters as $letter)
         <div @class(['page-break' => ! $loop->first])>

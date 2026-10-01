@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LetterRequest;
+use App\Models\LetterType;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
@@ -69,17 +70,49 @@ class LetterPdfService
     public const DATE_PLACEHOLDER = self::BLANK_PLACEHOLDER;
 
     /**
-     * Slug letter_type yang dicetak LANDSCAPE (folio 33 x 21,5 cm).
-     * Slug lain tetap portrait.
+     * Template surat keterangan yang berada langsung di resources/views/letters.
+     * Template di subfolder sengaja tidak dimasukkan ke registry tahap ini.
      */
-    private const LANDSCAPE_SLUGS = [
-        'family-biodata-form',
+    private const ROOT_TEMPLATE_BY_CODE = [
+        'SKBK' => 'unmarried-status-letter',
+        'SKU' => 'business-permit-letter',
+        'SKUM' => 'general-statement-letter',
+        'SKD' => 'domicile-certificate',
+        'SKTM' => 'sktm-general',
+        'SKP' => 'income-permit-letter',
+        'SKK' => 'event-permit-letter',
+        'SKJ' => 'travel-permit-letter',
+        'SKCK' => 'skck-referral-letter',
+        'SKDPAK' => 'population-service-authorization-letter',
+        'SBP' => 'research-response-letter',
     ];
 
     /**
-     * Slug letter_type => nama subfolder di resources/views/letters/.
-     * Slug yang tidak terdaftar dianggap langsung di folder letters/.
+     * Slug letter_type yang kopnya HARUS selalu format "PEMERINTAH KALURAHAN
+     * BIMOMARTANI" biasa, walau signer-nya Lurah langsung. TTD tetap ikut
+     * jabatan signer asli, tapi kop tidak berubah.
      */
+    private const KOP_ALWAYS_KALURAHAN_SLUGS = [
+        'permit-followup-letter',
+        'surat-tindak-lanjut-izin',
+        'lease-offer-letter',
+        'surat-penawaran-sewa',
+    ];
+
+    /** Slug yang TTD-nya cukup "a.n LURAH" tanpa rantai Carik / u.b. */
+    private const SIGNATURE_DIRECT_SLUGS = [
+        'birth-attestation-letter',
+        'birth-certificate-referral-letter',
+        'birth-certificate-power-of-attorney',
+        'spousal-relationship-responsibility-statement',
+    ];
+
+    /** Template yang kopnya selalu memakai kop Pemerintah Kalurahan. */
+    private const KALURAHAN_KOP_TEMPLATES = [
+        'land-price-certificate-letter',
+        'land-origin-certificate-letter',
+    ];
+
     private const VIEW_FOLDERS = [
         'letter-c-data-statement-letter' => 'letter-c',
         'power-of-attorney-letter' => 'letter-c',
@@ -97,10 +130,6 @@ class LetterPdfService
         'marriage-registration-data-sheet' => 'married-man',
     ];
 
-    /**
-     * Slug surat pernikahan versi baru (folder married-man).
-     * Slug di sini otomatis memakai marriedLetterData() dan jabatan KAMITUWA.
-     */
     private const MARRIED_LETTER_SLUGS = [
         'general-certificate-letter',
         'marriage-application-letter',
@@ -113,37 +142,6 @@ class LetterPdfService
         'marriage-introduction-letter',
         'marriage-registration-data-sheet',
     ];
-
-    /**
-     * Slug yang TTD-nya cukup "a.n LURAH" tanpa rantai Carik / u.b.
-     */
-    private const SIGNATURE_DIRECT_SLUGS = [
-        'birth-attestation-letter',
-        'birth-certificate-referral-letter',
-        'birth-certificate-power-of-attorney',
-        'spousal-relationship-responsibility-statement',
-    ];
-
-    /**
-     * Slug yang kopnya dipaksa "PEMERINTAH KALURAHAN BIMOMARTANI".
-     */
-    private const KALURAHAN_KOP_TEMPLATES = [
-        'land-price-certificate-letter',
-        'land-origin-certificate-letter',
-    ];
-
-    /**
-     * Slug letter_type yang kopnya HARUS selalu format "PEMERINTAH KALURAHAN
-     * BIMOMARTANI" biasa, walau signer-nya Lurah langsung. TTD tetap ikut
-     * jabatan signer asli, tapi kop tidak berubah.
-     */
-    private const KOP_ALWAYS_KALURAHAN_SLUGS = [
-        'permit-followup-letter',
-        'surat-tindak-lanjut-izin',
-        'lease-offer-letter',
-        'surat-penawaran-sewa',
-    ];
-
     public const MARRIAGE_LETTERS = [
         'registration-form'     => 'Data Isian Pendaftaran Nikah',
         'n1'                    => 'Pengantar Nikah (N1)',
@@ -222,6 +220,18 @@ class LetterPdfService
         'residence_permit_card',
     ];
 
+    public function rootTemplateForType(?LetterType $letterType): ?string
+    {
+        $code = strtoupper((string) ($letterType?->code ?? ''));
+
+        return self::ROOT_TEMPLATE_BY_CODE[$code] ?? null;
+    }
+
+    public function hasRootTemplate(?LetterType $letterType): bool
+    {
+        return $this->rootTemplateForType($letterType) !== null;
+    }
+
     public function viewData(LetterRequest $letterRequest, ?string $template = null): array
     {
         $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
@@ -238,6 +248,9 @@ class LetterPdfService
         $birthDate = $form['birth_date'] ?? $citizen?->birth_date;
         $address = $this->fullAddress($letterRequest->applicant_address ?? $citizen?->address);
         $templateSlug = $template ?? $letterRequest->letterType?->slug;
+        $form = $this->normalizeRootTemplateForm($letterRequest, $form);
+        $birthPlace = $form['birth_place'] ?? $citizen?->birth_place;
+        $birthDate = $form['birth_date'] ?? $citizen?->birth_date;
         $signerPosition = $signer?->position;
         if (
             in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)
@@ -705,6 +718,148 @@ class LetterPdfService
     {
         return Pdf::loadView($view, $data)
             ->setPaper(self::PAPER, $this->isLandscape($view) ? 'landscape' : 'portrait');
+    }
+
+    /**
+     * Menjembatani key field dinamis dari seeder dengan key yang dipakai Blade.
+     * Key asli tetap dipertahankan di form agar request lama tetap kompatibel.
+     */
+    private function normalizeRootTemplateForm(LetterRequest $letterRequest, array $form): array
+    {
+        $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+
+        $aliases = match ($code) {
+            'SKBK' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+            ],
+            'SKU' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'occupation' => 'pekerjaan',
+                'business_type' => 'jenis_usaha',
+                'business_address' => 'alamat_usaha',
+                'purpose' => 'keperluan',
+                'destination_agency' => 'instansi_tujuan',
+            ],
+            'SKUM' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'purpose' => 'menerangkan_bahwa',
+            ],
+            'SKD' => [
+                'company_name' => 'nama_perusahaan',
+                'business_activity' => 'jenis_usaha_kegiatan',
+                'building_status' => 'status_bangunan',
+                'building_use' => 'kegunaan_bangunan',
+                'person_in_charge' => 'nama_penanggung_jawab',
+                'employee_count' => 'jumlah_karyawan',
+                'phone' => 'nomor_telepon_usaha',
+                'domicile_address' => 'alamat_domisili_usaha',
+                'name' => 'nama_pemilik',
+                'nik' => 'nik_pemilik',
+                'birth_place' => 'tempat_lahir_pemilik',
+                'birth_date' => 'tanggal_lahir_pemilik',
+                'gender' => 'jenis_kelamin_pemilik',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama_pemilik',
+                'address' => 'alamat_pemilik',
+            ],
+            'SKTM' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'income' => 'penghasilan',
+                'category' => 'kategori',
+                'kkm_number' => 'nomor_kkm_krm',
+                'purpose' => 'keperluan',
+                'destination_agency' => 'instansi_tujuan',
+            ],
+            'SKP' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'marital_status' => 'status_perkawinan',
+                'gender' => 'jenis_kelamin',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'income' => 'penghasilan',
+                'category' => 'kategori',
+                'kkm_number' => 'nomor_kkm_krm',
+                'purpose' => 'dipergunakan_untuk',
+            ],
+            'SKK' => [
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'destination' => 'pergi_ke',
+                'purpose' => 'keperluan',
+                'event_date' => 'pada_hari_tanggal',
+                'event_time' => 'jam',
+                'event_place' => 'tempat',
+                'event_participants' => 'peserta',
+                'event_objective' => 'tujuan',
+                'responsible_person' => 'penanggung_jawab',
+            ],
+            'SKJ' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'destination' => 'pergi_ke',
+                'purpose' => 'maksud_dan_tujuan',
+            ],
+            'SKCK' => [
+                'birth_place' => 'tempat_lahir',
+                'birth_date' => 'tanggal_lahir',
+                'gender' => 'jenis_kelamin',
+                'marital_status' => 'status_perkawinan',
+                'religion' => 'agama',
+                'occupation' => 'pekerjaan',
+                'destination' => 'pergi_ke',
+                'purpose' => 'keperluan',
+            ],
+            'SKDPAK' => [
+                'attorney_name' => 'nama_penerima_kuasa',
+                'attorney_nik' => 'nik_penerima_kuasa',
+                'attorney_birth_place' => 'tempat_lahir_penerima_kuasa',
+                'attorney_birth_date' => 'tanggal_lahir_penerima_kuasa',
+                'attorney_occupation' => 'pekerjaan_penerima_kuasa',
+                'attorney_address' => 'alamat_penerima_kuasa',
+                'condition' => 'alasan_kuasa',
+            ],
+            'SBP' => [
+                'recipient_name' => 'ditujukan_kepada',
+                'ref_letter_number' => 'nomor_surat_asal',
+                'researcher_name' => 'nama_mahasiswa',
+                'researcher_nim' => 'nim',
+                'study_program' => 'program_studi',
+                'faculty' => 'fakultas',
+            ],
+            default => [],
+        };
+
+        foreach ($aliases as $canonicalKey => $sourceKey) {
+            if (! array_key_exists($canonicalKey, $form) && array_key_exists($sourceKey, $form)) {
+                $form[$canonicalKey] = $form[$sourceKey];
+            }
+        }
+
+        return $form;
     }
 
     public function previewHtml(string $view, array $data): string

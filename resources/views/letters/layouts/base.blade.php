@@ -14,21 +14,23 @@
             color: #000;
         }
 
+        /* ===== KOP KALURAHAN / LURAH (diperbesar ~10%) ===== */
         table.kop { width: 100%; border-collapse: collapse; }
         table.kop td { padding: 0; vertical-align: top; }
-        table.kop td.kop-logo { width: 70pt; padding-top: 2pt; }
-        td.kop-logo img { width: 58pt; height: 75pt; }
+        table.kop td.kop-logo { width: 80pt; padding-top: 2pt; }
+        td.kop-logo img { width: 66pt; height: 86pt; }
         table.kop td.kop-text { text-align: center; padding-top: 4pt; }
-        .kop-1 { font-size: 10.5pt; font-weight: bold; line-height: 9.5pt; }
-        .kop-2 { font-size: 12pt; font-weight: bold; line-height: 15pt; }
-        .kop-3 { font-size: 13.5pt; font-weight: bold; line-height: 15pt; }
+        .kop-1 { font-size: 11.5pt; font-weight: bold; line-height: 10.5pt; }
+        .kop-2 { font-size: 13.5pt; font-weight: bold; line-height: 16.5pt; }
+        .kop-3 { font-size: 15pt; font-weight: bold; line-height: 16.5pt; }
         .kop-aksara { margin-top: -2pt; margin-bottom: -2pt; }
-        .kop-aksara img { width: 170pt; height: auto; }
-        .kop-aksara.lurah img { width: 115pt; }
-        .kop-info { font-size: 9pt; font-weight: bold; line-height: 1.05; }
-        .kop-email { font-size: 8.5pt; font-weight: bold; line-height: 1.05; }
+        .kop-aksara img { width: 190pt; height: auto; }
+        .kop-aksara.lurah img { width: 130pt; }
+        .kop-info { font-size: 10pt; font-weight: bold; line-height: 1.05; }
+        .kop-email { font-size: 9.5pt; font-weight: bold; line-height: 1.05; }
         .kop-line { border-bottom: 2pt solid #000; margin-top: 8pt; }
 
+        /* ===== KOP DUKCAPIL (tidak diubah) ===== */
         table.kop-dukcapil td.kop-logo { width: 78pt; vertical-align: middle; }
         table.kop-dukcapil td.kop-logo img { width: 66pt; height: 86pt; }
         table.kop-dukcapil td.kop-text { vertical-align: middle; padding-left: 10pt; }
