@@ -30,6 +30,8 @@ use Illuminate\Support\Carbon;
  * - MARRIAGE_LETTERS sebelumnya terdeklarasi 2x (fatal error) -> sisa 1.
  * - VIEW_FOLDERS, MARRIED_LETTER_SLUGS, SIGNATURE_DIRECT_SLUGS, KALURAHAN_KOP_TEMPLATES
  *   hilang saat merge -> sudah diisi ulang (versi terbaru).
+ * - LANDSCAPE_SLUGS hilang saat merge (error "Undefined constant ...::LANDSCAPE_SLUGS")
+ *   -> sudah diisi ulang.
  * - Key 'marriage' ganda di viewData() -> sisa 1.
  * - sampleBase() kini memuat application, hamlet_head_name, letter_c, dan land
  *   (sebelumnya preview error "Undefined variable $land").
@@ -70,10 +72,14 @@ class LetterPdfService
     public const DATE_PLACEHOLDER = self::BLANK_PLACEHOLDER;
 
     /**
-     * Template surat keterangan yang berada langsung di resources/views/letters.
-     * Template di subfolder sengaja tidak dimasukkan ke registry tahap ini.
+     * Template utama per kode tipe surat.
+     *
+     * Beberapa template punya varian (misalnya formulir nikah dan kelahiran),
+     * sehingga satu kode dipetakan ke satu template utama yang dipakai oleh
+     * workflow request admin. Varian lain tetap dapat dilihat melalui route
+     * preview developer.
      */
-    private const ROOT_TEMPLATE_BY_CODE = [
+    private const TEMPLATE_BY_CODE = [
         'SKBK' => 'unmarried-status-letter',
         'SKU' => 'business-permit-letter',
         'SKUM' => 'general-statement-letter',
@@ -83,8 +89,44 @@ class LetterPdfService
         'SKK' => 'event-permit-letter',
         'SKJ' => 'travel-permit-letter',
         'SKCK' => 'skck-referral-letter',
+        'SPKTP' => 'ktp-application-form',
+        // Belum ada Blade khusus KIA; F-1.02 memuat pilihan KIA dan menjadi
+        // template administrasi kependudukan yang paling sesuai sementara.
+        'SPKIA' => 'population-occurrence-registration-form',
+        'SRBBM' => 'fuel-recommendation-letter',
+        'SPPWNI' => 'relocation-cover-letter',
+        'SGC' => 'divorce-lawsuit-letter',
+        'SMLPI' => 'permit-followup-letter',
+        'SPSKG' => 'lease-offer-letter',
+        'PNP' => 'registration-form',
+        'N2P' => 'n2',
+        'PNL' => 'registration-form',
+        'PAK' => 'birth-certificate-application-form',
+        'FPK' => 'birth-report-form',
+        'LK' => 'birth-report-statement',
+        'SKAK' => 'birth-certificate-power-of-attorney',
+        'PPKT' => 'late-birth-registration-approval-decree',
+        'LKLD' => 'out-of-domicile-birth-report',
+        'SPPD' => 'duty-travel-order-letter',
+        'SPBNI' => 'identity-discrepancy-statement-letter',
+        'SPTMDK' => 'population-document-statement-letter',
+        'SPBMLP' => 'unmarried-statement',
+        'SPTJMPSI' => 'spousal-relationship-responsibility-statement',
+        'SKDN' => 'marriage-certificate-duplicate-letter',
+        'SPU' => 'general-cover-letter',
+        'N1P' => 'n1',
+        'N4P' => 'n4',
+        'N5P' => 'n5',
+        'N6P' => 'n6',
+        'SKWNP' => 'guardian-statement',
+        'SKWHP' => 'judge-guardian',
+        'SPTKP' => 'health-referral',
+        'SKNNP' => 'numpang-nikah',
+        'N1L' => 'n1',
+        'N4L' => 'n4',
         'SKDPAK' => 'population-service-authorization-letter',
         'SBP' => 'research-response-letter',
+        'SKKL' => 'birth-attestation-letter',
     ];
 
     /**
@@ -107,6 +149,11 @@ class LetterPdfService
         'spousal-relationship-responsibility-statement',
     ];
 
+    /** Slug template yang dicetak landscape (kertas folio). */
+    private const LANDSCAPE_SLUGS = [
+        'family-biodata-form',
+    ];
+
     /** Template yang kopnya selalu memakai kop Pemerintah Kalurahan. */
     private const KALURAHAN_KOP_TEMPLATES = [
         'land-price-certificate-letter',
@@ -114,6 +161,16 @@ class LetterPdfService
     ];
 
     private const VIEW_FOLDERS = [
+        'birth-attestation-letter' => 'birth',
+        'birth-certificate-application-form' => 'birth',
+        'birth-certificate-power-of-attorney' => 'birth',
+        'birth-certificate-referral-letter' => 'birth',
+        'birth-registration-report' => 'birth',
+        'birth-report-form' => 'birth',
+        'birth-report-statement' => 'birth',
+        'late-birth-registration-approval-decree' => 'birth',
+        'out-of-domicile-birth-report' => 'birth',
+        'spousal-relationship-responsibility-statement' => 'birth',
         'letter-c-data-statement-letter' => 'letter-c',
         'power-of-attorney-letter' => 'letter-c',
         'land-price-certificate-letter' => 'letter-c',
@@ -224,7 +281,7 @@ class LetterPdfService
     {
         $code = strtoupper((string) ($letterType?->code ?? ''));
 
-        return self::ROOT_TEMPLATE_BY_CODE[$code] ?? null;
+        return self::TEMPLATE_BY_CODE[$code] ?? null;
     }
 
     public function hasRootTemplate(?LetterType $letterType): bool
@@ -287,7 +344,7 @@ class LetterPdfService
             ],
 
             'applicant' => [
-                'name' => $letterRequest->applicant_name,
+                'name' => $form['applicant_name'] ?? $letterRequest->applicant_name,
                 'birth' => $this->birth($birthPlace, $birthDate),
                 'nik' => $letterRequest->applicant_nik,
                 'kk_number' => $form['kk_number'] ?? $citizen?->kk_number,
@@ -295,7 +352,7 @@ class LetterPdfService
                 'marital_status' => $form['marital_status'] ?? $citizen?->marital_status,
                 'religion' => $form['religion'] ?? $citizen?->religion,
                 'occupation' => $form['occupation'] ?? $citizen?->occupation,
-                'address' => $address,
+                'address' => $form['address'] ?? $form['applicant_address'] ?? $address,
                 'rt' => $form['rt'] ?? $citizen?->rt,
                 'rw' => $form['rw'] ?? $citizen?->rw,
                 'phone' => $form['phone'] ?? $citizen?->phone,
@@ -728,6 +785,16 @@ class LetterPdfService
     {
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
 
+        $form = $this->normalizeComplexTemplateForm($code, $form);
+
+        if ($code === 'N1P' || $code === 'SPTKP' || $code === 'SPBMLP' || $code === 'SKNNP') {
+            $form['bride_name'] ??= $letterRequest->applicant_name;
+        }
+
+        if ($code === 'N1L') {
+            $form['groom_name'] ??= $letterRequest->applicant_name;
+        }
+
         $aliases = match ($code) {
             'SKBK' => [
                 'birth_place' => 'tempat_lahir',
@@ -856,6 +923,460 @@ class LetterPdfService
         foreach ($aliases as $canonicalKey => $sourceKey) {
             if (! array_key_exists($canonicalKey, $form) && array_key_exists($sourceKey, $form)) {
                 $form[$canonicalKey] = $form[$sourceKey];
+            }
+        }
+
+        return $form;
+    }
+
+    /**
+     * Field seeder menggunakan label Indonesia, sedangkan beberapa template
+     * lama memakai kontrak data berbahasa Inggris dan struktur bertingkat.
+     * Normalisasi ini menambahkan alias canonical tanpa menghapus key asli,
+     * sehingga request lama dan request baru tetap kompatibel.
+     */
+    private function normalizeComplexTemplateForm(string $code, array $form): array
+    {
+        $set = static function (array &$target, string $canonical, array $sources): void {
+            if (array_key_exists($canonical, $target) && $target[$canonical] !== null && $target[$canonical] !== '') {
+                return;
+            }
+
+            foreach ($sources as $source) {
+                if (array_key_exists($source, $target) && $target[$source] !== null && $target[$source] !== '') {
+                    $target[$canonical] = $target[$source];
+                    return;
+                }
+            }
+        };
+
+        $marriageCodes = [
+            'PNP', 'N2P', 'PNL', 'N1P', 'N4P', 'N5P', 'N6P',
+            'SKWNP', 'SKWHP', 'SPTKP', 'SPBMLP', 'SKNNP', 'N1L', 'N4L',
+        ];
+
+        if (in_array($code, $marriageCodes, true)) {
+            $people = [
+                'bride' => [
+                    'name' => ['nama_mempelai_wanita', 'nama_catin_putri', 'nama_calon_istri'],
+                    'bin' => ['binti_mempelai_wanita', 'binti_catin_putri', 'binti_calon_istri'],
+                    'nik' => ['nik_mempelai_wanita', 'nik_catin_putri', 'nik_calon_istri'],
+                    'birth_place' => ['tempat_lahir_mempelai_wanita', 'tempat_lahir_catin_putri', 'tempat_lahir_calon_istri', 'ttl_mempelai_wanita', 'ttl_catin_putri', 'ttl_calon_istri'],
+                    'birth_date' => ['tanggal_lahir_mempelai_wanita', 'tanggal_lahir_catin_putri', 'tanggal_lahir_calon_istri'],
+                    'citizenship' => ['kewarganegaraan_mempelai_wanita', 'kewarganegaraan_catin_putri', 'kewarganegaraan_calon_istri'],
+                    'religion' => ['agama_mempelai_wanita', 'agama_catin_putri', 'agama_calon_istri'],
+                    'occupation' => ['pekerjaan_mempelai_wanita', 'pekerjaan_catin_putri', 'pekerjaan_calon_istri'],
+                    'education' => ['pendidikan_mempelai_wanita', 'pendidikan_catin_putri', 'pendidikan_calon_istri'],
+                    'address' => ['alamat_mempelai_wanita', 'alamat_catin_putri', 'alamat_calon_istri'],
+                    'status' => ['status_mempelai_wanita', 'status_catin_putri', 'status_calon_istri'],
+                ],
+                'groom' => [
+                    'name' => ['nama_mempelai_pria', 'nama_catin_putra', 'nama_catin_pria', 'nama_calon_suami'],
+                    'bin' => ['bin_mempelai_pria', 'bin_catin_putra', 'bin_catin_pria', 'bin_calon_suami'],
+                    'nik' => ['nik_mempelai_pria', 'nik_catin_putra', 'nik_catin_pria', 'nik_calon_suami'],
+                    'birth_place' => ['tempat_lahir_mempelai_pria', 'tempat_lahir_catin_putra', 'tempat_lahir_catin_Putra', 'tempat_lahir_catin_pria', 'tempat_lahir_calon_suami', 'ttl_mempelai_pria', 'ttl_catin_putra', 'ttl_catin_pria', 'ttl_calon_suami'],
+                    'birth_date' => ['tanggal_lahir_mempelai_pria', 'tanggal_lahir_catin_putra', 'tanggal_lahir_catin_Putra', 'tanggal_lahir_catin_pria', 'tanggal_lahir_calon_suami'],
+                    'citizenship' => ['kewarganegaraan_mempelai_pria', 'kewarganegaraan_catin_putra', 'kewarganegaraan_catin_Putra', 'kewarganegaraan_catin_pria', 'kewarganegaraan_calon_suami'],
+                    'religion' => ['agama_mempelai_pria', 'agama_catin_putra', 'agama_catin_pria', 'agama_calon_suami'],
+                    'occupation' => ['pekerjaan_mempelai_pria', 'pekerjaan_catin_putra', 'pekerjaan_catin_pria', 'pekerjaan_calon_suami'],
+                    'education' => ['pendidikan_mempelai_pria', 'pendidikan_catin_putra', 'pendidikan_catin_pria', 'pendidikan_calon_suami'],
+                    'address' => ['alamat_mempelai_pria', 'alamat_catin_putra', 'alamat_catin_pria', 'alamat_calon_suami'],
+                    'status' => ['status_mempelai_pria', 'status_catin_putra', 'status_catin_pria', 'status_calon_suami'],
+                ],
+                'bride_father' => [
+                    'name' => ['nama_ayah_putri', 'nama_ayah'],
+                    'bin' => ['bin_ayah_putri', 'bin_ayah'],
+                    'nik' => ['nik_ayah_putri', 'nik_ayah'],
+                    'birth_place' => ['ttl_ayah_putri', 'ttl_ayah'],
+                    'citizenship' => ['kewarganegaraan_ayah_putri', 'kewarganegaraan_ayah'],
+                    'religion' => ['agama_ayah_putri', 'agama_ayah'],
+                    'occupation' => ['pekerjaan_ayah_putri', 'pekerjaan_ayah'],
+                    'address' => ['alamat_ayah_putri', 'alamat_ayah'],
+                ],
+                'bride_mother' => [
+                    'name' => ['nama_ibu_putri', 'nama_ibu'],
+                    'bin' => ['binti_ibu_putri', 'binti_ibu'],
+                    'nik' => ['nik_ibu_putri', 'nik_ibu'],
+                    'birth_place' => ['ttl_ibu_putri', 'ttl_ibu'],
+                    'citizenship' => ['kewarganegaraan_ibu_putri', 'kewarganegaraan_ibu'],
+                    'religion' => ['agama_ibu_putri', 'agama_ibu'],
+                    'occupation' => ['pekerjaan_ibu_putri', 'pekerjaan_ibu'],
+                    'address' => ['alamat_ibu_putri', 'alamat_ibu'],
+                ],
+                'guardian' => [
+                    'name' => ['nama_wali'],
+                    'bin' => ['bin_wali'],
+                    'nik' => ['nik_wali'],
+                    'birth_place' => ['ttl_wali'],
+                    'citizenship' => ['kewarganegaraan_wali'],
+                    'religion' => ['agama_wali'],
+                    'occupation' => ['pekerjaan_wali'],
+                    'address' => ['alamat_wali'],
+                ],
+            ];
+
+            foreach ($people as $person => $fields) {
+                foreach ($fields as $field => $sources) {
+                    $set($form, "{$person}_{$field}", $sources);
+                }
+            }
+
+            $set($form, 'akad_day', ['hari_akad']);
+            $set($form, 'akad_date', ['tanggal_akad']);
+            $set($form, 'akad_time', ['jam_akad']);
+            $set($form, 'akad_place', ['tempat_akad']);
+            $set($form, 'guardian_relation', ['hubungan_wali', 'hubungan_wali_nasab']);
+            $set($form, 'guardian_reason', ['sebab_wali_bukan_ayah', 'sebab_wali_hakim']);
+            $set($form, 'purpose', ['keperluan']);
+
+            // N1 memakai data diri umum untuk satu calon pengantin.
+            if ($code === 'N1P') {
+                $set($form, 'bride_gender', ['jenis_kelamin']);
+                $set($form, 'bride_birth_place', ['tempat_lahir']);
+                $set($form, 'bride_birth_date', ['tanggal_lahir']);
+                $set($form, 'bride_citizenship', ['kewarganegaraan']);
+                $set($form, 'bride_religion', ['agama']);
+                $set($form, 'bride_occupation', ['pekerjaan']);
+                $set($form, 'bride_education', ['pendidikan_terakhir']);
+                $set($form, 'bride_status', ['status_pernikahan']);
+                $set($form, 'ex_husband_name', ['nama_pasangan_terdahulu']);
+            }
+
+            if ($code === 'N1L') {
+                $set($form, 'groom_gender', ['jenis_kelamin']);
+                $set($form, 'groom_birth_place', ['tempat_lahir']);
+                $set($form, 'groom_birth_date', ['tanggal_lahir']);
+                $set($form, 'groom_citizenship', ['kewarganegaraan']);
+                $set($form, 'groom_religion', ['agama']);
+                $set($form, 'groom_occupation', ['pekerjaan']);
+                $set($form, 'groom_education', ['pendidikan_terakhir']);
+                $set($form, 'groom_status', ['status_perkawinan']);
+                $set($form, 'ex_husband_name', ['nama_pasangan_terdahulu']);
+            }
+
+            // N6 adalah varian surat kematian dalam folder template nikah.
+            if ($code === 'N6P') {
+                $set($form, 'ex_husband_name', ['nama_almarhum']);
+                $set($form, 'ex_husband_bin', ['bin_binti_almarhum']);
+                $set($form, 'ex_husband_nik', ['nik_almarhum']);
+                $set($form, 'ex_husband_birth_place', ['ttl_almarhum']);
+                $set($form, 'ex_husband_citizenship', ['kewarganegaraan_almarhum']);
+                $set($form, 'ex_husband_religion', ['agama_almarhum']);
+                $set($form, 'ex_husband_occupation', ['pekerjaan_almarhum']);
+                $set($form, 'ex_husband_address', ['alamat_almarhum']);
+                $set($form, 'ex_husband_died_at', ['tanggal_meninggal']);
+                $set($form, 'ex_husband_died_place', ['tempat_meninggal']);
+                $set($form, 'bride_name', ['nama_pasangan']);
+                $set($form, 'bride_bin', ['bin_binti_pasangan']);
+                $set($form, 'bride_nik', ['nik_pasangan']);
+                $set($form, 'bride_birth_place', ['ttl_pasangan']);
+                $set($form, 'bride_citizenship', ['kewarganegaraan_pasangan']);
+                $set($form, 'bride_religion', ['agama_pasangan']);
+                $set($form, 'bride_occupation', ['pekerjaan_pasangan']);
+                $set($form, 'bride_address', ['alamat_pasangan']);
+            }
+
+            // Surat kesehatan dan pernyataan belum menikah memakai satu
+            // pemohon, tetapi Blade lama membaca blok bride.
+            if (in_array($code, ['SPTKP', 'SPBMLP'], true)) {
+                $set($form, 'bride_gender', ['jenis_kelamin']);
+                $set($form, 'bride_birth_place', ['tempat_lahir']);
+                $set($form, 'bride_birth_date', ['tanggal_lahir']);
+                $set($form, 'bride_citizenship', ['kewarganegaraan']);
+                $set($form, 'bride_religion', ['agama']);
+                $set($form, 'bride_education', ['pendidikan', 'pendidikan_terakhir']);
+                $set($form, 'bride_occupation', ['pekerjaan']);
+                $set($form, 'bride_status', ['status_perkawinan']);
+                $set($form, 'health_destination', ['tujuan_ke']);
+                $set($form, 'health_need', ['keperluan']);
+                $set($form, 'health_note', ['keterangan_lain']);
+                $set($form, 'health_conduct', ['kelakuan']);
+                $set($form, 'health_valid_from', ['berlaku_mulai']);
+                $set($form, 'health_valid_until', ['berlaku_sampai']);
+            }
+
+            if ($code === 'SKNNP') {
+                $set($form, 'bride_name', ['nama_warga']);
+                $set($form, 'bride_bin', ['bin_binti_warga']);
+                $set($form, 'bride_birth_place', ['tempat_lahir_warga']);
+                $set($form, 'bride_birth_date', ['tanggal_lahir_warga']);
+                $set($form, 'bride_citizenship', ['kewarganegaraan_warga']);
+                $set($form, 'bride_religion', ['agama_warga']);
+                $set($form, 'bride_occupation', ['pekerjaan_warga']);
+                $set($form, 'bride_education', ['pendidikan_warga']);
+                $set($form, 'groom_name', ['nama_calon_pasangan']);
+                $set($form, 'groom_bin', ['bin_binti_calon_pasangan']);
+                $set($form, 'groom_nik', ['nik_calon_pasangan']);
+                $set($form, 'groom_birth_place', ['ttl_calon_pasangan']);
+                $set($form, 'groom_citizenship', ['kewarganegaraan_calon_pasangan']);
+                $set($form, 'groom_religion', ['agama_calon_pasangan']);
+                $set($form, 'groom_occupation', ['pekerjaan_calon_pasangan']);
+                $set($form, 'groom_address', ['alamat_calon_pasangan']);
+            }
+        }
+
+        $birthCodes = ['PAK', 'FPK', 'LK', 'SKAK', 'PPKT', 'LKLD', 'SKKL'];
+
+        if (in_array($code, $birthCodes, true)) {
+            $birthAliases = [
+                'child_nik' => ['nik_anak'],
+                'child_name' => ['nama_anak'],
+                'child_gender' => ['jenis_kelamin_anak'],
+                'child_delivery_place' => ['tempat_dilahirkan'],
+                'child_delivery_address' => ['alamat_rs'],
+                'child_birth_place' => ['tempat_kelahiran_kota', 'tempat_lahir_anak'],
+                'child_birth_date' => ['tanggal_lahir_anak', 'hari_tanggal_lahir'],
+                'child_birth_time' => ['jam_kelahiran'],
+                'child_plurality' => ['jenis_kelahiran'],
+                'child_birth_order' => ['kelahiran_ke', 'anak_ke'],
+                'child_birth_attendant' => ['penolong_kelahiran'],
+                'child_weight' => ['berat_bayi'],
+                'child_length' => ['panjang_bayi'],
+                'child_delivery_method' => ['cara_kelahiran'],
+                'child_delivery_cost' => ['biaya_kelahiran'],
+                'mother_nik' => ['nik_ibu'],
+                'mother_name' => ['nama_ibu'],
+                'mother_birth_place' => ['ttl_ibu'],
+                'mother_birth_date' => ['tanggal_lahir_ibu'],
+                'mother_occupation' => ['pekerjaan_ibu'],
+                'mother_address' => ['alamat_ibu'],
+                'mother_rt' => ['rt_ibu'],
+                'mother_rw' => ['rw_ibu'],
+                'mother_nationality' => ['kewarganegaraan_ibu'],
+                'father_nik' => ['nik_ayah'],
+                'father_name' => ['nama_ayah'],
+                'father_birth_place' => ['ttl_ayah'],
+                'father_birth_date' => ['tanggal_lahir_ayah'],
+                'father_occupation' => ['pekerjaan_ayah'],
+                'father_address' => ['alamat_ayah'],
+                'father_rt' => ['rt_ayah'],
+                'father_rw' => ['rw_ayah'],
+                'father_nationality' => ['kewarganegaraan_ayah'],
+                'reporter_nik' => ['nik_pelapor'],
+                'reporter_name' => ['nama_pelapor'],
+                'reporter_birth_place' => ['ttl_pelapor'],
+                'reporter_age' => ['umur_pelapor'],
+                'reporter_occupation' => ['pekerjaan_pelapor'],
+                'reporter_address' => ['alamat_pelapor'],
+                'report_date' => ['tanggal_lapor'],
+                'marriage_cert_number' => ['nomor_akta_perkawinan_ortu'],
+                'marriage_date' => ['tanggal_pernikahan_ortu'],
+            ];
+
+            foreach ($birthAliases as $canonical => $sources) {
+                $set($form, $canonical, $sources);
+            }
+
+            $set($form, 'kk_number', ['nomor_kk']);
+            $set($form, 'head_of_family_name', ['nama_kepala_keluarga']);
+            $set($form, 'reporter_phone', ['kontak_pelapor']);
+            $set($form, 'application_date', ['tanggal_lapor']);
+
+            if (! array_key_exists('birth_witnesses', $form)) {
+                $form['birth_witnesses'] = [
+                    [
+                        'nik' => $form['nik_saksi_1'] ?? null,
+                        'name' => $form['nama_saksi_1'] ?? null,
+                        'age' => $form['umur_saksi_1'] ?? null,
+                        'address' => $form['alamat_saksi_1'] ?? null,
+                    ],
+                    [
+                        'nik' => $form['nik_saksi_2'] ?? null,
+                        'name' => $form['nama_saksi_2'] ?? null,
+                        'age' => $form['umur_saksi_2'] ?? null,
+                        'address' => $form['alamat_saksi_2'] ?? null,
+                    ],
+                ];
+            }
+
+            $form['birth_type'] ??= match ($code) {
+                'PPKT' => 'late',
+                'LKLD' => 'out_of_domicile',
+                default => 'new',
+            };
+        }
+
+        if ($code === 'SMLPI') {
+            $set($form, 'recipient_name', ['ditujukan_kepada']);
+            $set($form, 'recipient_address', ['lokasi_tujuan_surat']);
+            $set($form, 'ref_letter_number', ['nomor_surat_asal']);
+            $set($form, 'event_date', ['tanggal_kegiatan']);
+            $set($form, 'event_time', ['waktu_kegiatan']);
+            $set($form, 'event_place', ['tempat_kegiatan']);
+            $set($form, 'event_objective', ['nama_acara']);
+        }
+
+        if ($code === 'SPSKG') {
+            $set($form, 'recipient_name', ['ditujukan_kepada']);
+            $set($form, 'recipient_address', ['lokasi_tujuan_surat']);
+            $set($form, 'lease_building_name', ['nama_gedung']);
+            $set($form, 'lease_building_address', ['alamat_gedung']);
+            $set($form, 'lease_duration_years', ['lama_sewa_tahun']);
+        }
+
+        if ($code === 'SPKTP') {
+            $set($form, 'application_type', ['jenis_permohonan_ktp']);
+            $set($form, 'kk_number', ['nomor_kk']);
+        }
+
+        if ($code === 'SPKIA') {
+            $set($form, 'kk_number', ['nomor_kk']);
+            $set($form, 'application_date', ['tgl_pengambilan']);
+            $form['application_types'] ??= ['child_card_new'];
+        }
+
+        if ($code === 'SRBBM') {
+            $set($form, 'consumer', ['konsumen_jenis_bbm']);
+            $set($form, 'business_type', ['jenis_usaha_kegiatan']);
+            $set($form, 'business_address', ['alamat_usaha']);
+            $set($form, 'total', ['jumlah']);
+            $set($form, 'volume_allocation', ['alokasi_volume']);
+            $set($form, 'pickup_location', ['tempat_pengambilan']);
+            $set($form, 'distributor_number', ['nomor_lembaga_penyalur']);
+            $set($form, 'distributor_location', ['lokasi']);
+            $form['fuel_items'] ??= [[
+                'retailer' => $form['pengecer_solar'] ?? null,
+                'type' => $form['bbm_jenis_tertentu'] ?? null,
+                'description' => $form['konsumsi_bbm'] ?? null,
+            ]];
+        }
+
+        if ($code === 'SPPD') {
+            foreach ([
+                'issuing_official' => ['pejabat_berwenang'],
+                'employee_name' => ['nama_pegawai'],
+                'employee_rank' => ['pangkat_golongan'],
+                'employee_position' => ['jabatan'],
+                'travel_purpose' => ['maksud_perjalanan'],
+                'transport' => ['alat_angkutan'],
+                'departure_place' => ['tempat_berangkat'],
+                'destination_place' => ['tempat_tujuan'],
+                'departure_date' => ['tanggal_berangkat'],
+                'return_due_date' => ['tanggal_kembali'],
+                'companions' => ['pengikut'],
+                'budget_agency' => ['anggaran_instansi'],
+                'budget_item' => ['anggaran_mata_anggaran'],
+                'travel_notes' => ['keterangan_lain'],
+            ] as $canonical => $sources) {
+                $set($form, $canonical, $sources);
+            }
+        }
+
+        if ($code === 'SPPWNI') {
+            $form['origin'] ??= [
+                'kk_number' => $form['nomor_kk'] ?? null,
+                'head_of_family' => $form['nama_kepala_keluarga'] ?? null,
+                'address' => $form['alamat_asal'] ?? null,
+                'rt' => $form['rt_asal'] ?? null,
+                'rw' => $form['rw_asal'] ?? null,
+                'hamlet' => $form['dusun_asal'] ?? null,
+                'village' => $form['desa_asal'] ?? null,
+                'district' => $form['kecamatan_asal'] ?? null,
+                'regency' => $form['kabupaten_asal'] ?? null,
+                'province' => $form['provinsi_asal'] ?? null,
+                'postal_code' => $form['kode_pos_asal'] ?? null,
+                'phone' => $form['telepon_asal'] ?? null,
+            ];
+            $form['destination'] ??= [
+                'address' => $form['alamat_tujuan'] ?? null,
+                'rt' => $form['rt_tujuan'] ?? null,
+                'rw' => $form['rw_tujuan'] ?? null,
+                'hamlet' => $form['dusun_tujuan'] ?? null,
+                'village' => $form['desa_tujuan'] ?? null,
+                'district' => $form['kecamatan_tujuan'] ?? null,
+                'regency' => $form['kabupaten_tujuan'] ?? null,
+                'province' => $form['provinsi_tujuan'] ?? null,
+                'postal_code' => $form['kode_pos_tujuan'] ?? null,
+                'phone' => $form['telepon_tujuan'] ?? null,
+            ];
+            $set($form, 'relocation_reason_code', ['alasan_pindah']);
+            $set($form, 'relocation_reason_other', ['alasan_pindah_lainnya']);
+        }
+
+        if (in_array($code, ['SGC'], true)) {
+            $set($form, 'applicant_name', ['nama_penggugat']);
+            $set($form, 'birth_place', ['tempat_lahir_penggugat']);
+            $set($form, 'birth_date', ['tanggal_lahir_penggugat']);
+            $set($form, 'gender', ['jenis_kelamin_penggugat']);
+            $set($form, 'religion', ['agama_penggugat']);
+            $set($form, 'occupation', ['pekerjaan_penggugat']);
+            $set($form, 'address', ['alamat_penggugat']);
+            $set($form, 'applicant_birth_place', ['tempat_lahir_penggugat']);
+            $set($form, 'applicant_birth_date', ['tanggal_lahir_penggugat']);
+            $set($form, 'applicant_gender', ['jenis_kelamin_penggugat']);
+            $set($form, 'applicant_religion', ['agama_penggugat']);
+            $set($form, 'applicant_occupation', ['pekerjaan_penggugat']);
+            $set($form, 'applicant_address', ['alamat_penggugat']);
+            $set($form, 'spouse_name', ['nama_tergugat']);
+            $set($form, 'spouse_birth_place', ['tempat_lahir_tergugat']);
+            $set($form, 'spouse_birth_date', ['tanggal_lahir_tergugat']);
+            $set($form, 'spouse_occupation', ['pekerjaan_tergugat']);
+            $set($form, 'spouse_address', ['alamat_tergugat']);
+            $set($form, 'marriage_cert_number', ['nomor_surat_nikah']);
+            $set($form, 'divorce_reasons', ['alasan_gugat_cerai']);
+            $form['divorce_reasons'] = array_values(array_filter([
+                $form['alasan_gugat_cerai'] ?? null,
+            ]));
+            $form['witnesses'] ??= [
+                [
+                    'name' => $form['nama_saksi_1'] ?? null,
+                    'birth_place' => $form['tempat_lahir_saksi_1'] ?? null,
+                    'birth_date' => $form['tanggal_lahir_saksi_1'] ?? null,
+                    'religion' => $form['agama_saksi_1'] ?? null,
+                    'occupation' => $form['pekerjaan_saksi_1'] ?? null,
+                    'address' => $form['alamat_saksi_1'] ?? null,
+                ],
+                [
+                    'name' => $form['nama_saksi_2'] ?? null,
+                    'birth_place' => $form['tempat_lahir_saksi_2'] ?? null,
+                    'birth_date' => $form['tanggal_lahir_saksi_2'] ?? null,
+                    'religion' => $form['agama_saksi_2'] ?? null,
+                    'occupation' => $form['pekerjaan_saksi_2'] ?? null,
+                    'address' => $form['alamat_saksi_2'] ?? null,
+                ],
+            ];
+        }
+
+        if (in_array($code, ['SKDN', 'SPU', 'SPTMDK'], true)) {
+            $set($form, 'birth_place', ['tempat_lahir']);
+            $set($form, 'birth_date', ['tanggal_lahir']);
+            $set($form, 'gender', ['jenis_kelamin']);
+            $set($form, 'marital_status', ['status_perkawinan']);
+            $set($form, 'religion', ['agama']);
+            $set($form, 'occupation', ['pekerjaan']);
+            $set($form, 'destination_agency', ['pergi_ke', 'tujuan']);
+            $set($form, 'purpose', ['keperluan']);
+            $set($form, 'mother_name', ['nama_ibu']);
+            $set($form, 'father_name', ['nama_ayah']);
+        }
+
+        if (array_key_exists('tembusan', $form) && ! is_array($form['tembusan'])) {
+            $form['tembusan'] = preg_split('/\r\n|\r|\n|,/', (string) $form['tembusan'], -1, PREG_SPLIT_NO_EMPTY);
+        }
+
+        // Data seeder lama pernah menyimpan kata acak pada field bertipe text
+        // yang secara makna adalah tanggal. Jangan biarkan satu nilai invalid
+        // membuat seluruh preview PDF gagal; nilai tanggal invalid dikosongkan
+        // dan akan terisi kembali ketika LetterRequestSeeder dijalankan ulang.
+        $dateKeys = [
+            'event_date', 'akad_date', 'numpang_date', 'unmarried_certificate_date',
+            'birth_date', 'student_birth_date', 'spouse_birth_date',
+            'husband_birth_date', 'wife_birth_date', 'child_birth_date',
+            'mother_birth_date', 'father_birth_date', 'reporter_birth_date',
+            'report_date', 'marriage_date', 'bride_birth_date', 'groom_birth_date',
+            'ex_husband_died_at', 'application_date', 'departure_date',
+            'return_due_date', 'land_measurement_letter_date',
+        ];
+
+        foreach ($dateKeys as $dateKey) {
+            if (! array_key_exists($dateKey, $form) || blank($form[$dateKey])) {
+                continue;
+            }
+
+            try {
+                $form[$dateKey] = Carbon::parse($form[$dateKey])->format('Y-m-d');
+            } catch (\Throwable) {
+                $form[$dateKey] = null;
             }
         }
 

@@ -13,6 +13,10 @@
 
     table.data td { padding: 1.5pt 0; }
     td.val { height: 12pt; }
+    table.fuel-data { width: 100%; margin-left: 0; }
+    table.fuel-data td.lbl { width: 145pt; white-space: nowrap; }
+    table.fuel-data td.sep { width: 10pt; }
+    table.fuel-data td.val.multiline-value { height: auto; }
 
     table.ttd td.ttd-content { padding-top: 14pt; }
     .ttd-space { height: 36pt; }
@@ -32,9 +36,9 @@
 
     <p class="gap-top-lg">Dengan ini memberikan rekomendasi kepada:</p>
 
-    <table class="data" style="margin-top:6pt;">
+    <table class="data fuel-data" style="margin-top:6pt;">
         <tr><td class="lbl">Nama</td><td class="sep">:</td><td class="val">{{ $applicant['name'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Alamat Usaha</td><td class="sep">:</td><td class="val">{{ $business['address'] ?? '' }}</td></tr>
+        <tr><td class="lbl">Alamat Usaha</td><td class="sep">:</td><td class="val multiline-value">@include('letters.partials.value-lines', ['value' => $business['address'] ?? ''])</td></tr>
         <tr><td class="lbl">Konsumen</td><td class="sep">:</td><td class="val">{{ $form['consumer'] ?? '' }}</td></tr>
         <tr><td class="lbl">Jenis Usaha Kegiatan</td><td class="sep">:</td><td class="val">{{ $business['type'] ?? '' }}</td></tr>
     </table>
@@ -72,7 +76,7 @@
     </table>
 
     <p class="gap-top-lg">2. Diberikan Jenis BBM Tertentu Jenis Minyak Solar (Gas Oil)</p>
-    <table class="data" style="margin-top:3pt;">
+    <table class="data fuel-data" style="margin-top:3pt;">
         <tr><td class="lbl">Alokasi Volume</td><td class="sep">:</td><td class="val">{{ $form['volume_allocation'] ?? '' }}</td></tr>
         <tr><td class="lbl">Tempat Pengambilan</td><td class="sep">:</td><td class="val">{{ $form['pickup_location'] ?? '' }}</td></tr>
         <tr><td class="lbl">Nomor Lembaga Penyalur</td><td class="sep">:</td><td class="val">{{ $form['distributor_number'] ?? '' }}</td></tr>

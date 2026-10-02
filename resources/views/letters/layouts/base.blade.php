@@ -61,6 +61,19 @@
         td.lbl { width: 111pt; }
         td.sep { width: 11pt; }
         td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 14pt; }
+        td.val.multiline-value {
+            border-bottom: 0;
+            height: auto;
+            padding-left: 0;
+        }
+        .value-lines { width: 100%; }
+        .value-line {
+            min-height: 14pt;
+            line-height: 14pt;
+            border-bottom: 1px dashed #000;
+            padding-left: 2pt;
+            white-space: nowrap;
+        }
 
         table.ttd {
             width: 100%;

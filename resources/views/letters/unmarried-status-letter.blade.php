@@ -56,7 +56,7 @@
         <tr>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val">{{ $applicant['address'] }}</td>
+            <td class="val multiline-value">@include('letters.partials.value-lines', ['value' => $applicant['address']])</td>
         </tr>
     </table>
 

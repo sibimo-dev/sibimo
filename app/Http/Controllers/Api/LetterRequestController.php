@@ -7,6 +7,7 @@ use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
 use App\Models\LetterType;
+use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -80,11 +81,31 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    public function pdf(Request $request, int $letterRequest_id, LetterPdfService $pdfService)
+    public function pdf(
+        Request $request,
+        int $letterRequest_id,
+        LetterPdfService $pdfService,
+        DeathTemplateService $deathTemplateService,
+    )
     {
         $letterRequest = LetterRequest::query()
             ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner'])
             ->findOrFail($letterRequest_id);
+
+        $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+
+        if ($code === 'SKKM') {
+            $pdf = $deathTemplateService->pdf(
+                'death-certificate',
+                $deathTemplateService->dataForRequest($letterRequest),
+            );
+
+            $filename = ($letterRequest->request_code ?: 'surat') . '.pdf';
+
+            return $request->boolean('download')
+                ? $pdf->download($filename)
+                : $pdf->stream($filename);
+        }
 
         $template = $pdfService->rootTemplateForType($letterRequest->letterType);
 

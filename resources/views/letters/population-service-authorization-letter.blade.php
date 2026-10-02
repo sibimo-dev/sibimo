@@ -8,6 +8,15 @@
     td.kd-lbl { width: 160pt; }
     td.kd-sep { width: 10pt; }
     td.kd-val { border-bottom: 1px dashed #000; padding-left: 3pt; height: 12pt; }
+    td.kd-val.multiline-value { border-bottom: 0; height: auto; padding-left: 0; }
+    .value-lines { width: 100%; }
+    .value-line {
+        min-height: 12pt;
+        line-height: 12pt;
+        border-bottom: 1px dashed #000;
+        padding-left: 3pt;
+        white-space: nowrap;
+    }
     .kuasa-p { margin-top: 10pt; }
 
     table.kuasa-ttd { width: 100%; border-collapse: collapse; margin-top: 12pt; }
@@ -59,7 +68,7 @@
     <tr>
         <td class="kd-lbl">Alamat</td>
         <td class="kd-sep">:</td>
-        <td class="kd-val">{{ $applicant['address'] }}</td>
+        <td class="kd-val multiline-value">@include('letters.partials.value-lines', ['value' => $applicant['address'], 'maxChars' => 48])</td>
     </tr>
 </table>
 
@@ -88,7 +97,7 @@
     <tr>
         <td class="kd-lbl">Alamat</td>
         <td class="kd-sep">:</td>
-        <td class="kd-val">{{ $attorney['address'] }}</td>
+        <td class="kd-val multiline-value">@include('letters.partials.value-lines', ['value' => $attorney['address'], 'maxChars' => 48])</td>
     </tr>
 </table>
 
