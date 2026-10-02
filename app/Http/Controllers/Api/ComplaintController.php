@@ -15,7 +15,26 @@ class ComplaintController extends Controller
 {
     public function index(): JsonResponse
     {
-        $complaints = Complaint::query()->with(['attachments', 'statusHistories'])->latest('submitted_at')->get();
+        // Daftar hanya membutuhkan data ringkas. Lampiran dan riwayat status
+        // diambil oleh endpoint detail masing-masing agar tabel tidak memuat
+        // payload relasi besar untuk setiap baris.
+        $complaints = Complaint::query()
+            ->select([
+                'complaint_id',
+                'reporter_name',
+                'reporter_phone',
+                'category',
+                'title',
+                'description',
+                'location',
+                'latitude',
+                'longitude',
+                'status',
+                'submitted_at',
+                'resolved_at',
+            ])
+            ->latest('submitted_at')
+            ->get();
 
         return response()->json([
             'success' => true,

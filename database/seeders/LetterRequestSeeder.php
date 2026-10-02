@@ -21,11 +21,6 @@ class LetterRequestSeeder extends Seeder
                 'ktp_address',
             ]);
         $userIds = DB::table('users')->orderBy('user_id')->pluck('user_id');
-        $signerIds = DB::table('staff')
-            ->where('is_signer', true)
-            ->orderBy('staff_id')
-            ->pluck('staff_id');
-
         if ($userIds->isEmpty()) {
             throw new RuntimeException('Users must be seeded before letter requests.');
         }
@@ -39,12 +34,11 @@ class LetterRequestSeeder extends Seeder
 
         DB::table('letter_types')
             ->orderBy('letter_type_id')
-            ->get(['letter_type_id', 'code', 'letter_name', 'signature_method', 'number_prefix'])
+            ->get(['letter_type_id', 'code', 'letter_name', 'signature_method', 'number_prefix', 'signer_id'])
             ->values()
             ->each(function ($type, int $index) use (
                 $citizens,
                 $userIds,
-                $signerIds,
                 $fieldsByLetterType,
                 $statuses,
             ): void {
@@ -61,7 +55,7 @@ class LetterRequestSeeder extends Seeder
                     ? $submittedAt->copy()->addHours(6)
                     : null;
                 $signerId = in_array($status, ['authorized', 'completed'], true)
-                    ? $signerIds->first()
+                    ? $type->signer_id
                     : null;
                 $userId = $userIds->first();
                 $citizen = $citizens->isNotEmpty()
