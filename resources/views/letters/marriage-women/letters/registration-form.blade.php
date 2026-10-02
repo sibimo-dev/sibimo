@@ -15,7 +15,7 @@
     DATA ISIAN PENDAFTARAN NIKAH
 </div>
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA DESA',
     'upper' => false,
     'rows'  => [
@@ -28,7 +28,7 @@
     ],
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA AKAD NIKAH',
     'rows'  => [
         'HARI AKAD'    => $m['akad']['day'],
@@ -38,7 +38,7 @@
     ],
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA CATIN PUTRI',
     'rows'  => [
         'Nama'                 => $m['bride']['name'],
@@ -63,17 +63,17 @@
     ],
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA AYAH CATIN PUTRI',
     'rows'  => $person($m['bride_father'], 'BIN'),
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA IBU CATIN PUTRI',
     'rows'  => $person($m['bride_mother'], 'BINTI'),
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA WALI NIKAH (Diisi jika wali NASAB BUKAN AYAH KANDUNG)',
     'rows'  => $person($m['guardian']) + [
         'Hubungan wali'                     => $m['guardian']['relation'],
@@ -82,7 +82,7 @@
     ],
 ])
 
-@include('letters.marriage.partials.data-block', [
+@include('letters.marriage-women.partials.data-block', [
     'title' => 'DATA CATIN PUTRA',
     'rows'  => $person($m['groom']),
 ])

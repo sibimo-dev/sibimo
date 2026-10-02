@@ -4,7 +4,7 @@
     .uc td.lbl { width: 170pt; }
     .uc table.head td { padding: 1px 0; vertical-align: top; }
 @endpush
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $b = $m['bride']; $uc = $m['unmarried_certificate']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $b = $m['bride']; $uc = $m['unmarried_certificate']; @endphp
 <div class="uc">
 
 <table class="head" style="width:100%">

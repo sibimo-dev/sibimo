@@ -1,5 +1,5 @@
 @use('App\Support\PersonRows')
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; @endphp
 @include($pp.'office-header')
 
 <div class="judul u">SURAT KETERANGAN WALI HAKIM</div>

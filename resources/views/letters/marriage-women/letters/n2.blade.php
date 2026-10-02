@@ -2,7 +2,7 @@
     .n2 { font-size: 11.5pt; }
 @endpush
 <div class="n2">
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; @endphp
 @include($pp.'model-header', ['lampiran' => 'VI', 'model' => 'N2'])
 
 <div class="model" style="margin-top:0">{{ $signature['city'] }}, {{ $signature['date_long'] }}</div>

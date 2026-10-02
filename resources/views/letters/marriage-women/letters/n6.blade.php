@@ -3,7 +3,7 @@
     .n6-rows td.lbl { width: 190pt; }
 @endpush
 @use('App\Support\PersonRows')
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $ex = $m['ex_husband']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $ex = $m['ex_husband']; @endphp
 @include($pp.'model-header', ['lampiran' => 'X', 'model' => 'N6'])
 @include($pp.'office-header')
 

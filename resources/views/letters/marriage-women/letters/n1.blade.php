@@ -1,5 +1,5 @@
 @use('App\Support\PersonRows')
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; $b = $m['bride']; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; $b = $m['bride']; @endphp
 @include($pp.'model-header', ['lampiran' => 'V', 'model' => 'N1'])
 @include($pp.'office-header')
 

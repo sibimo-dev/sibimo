@@ -2,7 +2,7 @@
 @push('styles')
     .n4 { font-size: 11.5pt; }
 @endpush
-@php $pp = 'letters.marriage.partials.'; $m = $marriage; @endphp
+@php $pp = 'letters.marriage-women.partials.'; $m = $marriage; @endphp
 <div class="n4">
 @include($pp.'model-header', ['lampiran' => 'VIII', 'model' => 'N4'])
 
