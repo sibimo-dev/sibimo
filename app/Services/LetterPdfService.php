@@ -30,6 +30,8 @@ use Illuminate\Support\Carbon;
  * - MARRIAGE_LETTERS sebelumnya terdeklarasi 2x (fatal error) -> sisa 1.
  * - VIEW_FOLDERS, MARRIED_LETTER_SLUGS, SIGNATURE_DIRECT_SLUGS, KALURAHAN_KOP_TEMPLATES
  *   hilang saat merge -> sudah diisi ulang (versi terbaru).
+ * - LANDSCAPE_SLUGS hilang saat merge (error "Undefined constant ...::LANDSCAPE_SLUGS")
+ *   -> sudah diisi ulang.
  * - Key 'marriage' ganda di viewData() -> sisa 1.
  * - sampleBase() kini memuat application, hamlet_head_name, letter_c, dan land
  *   (sebelumnya preview error "Undefined variable $land").
@@ -105,6 +107,11 @@ class LetterPdfService
         'birth-certificate-referral-letter',
         'birth-certificate-power-of-attorney',
         'spousal-relationship-responsibility-statement',
+    ];
+
+    /** Slug template yang dicetak landscape (kertas folio). */
+    private const LANDSCAPE_SLUGS = [
+        'family-biodata-form',
     ];
 
     /** Template yang kopnya selalu memakai kop Pemerintah Kalurahan. */
