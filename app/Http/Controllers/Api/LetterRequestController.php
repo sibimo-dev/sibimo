@@ -20,11 +20,30 @@ class LetterRequestController extends Controller
     public function index(): JsonResponse
     {
         $letterRequests = LetterRequest::query()
+        ->select([
+            'letter_request_id',
+            'request_code',
+            'applicant_name',
+            'applicant_nik',
+            'applicant_phone',
+            'applicant_address',
+            'letter_type_id',
+            'status',
+            'signature_type',
+            'letter_number',
+            'verified_by',
+            'authorized_by_signer_id',
+            'source',
+            'notes',
+            'submitted_at',
+            'verified_at',
+            'authorized_at',
+        ])
         ->with([
-            'citizen',
-            'letterType.signer',
-            'verifier',
-            'authorizedSigner'
+            'letterType:letter_type_id,letter_name,category,blade_view,signer_id',
+            'letterType.signer:staff_id,name,position',
+            'verifier:user_id,full_name',
+            'authorizedSigner:staff_id,name,position',
         ])
         ->latest('submitted_at')
         ->get();

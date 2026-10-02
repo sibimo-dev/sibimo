@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserPermissionController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrganizationalStructureController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\DashboardController;
@@ -115,6 +116,11 @@ Route::apiResource('regions', RegionController::class)->only(['index','store','u
 
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
+
+    Route::get(
+        'notifications',
+        [NotificationController::class, 'index'],
+    );
 
     // Tipe Surat
     Route::middleware('permission:tipe-surat')->group(function () {

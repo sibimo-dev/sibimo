@@ -9,10 +9,76 @@ class LetterTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        $signerId = DB::table('staff')
+        $defaultSignerId = DB::table('staff')
             ->where('is_signer', true)
             ->orderBy('staff_id')
             ->value('staff_id');
+
+        $signerRows = DB::table('staff')
+            ->where('is_signer', true)
+            ->get(['staff_id', 'position']);
+
+        $signerIdsByRole = [
+            'lurah' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'lurah'))?->staff_id,
+            'carik' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'carik'))?->staff_id,
+            'kaur danarta' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'danarta'))?->staff_id,
+            'kaur tata laksana' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'tata laksana'))?->staff_id,
+            'kamituwa' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'kamituwa'))?->staff_id,
+            'ulu-ulu' => $signerRows->first(fn ($staff) => str_contains(str_replace(' ', '', mb_strtolower((string) $staff->position)), 'ulu-ulu'))?->staff_id,
+            'jagabaya' => $signerRows->first(fn ($staff) => str_contains(mb_strtolower((string) $staff->position), 'jagabaya'))?->staff_id,
+        ];
+
+        // Posisi penandatangan mengikuti konfigurasi template. Jika role
+        // tertentu belum tersedia di database, gunakan signer utama sebagai
+        // fallback agar foreign key tetap valid.
+        $signerRoleByCode = [
+            'SKBK' => 'lurah',
+            'SKU' => 'kamituwa',
+            'SKUM' => 'lurah',
+            'SKD' => 'ulu-ulu',
+            'SKTM' => 'kaur danarta',
+            'SKP' => 'kaur tata laksana',
+            'SKK' => 'jagabaya',
+            'SKJ' => 'kaur tata laksana',
+            'SKCK' => 'lurah',
+            'SPKTP' => 'kaur tata laksana',
+            'SPKIA' => 'kaur tata laksana',
+            'SRBBM' => 'kaur tata laksana',
+            'SPPWNI' => 'kaur tata laksana',
+            'SGC' => 'carik',
+            'SMLPI' => 'lurah',
+            'SPSKG' => 'lurah',
+            'PNP' => 'kamituwa',
+            'N2P' => 'kamituwa',
+            'PNL' => 'kamituwa',
+            'PAK' => 'kaur tata laksana',
+            'FPK' => 'kaur tata laksana',
+            'LK' => 'kaur tata laksana',
+            'SKAK' => 'kaur tata laksana',
+            'PPKT' => 'kaur tata laksana',
+            'LKLD' => 'kaur tata laksana',
+            'SPPD' => 'kaur tata laksana',
+            'SPBNI' => 'kaur tata laksana',
+            'SPTMDK' => 'kaur tata laksana',
+            'SPBMLP' => 'kamituwa',
+            'SPTJMPSI' => 'ulu-ulu',
+            'SKDN' => 'kamituwa',
+            'SPU' => 'kaur tata laksana',
+            'N1P' => 'kamituwa',
+            'N4P' => 'kamituwa',
+            'N5P' => 'kamituwa',
+            'N6P' => 'kamituwa',
+            'SKWNP' => 'kamituwa',
+            'SKWHP' => 'kamituwa',
+            'SPTKP' => 'kamituwa',
+            'SKNNP' => 'kamituwa',
+            'N1L' => 'kamituwa',
+            'N4L' => 'kamituwa',
+            'SKDPAK' => 'kaur tata laksana',
+            'SBP' => 'kaur tata laksana',
+            'SKKL' => 'kamituwa',
+            'SKKM' => 'kaur tata laksana',
+        ];
 
         $types = [
             // Surat keterangan
@@ -91,9 +157,9 @@ class LetterTypeSeeder extends Seeder
             'SGC' => 'letters.divorce-lawsuit-letter',
             'SMLPI' => 'letters.permit-followup-letter',
             'SPSKG' => 'letters.lease-offer-letter',
-            'PNP' => 'letters.marriage.letters.registration-form',
-            'N2P' => 'letters.marriage.letters.n2',
-            'PNL' => 'letters.marriage.letters.registration-form',
+            'PNP' => 'letters.marriage-women.letters.registration-form',
+            'N2P' => 'letters.marriage-women.letters.n2',
+            'PNL' => 'letters.marriage-women.letters.registration-form',
             'PAK' => 'letters.birth.birth-certificate-application-form',
             'FPK' => 'letters.birth.birth-report-form',
             'LK' => 'letters.birth.birth-report-statement',
@@ -103,20 +169,20 @@ class LetterTypeSeeder extends Seeder
             'SPPD' => 'letters.duty-travel-order-letter',
             'SPBNI' => 'letters.identity-discrepancy-statement-letter',
             'SPTMDK' => 'letters.population-document-statement-letter',
-            'SPBMLP' => 'letters.marriage.letters.unmarried-statement',
+            'SPBMLP' => 'letters.marriage-women.letters.unmarried-statement',
             'SPTJMPSI' => 'letters.birth.spousal-relationship-responsibility-statement',
             'SKDN' => 'letters.marriage-certificate-duplicate-letter',
             'SPU' => 'letters.general-cover-letter',
-            'N1P' => 'letters.marriage.letters.n1',
-            'N4P' => 'letters.marriage.letters.n4',
-            'N5P' => 'letters.marriage.letters.n5',
-            'N6P' => 'letters.marriage.letters.n6',
-            'SKWNP' => 'letters.marriage.letters.guardian-statement',
-            'SKWHP' => 'letters.marriage.letters.judge-guardian',
-            'SPTKP' => 'letters.marriage.letters.health-referral',
-            'SKNNP' => 'letters.marriage.letters.numpang-nikah',
-            'N1L' => 'letters.marriage.letters.n1',
-            'N4L' => 'letters.marriage.letters.n4',
+            'N1P' => 'letters.marriage-women.letters.n1',
+            'N4P' => 'letters.marriage-women.letters.n4',
+            'N5P' => 'letters.marriage-women.letters.n5',
+            'N6P' => 'letters.marriage-women.letters.n6',
+            'SKWNP' => 'letters.marriage-women.letters.guardian-statement',
+            'SKWHP' => 'letters.marriage-women.letters.judge-guardian',
+            'SPTKP' => 'letters.marriage-women.letters.health-referral',
+            'SKNNP' => 'letters.marriage-women.letters.numpang-nikah',
+            'N1L' => 'letters.marriage-women.letters.n1',
+            'N4L' => 'letters.marriage-women.letters.n4',
             'SKDPAK' => 'letters.population-service-authorization-letter',
             'SBP' => 'letters.research-response-letter',
             'SKKL' => 'letters.birth.birth-attestation-letter',
@@ -124,6 +190,9 @@ class LetterTypeSeeder extends Seeder
         ];
 
         foreach ($types as [$code, $name, $category, $signatureMethod]) {
+            $signerRole = $signerRoleByCode[$code] ?? 'kaur tata laksana';
+            $signerId = $signerIdsByRole[$signerRole] ?? $defaultSignerId;
+
             DB::table('letter_types')->updateOrInsert(
                 ['code' => $code],
                 [

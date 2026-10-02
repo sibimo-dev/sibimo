@@ -38,7 +38,7 @@ use Illuminate\Support\Carbon;
  * - sampleBase() kini memuat 'birth' (birthLetterFromForm([])) supaya preview surat
  *   akta kelahiran tidak error "Undefined variable $birth".
  * - viewName() kini memetakan slug MARRIAGE_LETTERS (n1, n2, judge-guardian, dst)
- *   ke folder letters/marriage/letters/ (sebelumnya error "View ... tidak ditemukan").
+ *   ke folder letters/marriage-women/letters/ (sebelumnya error "View ... tidak ditemukan").
  * - Data contoh preview surat tanah (land-price-certificate-letter &
  *   land-origin-certificate-letter) di sampleOverrides() dikosongkan (null).
  *
@@ -293,6 +293,7 @@ class LetterPdfService
     {
         $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
 
+        $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $form = $letterRequest->form_data ?? [];
         $citizen = $letterRequest->citizen;
         $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
@@ -320,7 +321,11 @@ class LetterPdfService
             $signerPosition = 'KAMITUWA';
         }
 
-        $kalurahanKop = $this->usesKalurahanKop($templateSlug)
+        // SPTKP mengikuti kop pada template asli: aksara Bimomartani dan
+        // baris "PEMERINTAH KALURAHAN BIMOMARTANI". Jabatan penandatangan
+        // tetap dipakai hanya untuk bagian tanda tangan di bawah surat.
+        $kalurahanKop = $code === 'SPTKP'
+            || $this->usesKalurahanKop($templateSlug)
             || in_array($templateSlug, self::KOP_ALWAYS_KALURAHAN_SLUGS, true);
 
         // Kode formulir tetap (mis. "F-1.06"); diisi ke 2 key ('form_code' & 'kodeForm').
@@ -750,10 +755,10 @@ class LetterPdfService
 
     public function viewName(string $template): string
     {
-        // Surat pernikahan set lama (n1, n2, judge-guardian, dst) ada di
-        // resources/views/letters/marriage/letters/, jadi otomatis dipetakan ke sana.
+        // Surat pernikahan perempuan (n1, n2, judge-guardian, dst) ada di
+        // resources/views/letters/marriage-women/letters/, jadi otomatis dipetakan ke sana.
         $folder = self::VIEW_FOLDERS[$template]
-            ?? (array_key_exists($template, self::MARRIAGE_LETTERS) ? 'marriage.letters' : null);
+            ?? (array_key_exists($template, self::MARRIAGE_LETTERS) ? 'marriage-women.letters' : null);
 
         return 'letters.' . ($folder ? $folder . '.' : '') . $template;
     }
@@ -773,8 +778,30 @@ class LetterPdfService
     /** PDF asli hasil DomPDF (ini yang dicetak/di-download). */
     public function pdf(string $view, array $data): DomPdf
     {
+        $view = $this->wrapMarriageWomenView($view, $data);
+
         return Pdf::loadView($view, $data)
             ->setPaper(self::PAPER, $this->isLandscape($view) ? 'landscape' : 'portrait');
+    }
+
+    /**
+     * Template surat pernikahan perempuan adalah partial yang memakai
+     * @push('styles'). Saat dirender langsung, stack CSS tidak punya layout
+     * untuk menampilkannya sehingga kop dan tabel jatuh ke style default HTML.
+     * Samakan jalur render request admin dengan preview developer yang memakai
+     * wrapper `letters.marriage-women.single`.
+     */
+    private function wrapMarriageWomenView(string $view, array &$data): string
+    {
+        $prefix = 'letters.marriage-women.letters.';
+
+        if (! str_starts_with($view, $prefix)) {
+            return $view;
+        }
+
+        $data['letter'] = substr($view, strlen($prefix));
+
+        return 'letters.marriage-women.single';
     }
 
     /**
@@ -1385,6 +1412,7 @@ class LetterPdfService
 
     public function previewHtml(string $view, array $data): string
     {
+        $view = $this->wrapMarriageWomenView($view, $data);
         $html = view($view, $data)->render();
 
         $page = $this->isLandscape($view)
