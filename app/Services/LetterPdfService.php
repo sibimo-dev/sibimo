@@ -281,7 +281,18 @@ class LetterPdfService
     {
         $code = strtoupper((string) ($letterType?->code ?? ''));
 
-        return self::TEMPLATE_BY_CODE[$code] ?? null;
+        if (isset(self::TEMPLATE_BY_CODE[$code])) {
+            return self::TEMPLATE_BY_CODE[$code];
+        }
+
+        // Template tambahan disimpan langsung sebagai blade_view oleh katalog
+        // seeder. Ambil slug terakhir agar tetap kompatibel dengan resolver
+        // folder yang sudah dipakai preview developer.
+        $bladeView = (string) ($letterType?->blade_view ?? '');
+
+        return str_starts_with($bladeView, 'letters.')
+            ? str($bladeView)->afterLast('.')->toString()
+            : null;
     }
 
     public function hasRootTemplate(?LetterType $letterType): bool
@@ -694,6 +705,14 @@ class LetterPdfService
             ]);
         }
 
+        // Banyak template tambahan sudah memiliki struktur data contoh di
+        // sampleViewData(), tetapi belum memiliki normalizer khusus. Isi hanya
+        // bagian yang masih kosong agar preview request tetap terisi tanpa
+        // menimpa data asli dari request.
+        if (! array_key_exists($code, self::TEMPLATE_BY_CODE)) {
+            $data = $this->fillEmptyData($this->sampleViewData($templateSlug), $data);
+        }
+
         return $data;
     }
 
@@ -761,6 +780,22 @@ class LetterPdfService
             ?? (array_key_exists($template, self::MARRIAGE_LETTERS) ? 'marriage-women.letters' : null);
 
         return 'letters.' . ($folder ? $folder . '.' : '') . $template;
+    }
+
+    private function fillEmptyData(array $defaults, array $data): array
+    {
+        foreach ($defaults as $key => $default) {
+            if (! array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '' || $data[$key] === []) {
+                $data[$key] = $default;
+                continue;
+            }
+
+            if (is_array($default) && is_array($data[$key])) {
+                $data[$key] = $this->fillEmptyData($default, $data[$key]);
+            }
+        }
+
+        return $data;
     }
 
     /** true jika view ini termasuk slug yang dicetak landscape. */
@@ -1142,7 +1177,7 @@ class LetterPdfService
             }
         }
 
-        $birthCodes = ['PAK', 'FPK', 'LK', 'SKAK', 'PPKT', 'LKLD', 'SKKL'];
+        $birthCodes = ['SPAKL', 'LPKL', 'PAK', 'FPK', 'LK', 'SKAK', 'PPKT', 'LKLD', 'SKKL'];
 
         if (in_array($code, $birthCodes, true)) {
             $birthAliases = [
@@ -1894,7 +1929,9 @@ class LetterPdfService
             'rw'                => $form['rw'] ?? null,
             'village'           => $form['village'] ?? null,
             'district'          => $form['district'] ?? null,
-            'date'              => $form['submission_date'] ?? now()->locale('id')->translatedFormat('d F Y'),
+            'date'              => !empty($form['submission_date'])
+                ? $this->longDate($form['submission_date'])
+                : now()->locale('id')->translatedFormat('d F Y'),
         ];
     }
 

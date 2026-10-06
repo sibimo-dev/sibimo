@@ -30,6 +30,7 @@ use App\Services\LetterPdfService;
 use App\Services\DeathTemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -113,6 +114,10 @@ Route::get('/organizational-structures/{organizational_structure_id}', [Organiza
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
+Broadcast::routes([
+    'middleware' => ['auth:sanctum', 'active'],
+]);
 
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
