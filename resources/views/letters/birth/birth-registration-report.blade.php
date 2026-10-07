@@ -51,19 +51,19 @@
     <meta charset="utf-8">
     <title>Pelaporan Pencatatan Kelahiran</title>
     <style>
-        @page { margin: 1.3cm 1.5cm; }
+        @page { margin: 0.7cm 1.3cm 0.4cm; }
         body { margin: 0; color: #000; font-family: "Times New Roman", Times, serif; }
-        .bf { font-size: 11pt; }
-        .bf-title { text-align: center; font-weight: bold; font-size: 14pt; text-transform: uppercase; }
+        .bf { font-size: 8.6pt; line-height: 0.98; }
+        .bf-title { text-align: center; font-weight: bold; font-size: 11.8pt; text-transform: uppercase; }
 
         table.rows { width: 100%; border-collapse: collapse; }
-        table.rows td { padding: 1pt 0; vertical-align: top; }
+        table.rows td { padding: 0.25pt 0; vertical-align: top; }
         table.rows td.r-no { width: 14pt; padding-left: 10pt; }
         table.rows.flat td.r-no { padding-left: 0; }
         table.rows td.r-sep { width: 10pt; }
-        table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
+        table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 7.5pt; }
 
-        .sec-title { font-weight: bold; margin-top: 10pt; }
+        .sec-title { font-weight: bold; margin-top: 4pt; }
 
         table.split { width: 100%; border-collapse: collapse; }
         table.split td { width: 50%; vertical-align: top; }
@@ -71,13 +71,13 @@
         table.split td.gap-l { padding-left: 10pt; }
         .frame-title { font-weight: bold; }
 
-        table.sign-r { width: 100%; border-collapse: collapse; margin-top: 8pt; page-break-inside: avoid; }
+        table.sign-r { width: 100%; border-collapse: collapse; margin-top: 2pt; page-break-inside: avoid; }
         table.sign-r td { vertical-align: top; }
-        .sign-r-space { height: 30pt; }
+        .sign-r-space { height: 12pt; }
     </style>
 </head>
 <body class="bf">
-    <div class="bf-title" style="margin-bottom: 16pt;">PELAPORAN PENCATATAN KELAHIRAN</div>
+    <div class="bf-title" style="margin-bottom: 4pt;">PELAPORAN PENCATATAN KELAHIRAN</div>
 
     {!! $renderRows([
         ['nonum' => true, 'label' => 'No. KK', 'value' => $birth['family_card_number']],
@@ -132,7 +132,7 @@
         ['label' => 'Alamat', 'value' => $r['address'] . $gap(6) . $village],
     ], 110) !!}
 
-    <table class="split" style="margin-top: 8pt; page-break-inside: avoid;">
+    <table class="split" style="margin-top: 2pt; page-break-inside: avoid;">
         <tr>
             <td class="gap-r">
                 <div class="frame-title">SAKSI I</div>

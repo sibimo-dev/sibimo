@@ -35,7 +35,7 @@ final class AdditionalLetterTemplateCatalog
             self::type('FBWNI', 'Formulir Biodata Penduduk WNI', 'Permohonan', 'manual', 'letters.family-biodata-form', 'kaur tata laksana', self::familyFields(), $baseDocuments),
             self::type('SKUMG', 'Surat Keterangan Umum Pemerintah', 'Keterangan', 'manual', 'letters.general-statement-letter-gov', 'lurah', self::identityPurposeFields(), $baseDocuments),
             self::type('SKWKA', 'Surat Kuasa Antar-Warga untuk Sidang Waris', 'Permohonan', 'manual', 'letters.heir-power-of-attorney-letter', 'kaur tata laksana', self::attorneyFields(), $baseDocuments),
-            self::type('SPKIAF', 'Formulir Permohonan Kartu Identitas Anak', 'Permohonan', 'digital', 'letters.kia-application-form', 'kaur tata laksana', self::kiaFields(), $baseDocuments),
+            self::type('SPKIAF', 'Formulir Pendaftaran Peristiwa Kependudukan', 'Permohonan', 'digital', 'letters.population-occurrence-registration-form', 'kaur tata laksana', self::populationOccurrenceFields(), $baseDocuments),
             self::type('RL', 'Register Legalisasi', 'Keterangan', 'manual', 'letters.legalization-register', 'kaur tata laksana', self::registerFields(), $baseDocuments),
 
             self::type('SKTA', 'Surat Keterangan Asal-Usul Tanah', 'Keterangan', 'manual', 'letters.letter-c.land-origin-certificate-letter', 'lurah', self::landFields(), $baseDocuments),
@@ -224,6 +224,18 @@ final class AdditionalLetterTemplateCatalog
             self::field('Kelurahan', 'village'),
             self::field('Kecamatan', 'district'),
             self::field('Tanggal Pengajuan', 'submission_date', 'date'),
+        ];
+    }
+
+    private static function populationOccurrenceFields(): array
+    {
+        return [
+            self::field('Nama Lengkap Pemohon', 'applicant_name', 'text'),
+            self::field('Nomor Induk Kependudukan', 'applicant_nik', 'text'),
+            self::field('Nomor Kartu Keluarga', 'kk_number', 'text'),
+            self::field('Jenis Permohonan', 'application_types', 'textarea', null, false),
+            self::field('Persyaratan yang Dilampirkan', 'attached_documents', 'textarea', null, false),
+            self::field('Tanggal Pengajuan', 'application_date', 'date', null, false),
         ];
     }
 

@@ -15,26 +15,26 @@
     <meta charset="utf-8">
     <title>Pengantar Nikah</title>
     <style>
-        @page { margin: 1.8cm 2cm 1.8cm 2cm; }
-        body { margin:0; font-family: Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.3; color:#000; }
+        @page { margin: 1.0cm 1.6cm 0.7cm 1.6cm; }
+        body { margin:0; font-family: Helvetica, Arial, sans-serif; font-size: 9.2pt; line-height: 1.08; color:#000; }
         p { margin: 0; }
         .form-ref { text-align:right; font-size: 8.5pt; line-height: 1.2; }
-        .kop-block { margin-top: 8pt; }
+        .kop-block { margin-top: 5pt; }
         .kop-block table { border-collapse: collapse; font-size: 9pt; white-space: nowrap; }
         .kop-block td.lbl { width: 115pt; font-weight:bold; white-space: nowrap; }
         .kop-block td.sep { width: 10pt; font-weight:bold; }
-        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 12pt; }
-        .number { text-align:center; margin-bottom: 12pt; }
-        table.data { width:100%; border-collapse:collapse; margin-top: 4pt; }
-        table.data td { padding: 1.5pt 0; vertical-align:top; }
+        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 7pt; }
+        .number { text-align:center; margin-bottom: 6pt; }
+        table.data { width:100%; border-collapse:collapse; margin-top: 2pt; }
+        table.data td { padding: 0.55pt 0; vertical-align:top; }
         td.no { width: 16pt; }
         td.lbl { width: 175pt; }
         td.sep { width: 12pt; }
-        td.val { padding-left: 3pt; height: 13pt; }
+        td.val { padding-left: 3pt; height: 9pt; }
         tr.status-row td.lbl { width: auto; }
-        p.gap-top { margin-top: 10pt; }
-        .signature-block { margin-top: 18pt; margin-left: 62%; }
-        .signature-block div { line-height: 16pt; }
+        p.gap-top { margin-top: 5pt; }
+        .signature-block { margin-top: 8pt; margin-left: 62%; }
+        .signature-block div { line-height: 12pt; }
     </style>
 </head>
 <body>
@@ -127,7 +127,7 @@
     <div class="signature-block">
         <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
         <div>{{ $signature['position'] ?? 'Kamituwa' }}</div>
-        <div style="height: 34pt;">&nbsp;</div>
+        <div style="height: 22pt;">&nbsp;</div>
         <div>{{ $signature['name'] ?? '' }}</div>
     </div>
 

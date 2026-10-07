@@ -50,18 +50,18 @@
 
     .tsa-title {
         text-align: center; font-weight: bold; text-decoration: underline;
-        font-size: 11.5pt; margin-top: 10pt; margin-bottom: 10pt;
+        font-size: 11.5pt; margin-top: 6pt; margin-bottom: 6pt;
     }
 
-    table.tsa-item { width: 100%; border-collapse: separate; border-spacing: 6pt; margin-top: 4pt; }
-    table.tsa-item td { vertical-align: top; padding: 1pt 0; font-size: 9.5pt; }
+    table.tsa-item { width: 100%; border-collapse: separate; border-spacing: 2pt; margin-top: 2pt; }
+    table.tsa-item td { vertical-align: top; padding: 0.5pt 0; font-size: 9.5pt; }
     td.tsa-no { width: 16pt; }
     td.tsa-label { width: 175pt; }
     td.tsa-sep { width: 9pt; }
 
     table.tsa-item td.tsa-val {
         border: 1px solid #000;
-        padding: 2pt 6pt 2pt 6pt !important;
+        padding: 1pt 5pt 1pt 5pt !important;
         vertical-align: middle;
         line-height: normal;
     }
@@ -69,21 +69,21 @@
 
     table.tsa-family { width: 100%; border-collapse: collapse; margin-top: 3pt; }
     table.tsa-family th, table.tsa-family td {
-        border: 1px solid #000; padding: 2pt 6pt; font-size: 9pt;
+        border: 1px solid #000; padding: 1pt 5pt; font-size: 9pt;
     }
     table.tsa-family th { text-align: center; font-weight: bold; }
     td.fam-no { width: 22pt; text-align: center; }
     td.fam-nik { width: 40%; }
 
-    table.tsa-family td.fam-blank { padding: 4pt 6pt !important; line-height: normal; }
+    table.tsa-family td.fam-blank { padding: 2pt 5pt !important; line-height: normal; }
 
-    p.tsa-closing { margin-top: 8pt; font-size: 9.5pt; }
+    p.tsa-closing { margin-top: 4pt; font-size: 9.5pt; }
 
     /* ===================================================================
        WRAPPER untuk seluruh blok bawah, sama seperti trr — padding
        diperbesar (24pt) supaya blok ini "dimasukkan" lebih jauh dari tepi
        kiri/kanan halaman dibanding versi sebelumnya. */
-    .tsa-bottom-wrap { padding: 0 24pt; margin-top: 2pt; }
+    .tsa-bottom-wrap { padding: 0 24pt; margin-top: 0; }
 
     .tsa-place-date { text-align: right; font-size: 9.5pt; margin-top: 0; }
 
@@ -93,9 +93,9 @@
        tabel, satu <tr> per baris visual, supaya kiri-kanan sejajar
        (sebelumnya dipisah jadi tsa-sign + tsa-bottom sehingga tidak
        sejajar). */
-    table.tsa-final { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    table.tsa-final { width: 100%; border-collapse: collapse; margin-top: 3pt; }
     table.tsa-final td { width: 50%; vertical-align: top; font-size: 9.5pt; }
-    .tsa-sign-space { height: 46pt; }
+    .tsa-sign-space { height: 30pt; }
     td.tsa-sign-name { font-weight: bold; text-align: right; }
 
     table.tsa-bottom-inner { border-collapse: collapse; }

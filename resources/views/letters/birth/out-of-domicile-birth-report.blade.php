@@ -51,20 +51,20 @@
     <meta charset="utf-8">
     <title>Laporan Kelahiran Luar Domisili</title>
     <style>
-        @page { margin: 1.5cm 2cm 1.3cm 2cm; } 
+        @page { margin: 0.9cm 1.8cm 0.4cm 1.8cm; }
         body { margin: 0; color: #000; font-family: "Times New Roman", Times, serif; }
 
-        .bf { font-size: 10pt; line-height: 1.15; }
+        .bf { font-size: 8.8pt; line-height: 1.0; }
         .bf-title { text-align: center; font-weight: bold; font-size: 12pt; text-transform: uppercase; }
 
         table.rows { width: 100%; border-collapse: collapse; }
-        table.rows td { padding: 1.7pt 0; vertical-align: top; }
+        table.rows td { padding: 0.35pt 0; vertical-align: top; }
         table.rows td.r-no { width: 14pt; padding-left: 10pt; }
         table.rows.flat td.r-no { padding-left: 0; }
         table.rows td.r-sep { width: 10pt; }
-        table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
+        table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 8pt; }
 
-        .frame { border: 1px solid #000; padding: 1pt 6pt 2pt 6pt; margin-top: 3pt; page-break-inside: avoid; }
+        .frame { border: 1px solid #000; padding: 0 5pt 0 5pt; margin-top: 1pt; page-break-inside: avoid; }
         .frame-title { font-weight: bold; }
 
         table.split { width: 100%; border-collapse: collapse; }
@@ -72,9 +72,9 @@
         table.split td.gap-r { padding-right: 10pt; }
         table.split td.gap-l { padding-left: 10pt; }
 
-        table.foot { width: 100%; border-collapse: collapse; margin-top: 8pt; page-break-inside: avoid; }
+        table.foot { width: 100%; border-collapse: collapse; margin-top: 2pt; page-break-inside: avoid; }
         table.foot td { width: 50%; vertical-align: top; text-align: center; padding: 0; }
-        table.foot td.foot-space { height: 60pt; }
+        table.foot td.foot-space { height: 24pt; }
         .foot-name { display: inline-block; min-width: 130pt; border-bottom: 1px dashed #000; }
     </style>
 </head>

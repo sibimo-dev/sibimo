@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <title>Parental Consent Letter</title>
     <style>
-        @page { margin: 1.8cm 2cm 1.8cm 2cm; }
-        body { margin:0; font-family: Helvetica, Arial, sans-serif; font-size: 10.3pt; line-height: 1.28; color:#000; }
+        @page { margin: 1.0cm 1.6cm 0.7cm 1.6cm; }
+        body { margin:0; font-family: Helvetica, Arial, sans-serif; font-size: 9.0pt; line-height: 1.05; color:#000; }
         p { margin: 0; }
         .form-ref { text-align:right; font-size: 8.5pt; line-height: 1.2; }
-        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 14pt; margin-bottom: 12pt; }
-        .party-title { font-weight:bold; margin-top: 6pt; margin-bottom: 2pt; }
-        table.data { width:100%; border-collapse:collapse; margin-top: 2pt; }
-        table.data td { padding: 1.2pt 0; vertical-align:top; }
+        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 8pt; margin-bottom: 6pt; }
+        .party-title { font-weight:bold; margin-top: 4pt; margin-bottom: 1pt; }
+        table.data { width:100%; border-collapse:collapse; margin-top: 1pt; }
+        table.data td { padding: 0.55pt 0; vertical-align:top; }
 
         
         td.no { width: 16pt; padding-left: 100pt; }
@@ -24,13 +24,13 @@
 
         td.lbl { width: 165pt; }
         td.sep { width: 12pt; }
-        td.val { padding-left: 3pt; height: 12pt; }
-        p.gap-top { margin-top: 8pt; }
-        .signature-heading { text-align:left; margin-top: 14pt; margin-left: 60%; }
-        table.sig-cols { width:100%; border-collapse:collapse; margin-top: 4pt; }
+        td.val { padding-left: 3pt; height: 9pt; }
+        p.gap-top { margin-top: 5pt; }
+        .signature-heading { text-align:left; margin-top: 7pt; margin-left: 60%; }
+        table.sig-cols { width:100%; border-collapse:collapse; margin-top: 2pt; }
         table.sig-cols td { width:50%; vertical-align:top; }
         table.sig-cols td.sig-right { padding-left: 50pt; }
-        .sig-space { height: 36pt; }
+        .sig-space { height: 20pt; }
     </style>
 </head>
 <body>
