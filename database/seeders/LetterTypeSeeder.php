@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\AdditionalLetterTemplateCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -203,6 +204,27 @@ class LetterTypeSeeder extends Seeder
                     'number_prefix' => $code . '/',
                     'processing_time' => '1 hari',
                     'signature_method' => $signatureMethod,
+                    'signer_id' => $signerId,
+                    'is_active' => true,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ],
+            );
+        }
+
+        foreach (AdditionalLetterTemplateCatalog::all() as $template) {
+            $signerId = $signerIdsByRole[$template['signerRole']] ?? $defaultSignerId;
+
+            DB::table('letter_types')->updateOrInsert(
+                ['code' => $template['code']],
+                [
+                    'letter_name' => $template['name'],
+                    'category' => $template['category'],
+                    'description' => "Layanan {$template['name']}.",
+                    'blade_view' => $template['bladeView'],
+                    'number_prefix' => $template['code'] . '/',
+                    'processing_time' => '1 hari',
+                    'signature_method' => $template['signatureMethod'],
                     'signer_id' => $signerId,
                     'is_active' => true,
                     'updated_at' => now(),

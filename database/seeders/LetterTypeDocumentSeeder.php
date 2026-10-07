@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\AdditionalLetterTemplateCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -74,6 +75,10 @@ class LetterTypeDocumentSeeder extends Seeder
 
         foreach ($documentsByCode as $code => $documents) {
             $this->seedDocumentsForCode($code, $documents);
+        }
+
+        foreach (AdditionalLetterTemplateCatalog::all() as $template) {
+            $this->seedDocumentsForCode($template['code'], $template['documents']);
         }
     }
 

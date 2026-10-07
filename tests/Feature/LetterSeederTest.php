@@ -33,21 +33,34 @@ function seedLetterFixtures(): void
     test()->seed(LetterRequestStatusHistorySeeder::class);
 }
 
+function deathTemplateForType(LetterType $letterType): ?string
+{
+    $bladeView = (string) ($letterType->blade_view ?? '');
+
+    if ($letterType->code === 'SKKM') {
+        return 'death-certificate';
+    }
+
+    return str_starts_with($bladeView, 'letters.death.')
+        ? str($bladeView)->afterLast('.')->toString()
+        : null;
+}
+
 it('seeds a complete and connected letter fixture set', function () {
     seedLetterFixtures();
 
-    expect(DB::table('letter_types')->count())->toBe(46)
+    expect(DB::table('letter_types')->count())->toBe(85)
         ->and(DB::table('letter_type_fields')->count())->toBeGreaterThan(0)
-        ->and(DB::table('letter_type_documents')->count())->toBeGreaterThanOrEqual(92)
-        ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(46)
-        ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(46);
+        ->and(DB::table('letter_type_documents')->count())->toBeGreaterThanOrEqual(170)
+        ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(85)
+        ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(85);
 
     expect(DB::table('letter_types')
         ->whereIn('code', ['SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK', 'SKDPAK', 'SBP'])
         ->whereNotNull('blade_view')
         ->count())->toBe(11);
 
-    expect(DB::table('letter_types')->whereNotNull('blade_view')->count())->toBe(46);
+    expect(DB::table('letter_types')->whereNotNull('blade_view')->count())->toBe(85);
     expect(DB::table('letter_types')->whereNull('blade_view')->count())->toBe(0);
 
     expect(DB::table('letter_type_fields as fields')
@@ -92,10 +105,12 @@ it('renders a PDF for every seeded letter type', function () {
         $request->setRelation('letterType', $letterType);
         $request->setRelation('authorizedSigner', null);
 
-        if ($letterType->code === 'SKKM') {
+        $deathTemplate = deathTemplateForType($letterType);
+
+        if ($deathTemplate) {
             $pdf = $deathTemplateService->pdf(
-                'death-certificate',
-                $deathTemplateService->dataForRequest($request),
+                $deathTemplate,
+                $deathTemplateService->dataForRequest($request, $deathTemplate),
             );
         } else {
             $template = $pdfService->rootTemplateForType($letterType);
@@ -128,10 +143,12 @@ it('renders seeded request data without dropping template-specific fields', func
         ->where('request_code', 'like', 'SEED-REQ-%')
         ->orderBy('request_code')
         ->get() as $request) {
-        if ($request->letterType->code === 'SKKM') {
+        $deathTemplate = deathTemplateForType($request->letterType);
+
+        if ($deathTemplate) {
             $pdf = $deathTemplateService->pdf(
-                'death-certificate',
-                $deathTemplateService->dataForRequest($request),
+                $deathTemplate,
+                $deathTemplateService->dataForRequest($request, $deathTemplate),
             );
         } else {
             $template = $pdfService->rootTemplateForType($request->letterType);
@@ -190,6 +207,96 @@ it('seeds populated identity and template fields for birth and statement letters
         ->and($forms['SPTMDK']['father_name'])->not->toBeEmpty()
         ->and($forms['N1P']['nik_catin_putri'])->toMatch('/^340000\d{10}$/')
         ->and($forms['N1L']['nik_catin_putra'])->toMatch('/^340000\d{10}$/');
+});
+
+it('seeds data using the structure required by additional letter templates', function () {
+    seedLetterFixtures();
+
+    $forms = LetterRequest::query()
+        ->with('letterType')
+        ->whereIn('request_code', [
+            'SEED-REQ-FBWNI',
+            'SEED-REQ-RL',
+            'SEED-REQ-SPBNI',
+            'SEED-REQ-SPKLC',
+            'SEED-REQ-DKF',
+            'SEED-REQ-SPNIP',
+            'SEED-REQ-SPDP',
+            'SEED-REQ-SPTTS',
+        ])
+        ->get()
+        ->keyBy(fn ($request) => $request->letterType->code)
+        ->map(fn ($request) => $request->form_data);
+
+    expect($forms['FBWNI']['members'])->toHaveCount(2)
+        ->and($forms['FBWNI']['members'][0]['name'])->not->toBeEmpty()
+        ->and($forms['FBWNI']['members'][0]['nik'])->toMatch('/^340000\d{10}$/')
+        ->and($forms['RL']['register_year'])->toBe(now()->year)
+        ->and($forms['RL']['rows'])->toHaveCount(1)
+        ->and($forms['RL']['rows'][0]['name'])->not->toBeEmpty()
+        ->and($forms['RL']['rows'][0]['nik'])->toMatch('/^340000\d{10}$/')
+        ->and($forms['SPBNI']['other_name'])->not->toBeEmpty()
+        ->and($forms['SPBNI']['other_nik'])->toMatch('/^340000\d{10}$/')
+        ->and($forms['SPKLC']['letter_c_owner_name'])->not->toBeEmpty()
+        ->and($forms['DKF']['nama_jenazah'])->not->toBeEmpty()
+        ->and($forms['DKF']['nik_jenazah'])->toMatch('/^340000\d{10}$/')
+        ->and($forms['SPNIP']['groom_name'])->not->toBeEmpty()
+        ->and($forms['SPNIP']['bride_name'])->not->toBeEmpty()
+        ->and($forms['SPDP']['family_members'])->toHaveCount(1)
+        ->and($forms['SPTTS']['family_members'])->toHaveCount(2);
+
+    $deathRequest = LetterRequest::with(['letterType.signer', 'authorizedSigner'])
+        ->where('request_code', 'SEED-REQ-DKF')
+        ->firstOrFail();
+    $deathData = app(DeathTemplateService::class)->dataForRequest($deathRequest, 'death-report');
+
+    expect($deathData['death']['reporter']['name'])->toBe($forms['DKF']['nama_pelapor'])
+        ->and($deathData['death']['reporter']['nik'])->toBe($forms['DKF']['nik_pelapor'])
+        ->and($deathData['death']['reporter']['occupation'])->toBe($forms['DKF']['pekerjaan_pelapor'])
+        ->and($deathData['death']['reporter']['address'])->toBe($forms['DKF']['alamat_pelapor'])
+        ->and($deathData['death']['deceased']['name'])->not->toBe($deathData['death']['deceased']['nik']);
+});
+
+it('seeds realistic values for the KIA application form', function () {
+    seedLetterFixtures();
+
+    $request = LetterRequest::where('request_code', 'SEED-REQ-SPKIAF')->firstOrFail();
+    $form = $request->form_data;
+
+    expect($form['nik'])->toMatch('/^340000\d{10}$/')
+        ->and($form['name'])->not->toBeEmpty()
+        ->and($form['name'])->not->toBe($form['nik'])
+        ->and($form['birth_place'])->toBeIn(['Sleman', 'Yogyakarta', 'Bantul', 'Klaten'])
+        ->and($form['blood_type'])->toBeIn(['A', 'B', 'AB', 'O'])
+        ->and($form['kk_number'])->toMatch('/^340400\d{10}$/')
+        ->and($form['household_head'])->not->toBeEmpty()
+        ->and($form['birth_cert_number'])->toMatch('/^3471-LT-/')
+        ->and($form['religion'])->toBe('Islam')
+        ->and($form['citizenship'])->toBe('WNI')
+        ->and($form['village'])->toBe('Bimomartani')
+        ->and($form['district'])->toBe('Ngemplak');
+});
+
+it('populates legacy marriage template blocks used by seeded previews', function () {
+    seedLetterFixtures();
+
+    $forms = LetterRequest::query()
+        ->with('letterType')
+        ->whereIn('request_code', ['SEED-REQ-SKKMP', 'SEED-REQ-SPNIP', 'SEED-REQ-SKTNB', 'SEED-REQ-SPOT'])
+        ->get()
+        ->keyBy(fn ($request) => $request->letterType->code)
+        ->map(fn ($request) => $request->form_data);
+
+    expect($forms['SKKMP']['deceased_name'])->not->toBeEmpty()
+        ->and($forms['SKKMP']['spouse_name'])->not->toBeEmpty()
+        ->and($forms['SKKMP']['spouse_name'])->not->toBe($forms['SKKMP']['deceased_name'])
+        ->and($forms['SPNIP']['father_name'])->not->toBeEmpty()
+        ->and($forms['SPNIP']['mother_name'])->not->toBeEmpty()
+        ->and($forms['SKTNB']['spouse_name'])->not->toBeEmpty()
+        ->and($forms['SPOT']['father_name'])->not->toBeEmpty()
+        ->and($forms['SPOT']['mother_name'])->not->toBeEmpty()
+        ->and($forms['SPOT']['child_name'])->not->toBeEmpty()
+        ->and($forms['SPOT']['child_spouse_name'])->not->toBeEmpty();
 });
 
 it('can rerun the letter seeders without increasing fixture counts', function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Events\NotificationAvailable;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
@@ -80,6 +81,15 @@ class LetterRequestController extends Controller
         $letterRequest = LetterRequest::create($validated);
         $letterRequest->load(['citizen', 'letterType.signer']);
 
+        if ($letterRequest->source === 'Online') {
+            event(new NotificationAvailable(
+                'letter',
+                (int) $letterRequest->letter_request_id,
+                'created',
+                now()->toISOString(),
+            ));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Permohonan surat berhasil dibuat.',
@@ -112,11 +122,23 @@ class LetterRequestController extends Controller
             ->findOrFail($letterRequest_id);
 
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+        $bladeView = (string) ($letterRequest->letterType?->blade_view ?? '');
 
-        if ($code === 'SKKM') {
+        if ($code === 'SKKM' || str_starts_with($bladeView, 'letters.death.')) {
+            $deathTemplate = $code === 'SKKM'
+                ? 'death-certificate'
+                : str($bladeView)->afterLast('.')->toString();
+
+            if (! $deathTemplateService->hasTemplate($deathTemplate)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Template kematian untuk tipe surat ini belum tersedia.',
+                ], 422);
+            }
+
             $pdf = $deathTemplateService->pdf(
-                'death-certificate',
-                $deathTemplateService->dataForRequest($letterRequest),
+                $deathTemplate,
+                $deathTemplateService->dataForRequest($letterRequest, $deathTemplate),
             );
 
             $filename = ($letterRequest->request_code ?: 'surat') . '.pdf';
@@ -211,6 +233,13 @@ class LetterRequestController extends Controller
             'change_by' => $verifiedBy,
         ]);
 
+        event(new NotificationAvailable(
+            'letter',
+            (int) $letterRequest->letter_request_id,
+            'updated',
+            now()->toISOString(),
+        ));
+
         $letterRequest->load([
             'citizen',
             'letterType.signer',
@@ -264,6 +293,13 @@ class LetterRequestController extends Controller
             'note' => null,
             'change_by' => $request->user()->user_id ?? null,
         ]);
+
+        event(new NotificationAvailable(
+            'letter',
+            (int) $letterRequest->letter_request_id,
+            'updated',
+            now()->toISOString(),
+        ));
 
         $letterRequest->load([
             'citizen',

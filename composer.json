@@ -15,6 +15,7 @@
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "pusher/pusher-php-server": "^7.3",
         "spatie/laravel-pdf": "^2.13"
     },
     "require-dev": {

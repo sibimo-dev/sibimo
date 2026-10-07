@@ -43,6 +43,8 @@
             width: 82pt;
             height: 160pt;
             border: 1px solid #000;
+            background: #fff;
+            z-index: 2;
         }
 
         /* Blok TTD Pemohon: tabel 2 kolom, supaya "Sleman," & "Pemohon" sejajar kiri,
