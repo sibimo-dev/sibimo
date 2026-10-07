@@ -1448,6 +1448,21 @@ class LetterTypeFieldSeeder extends Seeder
         if (!$letterTypeId) {
             throw new \RuntimeException("Letter type [{$code}] must exist before its fields are seeded.");
         }
+
+        // SPKIAF sebelumnya memakai field formulir KIA. Bersihkan field lama
+        // saat seeder dijalankan agar admin tidak menampilkan dua kontrak form
+        // setelah SPKIAF dipindahkan menjadi formulir F-1.02.
+        if ($code === 'SPKIAF') {
+            DB::table('letter_type_fields')
+                ->where('letter_type_id', $letterTypeId)
+                ->whereIn('field_key', [
+                    'nik', 'name', 'birth_place', 'birth_date', 'gender',
+                    'blood_type', 'kk_number', 'household_head', 'birth_cert_number',
+                    'religion', 'citizenship', 'address', 'rt', 'rw', 'village',
+                    'district', 'submission_date',
+                ])
+                ->delete();
+        }
     
         foreach ($fields as $i => $f) {
             DB::table('letter_type_fields')->updateOrInsert(

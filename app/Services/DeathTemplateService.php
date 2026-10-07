@@ -58,7 +58,7 @@ class DeathTemplateService
 
     public function pdf(string $template, array $data): DomPdf
     {
-        return Pdf::loadView($this->viewName($template), $data)
+        return Pdf::loadHtml($this->renderDocumentHtml($template, $data))
             ->setPaper(self::PAPER, 'portrait');
     }
 
@@ -66,6 +66,7 @@ class DeathTemplateService
     public function sampleData(string $template = 'death-certificate'): array
     {
         return [
+            'document_title' => self::TEMPLATES[$template] ?? 'Surat Kematian',
             'title' => self::TEMPLATES[$template] ?? 'Surat Kematian',
             'logo' => $this->asset('logo-sleman.png'),
             'include_kop' => $this->includeKop($template),
@@ -162,6 +163,8 @@ class DeathTemplateService
         ];
 
         $data['number'] = $data['nomor'] = $request->letter_number ?? '';
+        $data['document_title'] = $request->letterType?->letter_name
+            ?? $data['document_title'];
         $data['request'] = [
             'code' => $request->request_code,
             'source' => $request->source,
@@ -177,6 +180,31 @@ class DeathTemplateService
             ?? '';
 
         return $data;
+    }
+
+    /** Samakan metadata title PDF dengan nama service type. */
+    private function renderDocumentHtml(string $template, array $data): string
+    {
+        $html = view($this->viewName($template), $data)->render();
+        $title = trim((string) ($data['document_title'] ?? ''));
+
+        if ($title === '') {
+            return $html;
+        }
+
+        $safeTitle = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $titleTag = '<title>' . $safeTitle . '</title>';
+
+        if (preg_match('/<title\b[^>]*>.*?<\/title>/is', $html)) {
+            return (string) preg_replace(
+                '/<title\b[^>]*>.*?<\/title>/is',
+                $titleTag,
+                $html,
+                1,
+            );
+        }
+
+        return (string) preg_replace('/(<head\b[^>]*>)/i', '$1' . $titleTag, $html, 1);
     }
 
     private function blankDeathData(): array

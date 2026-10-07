@@ -2,7 +2,24 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <title>@yield('title', 'Surat Pernikahan')</title>
+    @php
+        $marriageTitles = [
+            'registration-form' => 'Data Isian Pendaftaran Nikah',
+            'n1' => 'Pengantar Nikah (N1)',
+            'n2' => 'Permohonan Kehendak Nikah (N2)',
+            'n4' => 'Persetujuan Calon Pengantin (N4)',
+            'n5' => 'Surat Izin Orang Tua (N5)',
+            'n6' => 'Surat Keterangan Kematian (N6)',
+            'guardian-statement' => 'Surat Keterangan Wali Nikah',
+            'judge-guardian' => 'Surat Keterangan Wali Hakim',
+            'health-referral' => 'Surat Pengantar Tes Kesehatan Perempuan',
+            'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',
+            'unmarried-certificate' => 'Surat Keterangan Belum Kawin',
+            'numpang-nikah' => 'Surat Keterangan Numpang Nikah',
+        ];
+        $documentTitle = $marriageTitles[$letter ?? ''] ?? 'Surat Pernikahan';
+    @endphp
+    <title>{{ $documentTitle }}</title>
     <style>
         @page { margin: 1.3cm 2cm; }
         body { font-family: Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.15; color: #000; margin: 0; }

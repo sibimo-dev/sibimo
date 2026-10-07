@@ -257,24 +257,34 @@ it('seeds data using the structure required by additional letter templates', fun
         ->and($deathData['death']['deceased']['name'])->not->toBe($deathData['death']['deceased']['nik']);
 });
 
-it('seeds realistic values for the KIA application form', function () {
+it('seeds realistic values for the KIA and F-1.02 forms', function () {
     seedLetterFixtures();
 
-    $request = LetterRequest::where('request_code', 'SEED-REQ-SPKIAF')->firstOrFail();
-    $form = $request->form_data;
+    $kiaRequest = LetterRequest::where('request_code', 'SEED-REQ-SPKIA')->firstOrFail();
+    $kia = $kiaRequest->form_data;
 
-    expect($form['nik'])->toMatch('/^340000\d{10}$/')
-        ->and($form['name'])->not->toBeEmpty()
-        ->and($form['name'])->not->toBe($form['nik'])
-        ->and($form['birth_place'])->toBeIn(['Sleman', 'Yogyakarta', 'Bantul', 'Klaten'])
-        ->and($form['blood_type'])->toBeIn(['A', 'B', 'AB', 'O'])
-        ->and($form['kk_number'])->toMatch('/^340400\d{10}$/')
-        ->and($form['household_head'])->not->toBeEmpty()
-        ->and($form['birth_cert_number'])->toMatch('/^3471-LT-/')
-        ->and($form['religion'])->toBe('Islam')
-        ->and($form['citizenship'])->toBe('WNI')
-        ->and($form['village'])->toBe('Bimomartani')
-        ->and($form['district'])->toBe('Ngemplak');
+    expect($kia['nik_anak'])->toMatch('/^340000\d{10}$/')
+        ->and($kia['nama_anak'])->not->toBeEmpty()
+        ->and($kia['nama_anak'])->not->toBe($kia['nik_anak'])
+        ->and($kia['tempat_lahir_anak'])->toBeIn(['Sleman', 'Yogyakarta', 'Bantul', 'Klaten'])
+        ->and($kia['golongan_darah_anak'])->toBeIn(['A', 'B', 'AB', 'O'])
+        ->and($kia['nomor_kk'])->toMatch('/^340400\d{10}$/')
+        ->and($kia['nama_kepala_keluarga'])->not->toBeEmpty()
+        ->and($kia['nomor_akta_kelahiran'])->toMatch('/^3471-LT-/')
+        ->and($kia['agama_anak'])->toBe('Islam')
+        ->and($kia['kewarganegaraan'])->toBe('WNI')
+        ->and($kia['kelurahan'])->toBe('Bimomartani')
+        ->and($kia['kecamatan'])->toBe('Ngemplak');
+
+    $populationRequest = LetterRequest::where('request_code', 'SEED-REQ-SPKIAF')->firstOrFail();
+    $population = $populationRequest->form_data;
+
+    expect($population['applicant_name'])->not->toBeEmpty()
+        ->and($population['applicant_nik'])->toMatch('/^340000\d{10}$/')
+        ->and($population['kk_number'])->toMatch('/^340400\d{10}$/')
+        ->and($population['application_types'])->toContain('child_card_new')
+        ->and($population['attached_documents'])->toContain('old_family_card')
+        ->and($population['application_date'])->not->toBeEmpty();
 });
 
 it('populates legacy marriage template blocks used by seeded previews', function () {

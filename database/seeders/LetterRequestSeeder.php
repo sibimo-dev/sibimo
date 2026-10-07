@@ -228,7 +228,7 @@ class LetterRequestSeeder extends Seeder
             ]);
         }
 
-        if ($code === 'SPKIAF') {
+        if ($code === 'SPKIA') {
             $children = [
                 ['name' => 'Zahra Aulia Putri', 'gender' => 'Perempuan', 'birth_place' => 'Sleman'],
                 ['name' => 'Raka Aditya Pratama', 'gender' => 'Laki-laki', 'birth_place' => 'Yogyakarta'],
@@ -241,23 +241,40 @@ class LetterRequestSeeder extends Seeder
             $birthYear = now()->year - 8 - ($requestIndex % 5);
 
             $data = array_merge($data, [
-                'nik' => $childNik,
-                'name' => $child['name'],
-                'birth_place' => $child['birth_place'],
-                'birth_date' => sprintf('%d-%02d-%02d', $birthYear, ($requestIndex % 9) + 1, ($requestIndex % 20) + 1),
-                'gender' => $child['gender'],
-                'blood_type' => ['A', 'B', 'O', 'AB'][$requestIndex % 4],
-                'kk_number' => $kkNumber,
-                'household_head' => $this->sampleName($requestIndex + 3),
-                'birth_cert_number' => sprintf('3471-LT-%02d%02d%04d', ($requestIndex % 12) + 1, ($requestIndex % 27) + 1, $requestIndex + 1),
-                'religion' => 'Islam',
-                'citizenship' => 'WNI',
-                'address' => 'Kepuh, Bimomartani, Ngemplak, Sleman',
+                'nik_anak' => $childNik,
+                'nama_anak' => $child['name'],
+                'tempat_lahir_anak' => $child['birth_place'],
+                'tanggal_lahir_anak' => sprintf('%d-%02d-%02d', $birthYear, ($requestIndex % 9) + 1, ($requestIndex % 20) + 1),
+                'jenis_kelamin_anak' => $child['gender'],
+                'golongan_darah_anak' => ['A', 'B', 'O', 'AB'][$requestIndex % 4],
+                'nomor_kk' => $kkNumber,
+                'nama_kepala_keluarga' => $this->sampleName($requestIndex + 3),
+                'nomor_akta_kelahiran' => sprintf('3471-LT-%02d%02d%04d', ($requestIndex % 12) + 1, ($requestIndex % 27) + 1, $requestIndex + 1),
+                'agama_anak' => 'Islam',
+                'kewarganegaraan' => 'WNI',
+                'alamat_anak' => 'Kepuh, Bimomartani, Ngemplak, Sleman',
                 'rt' => '004',
                 'rw' => '002',
-                'village' => 'Bimomartani',
-                'district' => 'Ngemplak',
-                'submission_date' => $date(),
+                'kelurahan' => 'Bimomartani',
+                'kecamatan' => 'Ngemplak',
+                'tgl_pengambilan' => $date(),
+            ]);
+        }
+
+        if ($code === 'SPKIAF') {
+            $data = array_merge($data, [
+                'applicant_name' => $applicantName,
+                'applicant_nik' => $applicantNik,
+                'kk_number' => sprintf('340400%010d', $requestIndex + 120),
+                'application_types' => [
+                    'child_card_new',
+                    'id_card_new',
+                ],
+                'attached_documents' => [
+                    'old_family_card',
+                    'occurrence_evidence',
+                ],
+                'application_date' => $date(),
             ]);
         }
 
@@ -586,6 +603,8 @@ class LetterRequestSeeder extends Seeder
         if (in_array($code, ['N1P', 'N1L'], true)) {
             $isBride = $code === 'N1P';
             $prefix = $isBride ? 'putri' : 'putra';
+            $data['jenis_kelamin'] = $isBride ? 'Perempuan' : 'Laki-laki';
+            $data[$isBride ? 'status_pernikahan' : 'status_perkawinan'] = $isBride ? 'Perawan' : 'Jejaka';
             $data["nama_catin_{$prefix}"] ??= $applicantName;
             $data["nik_catin_{$prefix}"] ??= $applicantNik;
             $data["tanggal_lahir_catin_{$prefix}"] ??= $date();

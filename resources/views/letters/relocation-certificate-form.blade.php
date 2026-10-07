@@ -5,6 +5,19 @@
 @php($kodeForm = 'F.1-26')
 
 @section('extra_css')
+    @page { margin: 0.6cm 1.5cm 0.4cm 1.5cm; }
+    body { font-size: 8.5pt; line-height: 1.05; }
+    table.wgrid td.wg-label { font-size: 8.5pt; }
+    table.wgrid table.wg-kode td { height: 9pt; font-size: 8pt; }
+    table.wgrid td.wg-val { padding: 2pt 4pt; }
+    table.frow { margin-top: 0.5pt; }
+    table.frow td { font-size: 8.5pt; padding: 0.3pt 0; }
+    td.f-box { padding: 2pt 4pt; }
+    table.digit-box-full td { height: 9pt; }
+    .sub-heading { margin-top: 2pt; }
+    .judul-form { margin-top: 1pt; font-size: 9.5pt; }
+    .subjudul-form { font-size: 8pt; }
+    .ttd-left .ttd-space { height: 16pt; }
     table.kop-dukcapil { width: 100%; border-collapse: collapse; }
     table.kop-dukcapil td { padding: 0; vertical-align: middle; }
     table.kop-dukcapil td.kop-logo { width: 62pt; }
