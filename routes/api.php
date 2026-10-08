@@ -7,9 +7,11 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\BookLoanController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\ComplaintController;
+use App\Http\Controllers\Api\DevelopmentController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\LegalProductController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\PermissionController;
@@ -102,6 +104,11 @@ Route::get('/agendas', [AgendaController::class, 'index']);
 Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
 Route::get('/galleries', [GalleryController::class, 'index']);
 Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{news_id}', [NewsController::class, 'show']);
 Route::get('/news-categories', [NewsCategoryController::class, 'index']);
@@ -229,6 +236,16 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('permission:gallery')->group(function () {
         Route::apiResource('galleries', GalleryController::class)
             ->parameters(['galleries' => 'gallery_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])->except(['index', 'show']);
     });
 
     Route::middleware('permission:berita')->group(function () {
