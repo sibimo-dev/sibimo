@@ -27,7 +27,7 @@ class VillagePotentialSeeder extends Seeder
                     'category' => $category,
                     'title' => 'Potensi Kalurahan ' . ($i + 1),
                     'description' => 'Potensi unggulan Kalurahan Bimomartani untuk mendukung pemberdayaan masyarakat.',
-                    'image' => Storage::disk('public')->url('village-potentials/' . $image),
+                    'image' => 'village-potentials/' . $image,
                     'location' => 'Kalurahan Bimomartani',
                     'short_desc' => 'Potensi unggulan Kalurahan Bimomartani.',
                     'contact' => 'Kalurahan Bimomartani',

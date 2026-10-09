@@ -10,7 +10,7 @@ class StaffSeeder extends Seeder
 {
     public function run(): void
     {
-        $photo = static fn (string $file): string => Storage::disk('public')->url("profile/organization/{$file}");
+        $photo = static fn (string $file): string => "profile/organization/{$file}";
 
         $staff = [
             ['Tutik Wahyuningsih, S.Sos., M.AP', 'Lurah Kalurahan Bimomartani', 'Lurah', 'Memimpin penyelenggaraan pemerintahan kalurahan.', 'tutik-wahyuningsih.jpeg'],
