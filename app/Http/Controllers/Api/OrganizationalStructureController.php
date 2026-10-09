@@ -76,6 +76,7 @@ class OrganizationalStructureController extends Controller
             'status' => ['nullable', Rule::in(['Draft', 'Published'])],
             'published_at' => ['nullable', 'date'],
             'photos.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'signatures.*' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ]);
         Validator::make($validated['levels'], [
             '*.level' => ['required', 'string'],
@@ -87,6 +88,7 @@ class OrganizationalStructureController extends Controller
             '*.people.*.title' => ['required', 'string'],
             '*.people.*.desc' => ['nullable', 'string'],
             '*.people.*.photo' => ['nullable', 'string'],
+            '*.people.*.signature' => ['nullable', 'string'],
         ])->validate();
 
         return $validated;
@@ -95,21 +97,27 @@ class OrganizationalStructureController extends Controller
     private function replaceStaff(Request $request, array $levels): void
     {
         DB::transaction(function () use ($request, $levels): void {
-            $oldPhotos = $this->collectPhotoUrls(Staff::query()->where('is_signer', false)->pluck('photo')->all());
+            $oldPhotos = $this->collectMediaUrls(Staff::query()->where('is_signer', false)->pluck('photo')->all(), 'profile/organization/');
+            $oldSignatures = $this->collectMediaUrls(Staff::query()->where('is_signer', false)->pluck('signature_image')->all(), 'profile/signatures/');
             $files = $request->allFiles()['photos'] ?? [];
+            $signatureFiles = $request->allFiles()['signatures'] ?? [];
             $newPhotos = [];
+            $newSignatures = [];
             $rows = [];
 
             foreach ($levels as $level) {
                 foreach ($level['people'] as $person) {
                     $photo = $this->replacePhotoToken($person['photo'] ?? null, $files);
+                    $signature = $this->replaceSignatureToken($person['signature'] ?? null, $signatureFiles);
                     if ($photo) $newPhotos[] = $photo;
+                    if ($signature) $newSignatures[] = $signature;
                     $rows[] = [
                         'name' => $person['name'],
                         'position' => $person['title'],
                         'level' => $level['level'],
                         'description' => $person['desc'] ?? null,
                         'photo' => $photo,
+                        'signature_image' => $signature,
                         'is_signer' => false,
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -119,7 +127,15 @@ class OrganizationalStructureController extends Controller
 
             Staff::query()->where('is_signer', false)->delete();
             if ($rows) Staff::query()->insert($rows);
-            $this->deletePhotos(array_values(array_diff($oldPhotos, $newPhotos)));
+            foreach ($rows as $row) {
+                Staff::query()
+                    ->where('is_signer', true)
+                    ->where('name', $row['name'])
+                    ->where('position', $row['position'])
+                    ->update(['signature_image' => $row['signature_image']]);
+            }
+            $this->deleteMedia(array_values(array_diff($oldPhotos, $newPhotos)));
+            $this->deleteMedia(array_values(array_diff($oldSignatures, $newSignatures)));
         });
     }
 
@@ -137,6 +153,7 @@ class OrganizationalStructureController extends Controller
                     'title' => $person->position,
                     'desc' => $person->description,
                     'photo' => $person->photo,
+                    'signature' => $person->signature_image,
                 ])->values()->all(),
             ];
         })->values()->all();
@@ -170,17 +187,27 @@ class OrganizationalStructureController extends Controller
         return Storage::disk('public')->url($file->store('profile/organization', 'public'));
     }
 
-    private function collectPhotoUrls(array $photos): array
+    private function replaceSignatureToken(?string $signature, array $files): ?string
     {
-        return array_values(array_filter($photos, fn ($photo) => is_string($photo) && str_contains($photo, '/storage/profile/organization/')));
+        if (!$signature || !str_starts_with($signature, 'upload-signature:')) return $signature;
+        $token = substr($signature, 17);
+        $file = $files[$token] ?? null;
+        if (!$file) throw ValidationException::withMessages(['signatures' => "File tanda tangan untuk token {$token} tidak ditemukan."]);
+        return Storage::disk('public')->url($file->store('profile/signatures', 'public'));
+    }
+
+    private function collectMediaUrls(array $files, string $directory): array
+    {
+        return array_values(array_filter($files, fn ($file) => is_string($file) && str_contains($file, '/storage/' . trim($directory, '/') . '/')));
     }
 
     private function deleteStaffPhotos(): void
     {
-        $this->deletePhotos($this->collectPhotoUrls(Staff::query()->where('is_signer', false)->pluck('photo')->all()));
+        $this->deleteMedia($this->collectMediaUrls(Staff::query()->where('is_signer', false)->pluck('photo')->all(), 'profile/organization/'));
+        $this->deleteMedia($this->collectMediaUrls(Staff::query()->where('is_signer', false)->pluck('signature_image')->all(), 'profile/signatures/'));
     }
 
-    private function deletePhotos(array $photos): void
+    private function deleteMedia(array $photos): void
     {
         foreach ($photos as $url) {
             Storage::disk('public')->delete(str_replace('/storage/', '', (string) parse_url($url, PHP_URL_PATH)));

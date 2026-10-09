@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'name',
     'position',
+    'signature_image',
 ])]
 class Signer extends Model
 {
