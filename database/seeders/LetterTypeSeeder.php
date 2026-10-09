@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\AdditionalLetterTemplateCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -151,7 +152,7 @@ class LetterTypeSeeder extends Seeder
             'SKJ' => 'letters.travel-permit-letter',
             'SKCK' => 'letters.skck-referral-letter',
             'SPKTP' => 'letters.ktp-application-form',
-            'SPKIA' => 'letters.population-occurrence-registration-form',
+            'SPKIA' => 'letters.kia-application-form',
             'SRBBM' => 'letters.fuel-recommendation-letter',
             'SPPWNI' => 'letters.relocation-cover-letter',
             'SGC' => 'letters.divorce-lawsuit-letter',
@@ -159,7 +160,7 @@ class LetterTypeSeeder extends Seeder
             'SPSKG' => 'letters.lease-offer-letter',
             'PNP' => 'letters.marriage-women.letters.registration-form',
             'N2P' => 'letters.marriage-women.letters.n2',
-            'PNL' => 'letters.marriage-women.letters.registration-form',
+            'PNL' => 'letters.married-man.marriage-registration-data-sheet',
             'PAK' => 'letters.birth.birth-certificate-application-form',
             'FPK' => 'letters.birth.birth-report-form',
             'LK' => 'letters.birth.birth-report-statement',
@@ -181,8 +182,8 @@ class LetterTypeSeeder extends Seeder
             'SKWHP' => 'letters.marriage-women.letters.judge-guardian',
             'SPTKP' => 'letters.marriage-women.letters.health-referral',
             'SKNNP' => 'letters.marriage-women.letters.numpang-nikah',
-            'N1L' => 'letters.marriage-women.letters.n1',
-            'N4L' => 'letters.marriage-women.letters.n4',
+            'N1L' => 'letters.married-man.marriage-introduction-letter',
+            'N4L' => 'letters.married-man.bride-groom-consent-letter',
             'SKDPAK' => 'letters.population-service-authorization-letter',
             'SBP' => 'letters.research-response-letter',
             'SKKL' => 'letters.birth.birth-attestation-letter',
@@ -203,6 +204,27 @@ class LetterTypeSeeder extends Seeder
                     'number_prefix' => $code . '/',
                     'processing_time' => '1 hari',
                     'signature_method' => $signatureMethod,
+                    'signer_id' => $signerId,
+                    'is_active' => true,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ],
+            );
+        }
+
+        foreach (AdditionalLetterTemplateCatalog::all() as $template) {
+            $signerId = $signerIdsByRole[$template['signerRole']] ?? $defaultSignerId;
+
+            DB::table('letter_types')->updateOrInsert(
+                ['code' => $template['code']],
+                [
+                    'letter_name' => $template['name'],
+                    'category' => $template['category'],
+                    'description' => "Layanan {$template['name']}.",
+                    'blade_view' => $template['bladeView'],
+                    'number_prefix' => $template['code'] . '/',
+                    'processing_time' => '1 hari',
+                    'signature_method' => $template['signatureMethod'],
                     'signer_id' => $signerId,
                     'is_active' => true,
                     'updated_at' => now(),

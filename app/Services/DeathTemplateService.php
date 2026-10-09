@@ -58,7 +58,7 @@ class DeathTemplateService
 
     public function pdf(string $template, array $data): DomPdf
     {
-        return Pdf::loadView($this->viewName($template), $data)
+        return Pdf::loadHtml($this->renderDocumentHtml($template, $data))
             ->setPaper(self::PAPER, 'portrait');
     }
 
@@ -66,6 +66,7 @@ class DeathTemplateService
     public function sampleData(string $template = 'death-certificate'): array
     {
         return [
+            'document_title' => self::TEMPLATES[$template] ?? 'Surat Kematian',
             'title' => self::TEMPLATES[$template] ?? 'Surat Kematian',
             'logo' => $this->asset('logo-sleman.png'),
             'include_kop' => $this->includeKop($template),
@@ -101,10 +102,10 @@ class DeathTemplateService
      * Alias bahasa Indonesia dan Inggris sengaja diterima agar kompatibel dengan
      * data seeder maupun request dari admin.
      */
-    public function dataForRequest(LetterRequest $request): array
+    public function dataForRequest(LetterRequest $request, string $template = 'death-certificate'): array
     {
         $request->loadMissing(['letterType.signer', 'authorizedSigner']);
-        $data = $this->sampleData($request->letterType?->slug === 'SKKM' ? 'death-certificate' : 'death-certificate');
+        $data = $this->sampleData($this->hasTemplate($template) ? $template : 'death-certificate');
         $form = $request->form_data ?? [];
         $death = $data['death'];
 
@@ -113,7 +114,9 @@ class DeathTemplateService
             'head_name' => $this->value($form, ['nama_kepala_keluarga', 'head_name']),
         ];
         $death['deceased'] = [
-            'nik' => $request->applicant_nik ?: $this->value($form, ['nik_jenazah', 'deceased_nik']),
+            // NIK jenazah harus memakai field khusus jenazah terlebih dahulu.
+            // NIK pemohon hanya menjadi fallback apabila data jenazah belum diisi.
+            'nik' => $this->value($form, ['nik_jenazah', 'deceased_nik']) ?: $request->applicant_nik,
             'name' => $this->value($form, ['nama_jenazah', 'deceased_name']) ?: $request->applicant_name,
             'gender' => $this->value($form, ['jenis_kelamin_jenazah', 'deceased_gender']),
             'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place']),
@@ -134,6 +137,15 @@ class DeathTemplateService
         $death['mother'] = $this->person($form, 'ibu', ['mother']);
         $death['father'] = $this->person($form, 'ayah', ['father']);
         $death['reporter'] = $this->person($form, 'pelapor', ['reporter']);
+        foreach ([
+            'nik' => $request->applicant_nik,
+            'name' => $request->applicant_name,
+            'address' => $request->applicant_address,
+        ] as $key => $fallback) {
+            if (blank($death['reporter'][$key] ?? null)) {
+                $death['reporter'][$key] = $fallback;
+            }
+        }
         $death['reporter']['report_date'] = $this->value($form, ['tanggal_lapor', 'report_date']);
         $death['witnesses'] = [
             $this->person($form, 'saksi_1', ['witness_1']),
@@ -143,8 +155,16 @@ class DeathTemplateService
             'grantor' => $this->person($form, 'pemberi_kuasa', ['grantor']),
             'attorney' => $this->person($form, 'penerima_kuasa', ['attorney']),
         ];
+        $death['statement'] = [
+            'name' => $this->value($form, ['nama_pemberi_pernyataan', 'nama_pelapor']) ?: $request->applicant_name,
+            'nik' => $this->value($form, ['nik_pemberi_pernyataan', 'nik_pelapor']) ?: $request->applicant_nik,
+            'address' => $this->value($form, ['alamat_pemberi_pernyataan', 'alamat_pelapor']) ?: $request->applicant_address,
+            'relationship' => $this->value($form, ['hubungan_pelapor']),
+        ];
 
         $data['number'] = $data['nomor'] = $request->letter_number ?? '';
+        $data['document_title'] = $request->letterType?->letter_name
+            ?? $data['document_title'];
         $data['request'] = [
             'code' => $request->request_code,
             'source' => $request->source,
@@ -160,6 +180,31 @@ class DeathTemplateService
             ?? '';
 
         return $data;
+    }
+
+    /** Samakan metadata title PDF dengan nama service type. */
+    private function renderDocumentHtml(string $template, array $data): string
+    {
+        $html = view($this->viewName($template), $data)->render();
+        $title = trim((string) ($data['document_title'] ?? ''));
+
+        if ($title === '') {
+            return $html;
+        }
+
+        $safeTitle = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $titleTag = '<title>' . $safeTitle . '</title>';
+
+        if (preg_match('/<title\b[^>]*>.*?<\/title>/is', $html)) {
+            return (string) preg_replace(
+                '/<title\b[^>]*>.*?<\/title>/is',
+                $titleTag,
+                $html,
+                1,
+            );
+        }
+
+        return (string) preg_replace('/(<head\b[^>]*>)/i', '$1' . $titleTag, $html, 1);
     }
 
     private function blankDeathData(): array
@@ -189,21 +234,23 @@ class DeathTemplateService
 
     private function person(array $form, string $prefix, array $aliases = []): array
     {
-        $get = fn (array $names) => $this->value($form, array_merge(
-            array_map(fn (string $name) => $name . '_' . $prefix, [
-                'nik', 'nama', 'ttl', 'umur', 'pekerjaan', 'alamat', 'jenis_kelamin',
-            ]),
-            $names,
-        ));
+        // Setiap kolom harus membaca key miliknya sendiri. Sebelumnya daftar
+        // alias seluruh kolom digabung sekaligus, sehingga semua kolom
+        // menemukan nilai pertama (nik_*) dan menampilkan NIK.
+        $get = function (string $field, array $extra = []) use ($form, $prefix): mixed {
+            return $this->value($form, array_merge([
+                $field . '_' . $prefix,
+            ], $extra));
+        };
 
         return [
-            'nik' => $get(['nik_' . $prefix]),
-            'name' => $get(['nama_' . $prefix]),
-            'gender' => $get(['jenis_kelamin_' . $prefix]),
-            'birth_place_date' => $get(['ttl_' . $prefix]),
-            'age' => $get(['umur_' . $prefix]),
-            'occupation' => $get(['pekerjaan_' . $prefix]),
-            'address' => $get(['alamat_' . $prefix]),
+            'nik' => $get('nik', ['nik_' . $prefix]),
+            'name' => $get('nama', ['name_' . $prefix]),
+            'gender' => $get('jenis_kelamin', ['gender_' . $prefix]),
+            'birth_place_date' => $get('ttl', ['birth_place_date_' . $prefix]),
+            'age' => $get('umur', ['age_' . $prefix]),
+            'occupation' => $get('pekerjaan', ['occupation_' . $prefix]),
+            'address' => $get('alamat', ['address_' . $prefix]),
         ] + ($aliases ? ['role' => $aliases[0]] : []);
     }
 

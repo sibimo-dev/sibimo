@@ -1,6 +1,7 @@
 <?php
 namespace Database\Seeders;
 
+use App\Support\AdditionalLetterTemplateCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -1423,6 +1424,10 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Saksi II', 'label' => 'Umur', 'key' => 'umur_saksi_2', 'type' => 'number'],
             ['section' => 'Saksi II', 'label' => 'Alamat', 'key' => 'alamat_saksi_2', 'type' => 'text'],
         ]);
+
+        foreach (AdditionalLetterTemplateCatalog::all() as $template) {
+            $this->seedForCode($template['code'], $template['fields']);
+        }
     }
 
     private function seedForCode(string $code, array $fields): void
@@ -1443,22 +1448,38 @@ class LetterTypeFieldSeeder extends Seeder
         if (!$letterTypeId) {
             throw new \RuntimeException("Letter type [{$code}] must exist before its fields are seeded.");
         }
-    
-        $alreadySeeded = DB::table('letter_type_fields')->where('letter_type_id', $letterTypeId)->exists();
-        if ($alreadySeeded) return;
+
+        // SPKIAF sebelumnya memakai field formulir KIA. Bersihkan field lama
+        // saat seeder dijalankan agar admin tidak menampilkan dua kontrak form
+        // setelah SPKIAF dipindahkan menjadi formulir F-1.02.
+        if ($code === 'SPKIAF') {
+            DB::table('letter_type_fields')
+                ->where('letter_type_id', $letterTypeId)
+                ->whereIn('field_key', [
+                    'nik', 'name', 'birth_place', 'birth_date', 'gender',
+                    'blood_type', 'kk_number', 'household_head', 'birth_cert_number',
+                    'religion', 'citizenship', 'address', 'rt', 'rw', 'village',
+                    'district', 'submission_date',
+                ])
+                ->delete();
+        }
     
         foreach ($fields as $i => $f) {
-            DB::table('letter_type_fields')->insert([
-                'letter_type_id' => $letterTypeId,
-                'section_name' => $f['section'] ?? null,
-                'field_label' => $f['label'],
-                'field_key' => $f['key'],
-                'field_type' => $f['type'],
-                'is_required' => $f['is_required'] ?? true,
-                'options' => isset($f['options']) ? json_encode($f['options']) : null,
-                'sort_order' => $i + 1,
-                'created_at' => now(),
-            ]);
+            DB::table('letter_type_fields')->updateOrInsert(
+                [
+                    'letter_type_id' => $letterTypeId,
+                    'field_key' => $f['key'],
+                ],
+                [
+                    'section_name' => $f['section'] ?? null,
+                    'field_label' => $f['label'],
+                    'field_type' => $f['type'],
+                    'is_required' => $f['is_required'] ?? true,
+                    'options' => isset($f['options']) ? json_encode($f['options']) : null,
+                    'sort_order' => $i + 1,
+                    'created_at' => now(),
+                ],
+            );
         }
     }
 }

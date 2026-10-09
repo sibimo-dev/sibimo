@@ -13,21 +13,21 @@
 
     /* Dipadatkan supaya kop + seluruh data muat satu halaman folio (override atas
        default letters.layouts.base) */
-    .judul { margin-left: 0; margin-top: 6pt; font-size: 12pt; }
+    .judul { margin-left: 0; margin-top: 2pt; font-size: 11pt; }
     .nomor { font-size: 9.5pt; margin-top: 1pt; }
-    .kop-line { margin-top: 8pt; }
-    .sign-space { height: 34pt; }
+    .kop-line { margin-top: 4pt; }
+    .sign-space { height: 16pt; }
 
-    .bf { font-size: 10pt; line-height: 1.1; }
+    .bf { font-size: 8.6pt; line-height: 0.98; }
 
     table.rows { width: 100%; border-collapse: collapse; }
-    table.rows td { padding: 1pt 0; vertical-align: top; }
+    table.rows td { padding: 0.3pt 0; vertical-align: top; }
     table.rows td.r-no { width: 14pt; padding-left: 10pt; }
     table.rows.flat td.r-no { padding-left: 0; }
     table.rows td.r-sep { width: 10pt; }
-    table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 10pt; }
+    table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 7.5pt; }
 
-    .frame { border: 1px solid #000; margin-top: 3pt; padding: 0 6pt 2pt 6pt; page-break-inside: avoid; }
+    .frame { border: 1px solid #000; margin-top: 1pt; padding: 0 5pt 0 5pt; page-break-inside: avoid; }
     .frame-title { font-weight: bold; }
 
     table.split { width: 100%; border-collapse: collapse; }
@@ -77,7 +77,7 @@
     <div class="judul">SURAT KETERANGAN KELAHIRAN</div>
     <div class="nomor">NO : {{ $number }}</div>
 
-    <div class="bf" style="margin-top: 6pt;">
+    <div class="bf" style="margin-top: 2pt;">
 
         <div class="frame">
             {!! $renderRows([
@@ -178,7 +178,7 @@
 
 {{-- TTD dua kolom: menggantikan blok TTD standar di layouts.base --}}
 @section('custom_signature')
-    <table class="sign" style="width: 100%; border-collapse: collapse; page-break-inside: avoid; margin-top: 6pt; font-size: 9.5pt;">
+    <table class="sign" style="width: 100%; border-collapse: collapse; page-break-inside: avoid; margin-top: 2pt; font-size: 8.6pt;">
         <tr>
             <td style="width: 50%; vertical-align: top;">
                 Mengetahui

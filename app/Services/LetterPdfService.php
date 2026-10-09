@@ -90,9 +90,8 @@ class LetterPdfService
         'SKJ' => 'travel-permit-letter',
         'SKCK' => 'skck-referral-letter',
         'SPKTP' => 'ktp-application-form',
-        // Belum ada Blade khusus KIA; F-1.02 memuat pilihan KIA dan menjadi
-        // template administrasi kependudukan yang paling sesuai sementara.
-        'SPKIA' => 'population-occurrence-registration-form',
+        'SPKIA' => 'kia-application-form',
+        'SPKIAF' => 'population-occurrence-registration-form',
         'SRBBM' => 'fuel-recommendation-letter',
         'SPPWNI' => 'relocation-cover-letter',
         'SGC' => 'divorce-lawsuit-letter',
@@ -100,7 +99,7 @@ class LetterPdfService
         'SPSKG' => 'lease-offer-letter',
         'PNP' => 'registration-form',
         'N2P' => 'n2',
-        'PNL' => 'registration-form',
+        'PNL' => 'marriage-registration-data-sheet',
         'PAK' => 'birth-certificate-application-form',
         'FPK' => 'birth-report-form',
         'LK' => 'birth-report-statement',
@@ -122,8 +121,8 @@ class LetterPdfService
         'SKWHP' => 'judge-guardian',
         'SPTKP' => 'health-referral',
         'SKNNP' => 'numpang-nikah',
-        'N1L' => 'n1',
-        'N4L' => 'n4',
+        'N1L' => 'marriage-introduction-letter',
+        'N4L' => 'bride-groom-consent-letter',
         'SKDPAK' => 'population-service-authorization-letter',
         'SBP' => 'research-response-letter',
         'SKKL' => 'birth-attestation-letter',
@@ -281,7 +280,18 @@ class LetterPdfService
     {
         $code = strtoupper((string) ($letterType?->code ?? ''));
 
-        return self::TEMPLATE_BY_CODE[$code] ?? null;
+        if (isset(self::TEMPLATE_BY_CODE[$code])) {
+            return self::TEMPLATE_BY_CODE[$code];
+        }
+
+        // Template tambahan disimpan langsung sebagai blade_view oleh katalog
+        // seeder. Ambil slug terakhir agar tetap kompatibel dengan resolver
+        // folder yang sudah dipakai preview developer.
+        $bladeView = (string) ($letterType?->blade_view ?? '');
+
+        return str_starts_with($bladeView, 'letters.')
+            ? str($bladeView)->afterLast('.')->toString()
+            : null;
     }
 
     public function hasRootTemplate(?LetterType $letterType): bool
@@ -332,6 +342,9 @@ class LetterPdfService
         $formCode = $form['kode_form'] ?? $letterRequest->letterType?->form_code ?? null;
 
         $data = [
+            // Metadata PDF harus mengikuti nama resmi pada service type.
+            'document_title' => $letterRequest->letterType?->letter_name,
+
             // 'number' (baru) dan 'nomor' (alias untuk blade lama).
             'number' => $number = $letterRequest->letter_number
                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
@@ -694,6 +707,14 @@ class LetterPdfService
             ]);
         }
 
+        // Banyak template tambahan sudah memiliki struktur data contoh di
+        // sampleViewData(), tetapi belum memiliki normalizer khusus. Isi hanya
+        // bagian yang masih kosong agar preview request tetap terisi tanpa
+        // menimpa data asli dari request.
+        if (! array_key_exists($code, self::TEMPLATE_BY_CODE)) {
+            $data = $this->fillEmptyData($this->sampleViewData($templateSlug), $data);
+        }
+
         return $data;
     }
 
@@ -763,6 +784,22 @@ class LetterPdfService
         return 'letters.' . ($folder ? $folder . '.' : '') . $template;
     }
 
+    private function fillEmptyData(array $defaults, array $data): array
+    {
+        foreach ($defaults as $key => $default) {
+            if (! array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '' || $data[$key] === []) {
+                $data[$key] = $default;
+                continue;
+            }
+
+            if (is_array($default) && is_array($data[$key])) {
+                $data[$key] = $this->fillEmptyData($default, $data[$key]);
+            }
+        }
+
+        return $data;
+    }
+
     /** true jika view ini termasuk slug yang dicetak landscape. */
     private function isLandscape(string $view): bool
     {
@@ -779,9 +816,38 @@ class LetterPdfService
     public function pdf(string $view, array $data): DomPdf
     {
         $view = $this->wrapMarriageWomenView($view, $data);
+        $html = $this->renderDocumentHtml($view, $data);
 
-        return Pdf::loadView($view, $data)
+        return Pdf::loadHtml($html)
             ->setPaper(self::PAPER, $this->isLandscape($view) ? 'landscape' : 'portrait');
+    }
+
+    /**
+     * Menyamakan metadata title PDF dengan nama service type tanpa mengubah
+     * judul resmi yang tercetak di dalam badan template.
+     */
+    private function renderDocumentHtml(string $view, array $data): string
+    {
+        $html = view($view, $data)->render();
+        $title = trim((string) ($data['document_title'] ?? ''));
+
+        if ($title === '') {
+            return $html;
+        }
+
+        $safeTitle = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $titleTag = '<title>' . $safeTitle . '</title>';
+
+        if (preg_match('/<title\b[^>]*>.*?<\/title>/is', $html)) {
+            return (string) preg_replace(
+                '/<title\b[^>]*>.*?<\/title>/is',
+                $titleTag,
+                $html,
+                1,
+            );
+        }
+
+        return (string) preg_replace('/(<head\b[^>]*>)/i', '$1' . $titleTag, $html, 1);
     }
 
     /**
@@ -1020,6 +1086,16 @@ class LetterPdfService
                     'occupation' => ['pekerjaan_ayah_putri', 'pekerjaan_ayah'],
                     'address' => ['alamat_ayah_putri', 'alamat_ayah'],
                 ],
+                'groom_father' => [
+                    'name' => ['nama_ayah_putra', 'nama_ayah_catin_putra', 'nama_ayah'],
+                    'bin' => ['bin_ayah_putra', 'bin_ayah_catin_putra', 'bin_ayah'],
+                    'nik' => ['nik_ayah_putra', 'nik_ayah_catin_putra', 'nik_ayah'],
+                    'birth_place' => ['ttl_ayah_putra', 'ttl_ayah_catin_putra', 'ttl_ayah'],
+                    'citizenship' => ['kewarganegaraan_ayah_putra', 'kewarganegaraan_ayah_catin_putra', 'kewarganegaraan_ayah'],
+                    'religion' => ['agama_ayah_putra', 'agama_ayah_catin_putra', 'agama_ayah'],
+                    'occupation' => ['pekerjaan_ayah_putra', 'pekerjaan_ayah_catin_putra', 'pekerjaan_ayah'],
+                    'address' => ['alamat_ayah_putra', 'alamat_ayah_catin_putra', 'alamat_ayah'],
+                ],
                 'bride_mother' => [
                     'name' => ['nama_ibu_putri', 'nama_ibu'],
                     'bin' => ['binti_ibu_putri', 'binti_ibu'],
@@ -1029,6 +1105,16 @@ class LetterPdfService
                     'religion' => ['agama_ibu_putri', 'agama_ibu'],
                     'occupation' => ['pekerjaan_ibu_putri', 'pekerjaan_ibu'],
                     'address' => ['alamat_ibu_putri', 'alamat_ibu'],
+                ],
+                'groom_mother' => [
+                    'name' => ['nama_ibu_putra', 'nama_ibu_catin_putra', 'nama_ibu'],
+                    'bin' => ['binti_ibu_putra', 'binti_ibu_catin_putra', 'binti_ibu'],
+                    'nik' => ['nik_ibu_putra', 'nik_ibu_catin_putra', 'nik_ibu'],
+                    'birth_place' => ['ttl_ibu_putra', 'ttl_ibu_catin_putra', 'ttl_ibu'],
+                    'citizenship' => ['kewarganegaraan_ibu_putra', 'kewarganegaraan_ibu_catin_putra', 'kewarganegaraan_ibu'],
+                    'religion' => ['agama_ibu_putra', 'agama_ibu_catin_putra', 'agama_ibu'],
+                    'occupation' => ['pekerjaan_ibu_putra', 'pekerjaan_ibu_catin_putra', 'pekerjaan_ibu'],
+                    'address' => ['alamat_ibu_putra', 'alamat_ibu_catin_putra', 'alamat_ibu'],
                 ],
                 'guardian' => [
                     'name' => ['nama_wali'],
@@ -1067,6 +1153,14 @@ class LetterPdfService
                 $set($form, 'bride_education', ['pendidikan_terakhir']);
                 $set($form, 'bride_status', ['status_pernikahan']);
                 $set($form, 'ex_husband_name', ['nama_pasangan_terdahulu']);
+                $set($form, 'marital_status', ['status_pernikahan']);
+                $form['gender'] = 'Perempuan';
+                $form['bride_gender'] = 'Perempuan';
+                $form['marital_status'] = $this->normalizeN1Status(
+                    $form['bride_status'] ?? $form['marital_status'] ?? null,
+                    'N1P',
+                );
+                $form['bride_status'] = $form['marital_status'];
             }
 
             if ($code === 'N1L') {
@@ -1079,6 +1173,38 @@ class LetterPdfService
                 $set($form, 'groom_education', ['pendidikan_terakhir']);
                 $set($form, 'groom_status', ['status_perkawinan']);
                 $set($form, 'ex_husband_name', ['nama_pasangan_terdahulu']);
+
+                // Template laki-laki memakai blok applicant/father/mother,
+                // sedangkan field katalog N1L memakai nama field Indonesia.
+                $set($form, 'birth_place', ['tempat_lahir']);
+                $set($form, 'birth_date', ['tanggal_lahir']);
+                $set($form, 'gender', ['jenis_kelamin']);
+                $set($form, 'nationality', ['kewarganegaraan']);
+                $set($form, 'education', ['pendidikan_terakhir']);
+                $set($form, 'marital_status', ['status_perkawinan']);
+                $set($form, 'father_name', ['nama_ayah']);
+                $set($form, 'father_nik', ['nik_ayah']);
+                $set($form, 'father_birth_place', ['ttl_ayah']);
+                $set($form, 'father_nationality', ['kewarganegaraan_ayah']);
+                $set($form, 'father_religion', ['agama_ayah']);
+                $set($form, 'father_occupation', ['pekerjaan_ayah']);
+                $set($form, 'father_address', ['alamat_ayah']);
+                $set($form, 'mother_name', ['nama_ibu']);
+                $set($form, 'mother_nik', ['nik_ibu']);
+                $set($form, 'mother_birth_place', ['ttl_ibu']);
+                $set($form, 'mother_nationality', ['kewarganegaraan_ibu']);
+                $set($form, 'mother_religion', ['agama_ibu']);
+                $set($form, 'mother_occupation', ['pekerjaan_ibu']);
+                $set($form, 'mother_address', ['alamat_ibu']);
+
+                // N1L adalah varian untuk calon pengantin laki-laki. Kode
+                // surat menjadi sumber kebenaran agar data seed lama yang
+                // kebetulan memilih opsi gender perempuan tidak membuat
+                // baris status tampil pada bagian yang salah.
+                $form['gender'] = 'Laki-laki';
+                $form['groom_gender'] = 'Laki-laki';
+                $form['marital_status'] = $this->normalizeN1Status($form['marital_status'] ?? null, 'N1L');
+                $form['groom_status'] = $form['marital_status'];
             }
 
             // N6 adalah varian surat kematian dalam folder template nikah.
@@ -1142,7 +1268,7 @@ class LetterPdfService
             }
         }
 
-        $birthCodes = ['PAK', 'FPK', 'LK', 'SKAK', 'PPKT', 'LKLD', 'SKKL'];
+        $birthCodes = ['SPAKL', 'LPKL', 'PAK', 'FPK', 'LK', 'SKAK', 'PPKT', 'LKLD', 'SKKL'];
 
         if (in_array($code, $birthCodes, true)) {
             $birthAliases = [
@@ -1247,9 +1373,35 @@ class LetterPdfService
         }
 
         if ($code === 'SPKIA') {
+            $set($form, 'nik', ['nik_anak']);
+            $set($form, 'name', ['nama_anak']);
+            $set($form, 'birth_place', ['tempat_lahir_anak']);
+            $set($form, 'birth_date', ['tanggal_lahir_anak']);
+            $set($form, 'gender', ['jenis_kelamin_anak']);
+            $set($form, 'blood_type', ['golongan_darah_anak']);
             $set($form, 'kk_number', ['nomor_kk']);
+            $set($form, 'household_head', ['nama_kepala_keluarga']);
+            $set($form, 'birth_cert_number', ['nomor_akta_kelahiran']);
+            $set($form, 'religion', ['agama_anak']);
+            $set($form, 'citizenship', ['kewarganegaraan']);
+            $set($form, 'address', ['alamat_anak']);
+            $set($form, 'rt', ['rt']);
+            $set($form, 'rw', ['rw']);
+            $set($form, 'village', ['kelurahan']);
+            $set($form, 'district', ['kecamatan']);
             $set($form, 'application_date', ['tgl_pengambilan']);
+        }
+
+        if ($code === 'SPKIAF') {
+            // F-1.02 memakai data pemohon dan pilihan checkbox, bukan data
+            // biodata KIA. Default ini juga menjaga request lama tetap terisi
+            // setelah kode SPKIAF dipindahkan ke template F-1.02.
+            $set($form, 'applicant_name', ['nama_pemohon', 'name']);
+            $set($form, 'applicant_nik', ['nik_pemohon', 'nik']);
+            $set($form, 'kk_number', ['nomor_kk']);
+            $set($form, 'application_date', ['tanggal_pengajuan', 'submission_date']);
             $form['application_types'] ??= ['child_card_new'];
+            $form['attached_documents'] ??= ['old_family_card', 'occurrence_evidence'];
         }
 
         if ($code === 'SRBBM') {
@@ -1410,10 +1562,46 @@ class LetterPdfService
         return $form;
     }
 
+    /**
+     * Ubah status umum dari form menjadi istilah yang sesuai dengan Model N1.
+     * N1P menggunakan Perawan/Janda, sedangkan N1L menggunakan Jejaka/Duda.
+     */
+    private function normalizeN1Status(?string $status, string $code): ?string
+    {
+        $status = trim((string) $status);
+
+        if ($status === '') {
+            return null;
+        }
+
+        $statusMap = $code === 'N1P'
+            ? [
+                'belum kawin' => 'Perawan',
+                'perjaka' => 'Perawan',
+                'jejaka' => 'Perawan',
+                'perawan' => 'Perawan',
+                'duda' => 'Janda',
+                'janda' => 'Janda',
+                'cerai hidup' => 'Janda',
+                'cerai mati' => 'Janda',
+            ]
+            : [
+                'belum kawin' => 'Jejaka',
+                'perjaka' => 'Jejaka',
+                'jejaka' => 'Jejaka',
+                'duda' => 'Duda',
+                'janda' => 'Duda',
+                'cerai hidup' => 'Duda',
+                'cerai mati' => 'Duda',
+            ];
+
+        return $statusMap[strtolower($status)] ?? $status;
+    }
+
     public function previewHtml(string $view, array $data): string
     {
         $view = $this->wrapMarriageWomenView($view, $data);
-        $html = view($view, $data)->render();
+        $html = $this->renderDocumentHtml($view, $data);
 
         $page = $this->isLandscape($view)
             ? 'width:33.02cm;min-height:21.59cm;padding:0.9cm'
@@ -1813,7 +2001,7 @@ class LetterPdfService
 
         $groom = $this->personBlock($form, 'groom', 'bin', [
             'status' => $form['groom_status'] ?? null,
-            'last_education' => $form['groom_last_education'] ?? null,
+            'last_education' => $form['groom_last_education'] ?? $form['groom_education'] ?? null,
             'previous_spouse_name' => $form['groom_previous_spouse_name'] ?? null,
             'previous_spouse_parent_name' => $form['groom_previous_spouse_parent_name'] ?? null,
             'previous_spouse_bin' => $form['groom_previous_spouse_bin'] ?? null,
@@ -1833,7 +2021,7 @@ class LetterPdfService
 
         $bride = $this->personBlock($form, 'bride', 'binti', [
             'status' => $form['bride_status'] ?? null,
-            'last_education' => $form['bride_last_education'] ?? null,
+            'last_education' => $form['bride_last_education'] ?? $form['bride_education'] ?? null,
             'previous_spouse_name' => $form['bride_previous_spouse_name'] ?? null,
             'previous_spouse_bin' => $form['bride_previous_spouse_bin'] ?? null,
             'previous_spouse_nik' => $form['bride_previous_spouse_nik'] ?? null,
@@ -1894,7 +2082,9 @@ class LetterPdfService
             'rw'                => $form['rw'] ?? null,
             'village'           => $form['village'] ?? null,
             'district'          => $form['district'] ?? null,
-            'date'              => $form['submission_date'] ?? now()->locale('id')->translatedFormat('d F Y'),
+            'date'              => !empty($form['submission_date'])
+                ? $this->longDate($form['submission_date'])
+                : now()->locale('id')->translatedFormat('d F Y'),
         ];
     }
 

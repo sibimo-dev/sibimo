@@ -101,13 +101,13 @@
 
         .date-right {
             text-align: right;
-            margin: 14px 0 18px 0;
+            margin: 8px 0 10px 0;
         }
 
         table.signature {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
+            margin-top: 0;
         }
 
         table.signature td {
@@ -120,7 +120,7 @@
         .materai {
             width: 80px;
             height: 45px;
-            margin: 5px auto;
+            margin: 2px auto;
             border: 1px solid #000;
             text-align: center;
             font-size: 8pt;
@@ -129,16 +129,16 @@
         }
 
         .materai-placeholder {
-            height: 61px;
+            height: 38px;
         }
 
         .sign-space {
-            height: 34px;
+            height: 24px;
         }
 
         .mengetahui {
             text-align: center;
-            margin-top: 18px;
+            margin-top: 8px;
         }
 
         .mengetahui p {
@@ -147,7 +147,7 @@
         }
 
         .mengetahui .sign-space {
-            height: 95px;
+            height: 42px;
         }
     </style>
 </head>

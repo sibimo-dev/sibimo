@@ -42,21 +42,21 @@
 --}}
 
 @section('extra_css')
-    .trr-body { font-family: 'Times New Roman', Times, serif; font-size: 11.5pt; line-height: 1.35; }
+    .trr-body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.2; }
 
     .trr-hal { margin-top: 3pt; }
-    .trr-to { margin-top: 12pt; }
+    .trr-to { margin-top: 8pt; }
     .trr-to div { margin-top: 0; }
-    .trr-greeting { margin-top: 12pt; }
+    .trr-greeting { margin-top: 8pt; }
     .trr-intro { margin-top: 3pt; }
 
-    table.trr-item { border-collapse: collapse; margin-top: 4pt; margin-left: 20pt; }
-    table.trr-item td { vertical-align: top; padding: 1pt 0; }
+    table.trr-item { border-collapse: collapse; margin-top: 2pt; margin-left: 20pt; }
+    table.trr-item td { vertical-align: top; padding: 0.5pt 0; }
     td.trr-label { width: 130pt; }
     td.trr-sep { width: 10pt; }
     td.trr-val { padding-left: 3pt; }
 
-    .trr-request { margin-top: 7pt; }
+    .trr-request { margin-top: 4pt; }
 
     table.trr-dest { border-collapse: collapse; margin-top: 1pt; margin-left: 20pt; }
     table.trr-dest td { padding: 1pt 0; vertical-align: top; }
@@ -73,26 +73,26 @@
        keluarga dari" dkk di atasnya. Lebar dikurangi (calc(100% - 20pt))
        supaya total lebar tabel + margin-left tetap pas di dalam batas
        halaman, tidak melebar sampai ke tepi kanan seperti sebelumnya. */
-    table.trr-family { width: calc(100% - 20pt); margin-left: 20pt; border-collapse: collapse; margin-top: 7pt; }
+    table.trr-family { width: calc(100% - 20pt); margin-left: 20pt; border-collapse: collapse; margin-top: 4pt; }
     table.trr-family th, table.trr-family td {
-        border: 1px solid #000; padding: 3pt 6pt; font-size: 10.5pt;
+        border: 1px solid #000; padding: 2pt 5pt; font-size: 9.5pt;
     }
     table.trr-family th { text-align: center; font-weight: bold; }
     td.fam-no { width: 26pt; text-align: center; }
-    .fam-blank { height: 15pt; }
+    .fam-blank { height: 11pt; }
 
     table.trr-family { page-break-inside: avoid; }
     table.trr-family tr { page-break-inside: avoid; }
 
-    p.trr-closing { margin-top: 12pt; line-height: 1.35; }
+    p.trr-closing { margin-top: 7pt; line-height: 1.2; }
 
-    .trr-bottom-wrap { padding: 0 20pt; margin-top: 3pt; }
+    .trr-bottom-wrap { padding: 0 20pt; margin-top: 0; }
 
     .trr-place-date { text-align: right; margin-top: 0; }
 
-    table.trr-final { width: 100%; border-collapse: collapse; margin-top: 9pt; }
+    table.trr-final { width: 100%; border-collapse: collapse; margin-top: 5pt; }
     table.trr-final td { width: 50%; vertical-align: top; }
-    .trr-sign-space { height: 44pt; }
+    .trr-sign-space { height: 30pt; }
     td.trr-sign-name { font-weight: bold; text-align: right; }
 
     table.trr-bottom-inner { border-collapse: collapse; }

@@ -14,7 +14,7 @@
 
 <p style="margin-top:10pt">Demikian surat izin ini dibuat dengan kesadaran tanpa ada paksaan dari siapapun dan untuk digunakan seperlunya.</p>
 
-<table class="sign" style="margin-top:16pt">
+<table class="sign" style="margin-top:8pt">
     <tr>
         <td class="sign-l">&nbsp;</td>
         <td class="sign-r" style="text-align:left; padding-left:130pt; white-space:nowrap">{{ $signature['city'] }}, {{ $signature['date_long'] }}</td>
@@ -23,7 +23,7 @@
         <td class="sign-l">Ayah/wali/pengampu</td>
         <td class="sign-r" style="text-align:left; padding-left:130pt">Ibu/wali/pengampu</td>
     </tr>
-    <tr><td colspan="2" class="sign-space">&nbsp;</td></tr>
+    <tr><td colspan="2" class="sign-space" style="height:26pt">&nbsp;</td></tr>
     <tr>
         <td class="sign-l bold">{{ mb_strtoupper($m['bride_father']['name'] ?? '') }}</td>
         <td class="sign-r bold" style="text-align:left; padding-left:130pt">{{ mb_strtoupper($m['bride_mother']['name'] ?? '') }}</td>

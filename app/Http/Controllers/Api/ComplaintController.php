@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NotificationAvailable;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use Illuminate\Http\JsonResponse;
@@ -155,6 +156,13 @@ class ComplaintController extends Controller
 
         $complaint = Complaint::create($validated);
 
+        event(new NotificationAvailable(
+            'complaint',
+            (int) $complaint->complaint_id,
+            'created',
+            now()->toISOString(),
+        ));
+
         return response()->json([
             'success' => true,
             'message' => 'Pengaduan berhasil dikirim.',
@@ -203,6 +211,13 @@ class ComplaintController extends Controller
             'note' => $validated['note'] ?? null,
             'user_id' => $request->user()->user_id,
         ]);
+
+        event(new NotificationAvailable(
+            'complaint',
+            (int) $complaint->complaint_id,
+            'updated',
+            now()->toISOString(),
+        ));
     
         return response()->json([
             'success' => true,
