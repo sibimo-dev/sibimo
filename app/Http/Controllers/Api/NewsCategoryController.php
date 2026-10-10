@@ -7,6 +7,7 @@ use App\Models\NewsCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 
 class NewsCategoryController extends Controller
@@ -14,7 +15,7 @@ class NewsCategoryController extends Controller
 
     public function index(): JsonResponse
     {
-        $categorys = NewsCategory::query()->latest()->get();
+        $categorys = NewsCategory::query()->orderBy('category_name')->get();
 
         return response()->json([
             'success' => true,
@@ -27,9 +28,10 @@ class NewsCategoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_name' => ['required','string','max:100'],
-            'slug' => ['required','string','max:100','unique:news_categories,slug']
+            'category_name' => ['required','string','max:100', Rule::unique('news_categories', 'category_name')],
+            'slug' => ['nullable','string','max:100', Rule::unique('news_categories', 'slug')],
         ]);
+        $validated['slug'] = Str::slug($validated['slug'] ?? $validated['category_name']);
 
         $category = NewsCategory::create($validated);
 
@@ -58,9 +60,14 @@ class NewsCategoryController extends Controller
         $category = NewsCategory::findOrFail($category_id);
 
         $validated = $request->validate([
-            'category_name' => ['sometimes','required','string','max:100'],
-            'slug' => ['sometimes','required','string','max:100', Rule::unique('news_categories','slug')->ignore($category_id, 'category_id')]
+            'category_name' => ['sometimes','required','string','max:100', Rule::unique('news_categories', 'category_name')->ignore($category_id, 'category_id')],
+            'slug' => ['sometimes','nullable','string','max:100', Rule::unique('news_categories','slug')->ignore($category_id, 'category_id')],
         ]);
+        if (array_key_exists('category_name', $validated) && !array_key_exists('slug', $validated)) {
+            $validated['slug'] = Str::slug($validated['category_name']);
+        } elseif (array_key_exists('slug', $validated)) {
+            $validated['slug'] = Str::slug($validated['slug'] ?: $category->category_name);
+        }
 
         $category->update($validated);
 
@@ -75,6 +82,14 @@ class NewsCategoryController extends Controller
     public function destroy(int $category_id): JsonResponse
     {
         $category = NewsCategory::findOrFail($category_id);
+
+        if ($category->news()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak dapat dihapus karena masih dipakai oleh berita.',
+            ], 422);
+        }
+
         $category->delete();
 
         return response()->json([
