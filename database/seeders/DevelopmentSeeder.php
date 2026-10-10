@@ -60,8 +60,8 @@ class DevelopmentSeeder extends Seeder
         $executor = ['TPK Kalurahan', 'Swakelola Kalurahan', 'Pemerintah Kalurahan'];
 
         // Titik tengah Kalurahan Bimomartani, digeser sedikit tiap data.
-        $centerLat = -7.7075;
-        $centerLng = 110.4470;
+        $centerLat = -7.7012;
+        $centerLng = 110.4630;
 
         $i = 0;
         foreach ($templates as $category => $tpl) {
@@ -119,7 +119,7 @@ class DevelopmentSeeder extends Seeder
                         'name'           => $name,
                         'category'       => $category,
                         'status'         => $status,
-                        'address'        => "Padukuhan Seeder {$no}, RT 0" . (($i % 5) + 1) . '/RW 1' . ($i % 4),
+                        'address'        => "Padukuhan Seeder {$no}, RT 0" . (($i % 5) + 1) . '/RW 1' . ($i % 4) . ', Bimomartani, Ngemplak, Sleman',
                         'description'    => "{$tpl['names'][$s]} sebagai data contoh untuk pengujian sistem SIBIMO.",
                         'budget'         => 40000000 + $i * 17000000,
                         'volume'         => 20 + $i * 15,
