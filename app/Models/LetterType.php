@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
     'description',
     'blade_view',
     'is_active',
+    'is_online',
 ])]
 class LetterType extends Model
 {
@@ -31,6 +32,7 @@ class LetterType extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_online' => 'boolean',
         ];
     }
 

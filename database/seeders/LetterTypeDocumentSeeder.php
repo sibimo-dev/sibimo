@@ -80,6 +80,16 @@ class LetterTypeDocumentSeeder extends Seeder
         foreach (AdditionalLetterTemplateCatalog::all() as $template) {
             $this->seedDocumentsForCode($template['code'], $template['documents']);
         }
+
+        // Public forms can contain extra supporting files whose wording is
+        // intentionally different from the admin document catalog. This
+        // optional bucket keeps those files attached to a valid document type
+        // without hard-coding database IDs in the public application.
+        foreach (LetterTypeSeeder::ONLINE_CODES as $code) {
+            $this->seedDocumentsForCode($code, [
+                ['name' => 'Dokumen pendukung lainnya', 'is_required' => false],
+            ]);
+        }
     }
 
     /**
