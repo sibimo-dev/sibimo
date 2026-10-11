@@ -1172,7 +1172,7 @@ class LetterPdfService
                 $set($form, 'groom_occupation', ['pekerjaan']);
                 $set($form, 'groom_education', ['pendidikan_terakhir']);
                 $set($form, 'groom_status', ['status_perkawinan']);
-                $set($form, 'ex_husband_name', ['nama_pasangan_terdahulu']);
+                $set($form, 'previous_spouse_name', ['nama_pasangan_terdahulu']);
 
                 // Template laki-laki memakai blok applicant/father/mother,
                 // sedangkan field katalog N1L memakai nama field Indonesia.

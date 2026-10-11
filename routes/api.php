@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\UserPermissionController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PublicLetterController;
 use App\Http\Controllers\Api\OrganizationalStructureController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\DashboardController;
@@ -51,6 +52,14 @@ Route::prefix('public')->group(function () {
     Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
     Route::post('/complaints', [ComplaintController::class, 'storePublic']);
     Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/letter-types', [PublicLetterController::class, 'types']);
+        Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/letter-requests', [PublicLetterController::class, 'store']);
+        Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
+        Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);
+    });
 });
 
 Route::middleware([

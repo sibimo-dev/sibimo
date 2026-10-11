@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\DB;
 
 class LetterTypeSeeder extends Seeder
 {
+    /** @var list<string> */
+    public const ONLINE_CODES = [
+        'SGC', 'FBWNI', 'SRBBM', 'SPKIA', 'SPKTP', 'SPKIAF', 'SPPWF', 'SPPWNI', 'SKDT', 'SKTS', 'SPTTS',
+        'SKWKA', 'SPBNI', 'SPTMDK', 'SKDPAK', 'SPDP', 'SPTJP',
+        'SKU', 'SKD', 'SKK', 'SKUM', 'SKP', 'RL', 'SKCK', 'SKTM', 'SKTMS', 'SKJG', 'SKBK',
+        'SPCCP', 'SKKMP', 'SKUMN', 'SPNIK', 'SPNIP', 'SKTNB', 'FPDN', 'SKBKN', 'SPBML', 'SPOT',
+        'SKTA', 'SKTH', 'SPKLC', 'SKC',
+        'SPU', 'SKDN',
+    ];
+
     public function run(): void
     {
         $defaultSignerId = DB::table('staff')
@@ -205,6 +215,7 @@ class LetterTypeSeeder extends Seeder
                     'processing_time' => '1 hari',
                     'signature_method' => $signatureMethod,
                     'signer_id' => $signerId,
+                    'is_online' => in_array($code, self::ONLINE_CODES, true),
                     'is_active' => true,
                     'updated_at' => now(),
                     'created_at' => now(),
@@ -226,11 +237,16 @@ class LetterTypeSeeder extends Seeder
                     'processing_time' => '1 hari',
                     'signature_method' => $template['signatureMethod'],
                     'signer_id' => $signerId,
+                    'is_online' => in_array($template['code'], self::ONLINE_CODES, true),
                     'is_active' => true,
                     'updated_at' => now(),
                     'created_at' => now(),
                 ],
             );
         }
+
+        DB::table('letter_types')
+            ->whereNotIn('code', self::ONLINE_CODES)
+            ->update(['is_online' => false]);
     }
 }

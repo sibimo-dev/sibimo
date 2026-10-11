@@ -13,7 +13,7 @@
     <tr><td class="no">10.</td><td colspan="3">Status pernikahan</td></tr>
     <tr><td class="no"></td><td class="lbl">a. Laki-laki: Jejaka, Duda, atau beristri ke .....</td><td class="sep">:</td><td>&nbsp;</td></tr>
     <tr><td class="no"></td><td class="lbl">b. Perempuan: Perawan, atau janda</td><td class="sep">:</td><td class="bold">{{ mb_strtoupper($b['status'] ?? '') }}</td></tr>
-    <tr><td class="no">11.</td><td class="lbl">Nama isteri/suami terdahulu</td><td class="sep">:</td><td>{{ filled($m['ex_husband']['name']) ? mb_strtoupper($m['ex_husband']['name']) : '.' }}</td></tr>
+    <tr><td class="no">11.</td><td class="lbl">Nama suami terdahulu</td><td class="sep">:</td><td>{{ filled($m['ex_husband']['name']) ? mb_strtoupper($m['ex_husband']['name']) : '.' }}</td></tr>
 </table>
 
 <p>Adalah benar anak dari pernikahan seorang pria :</p>

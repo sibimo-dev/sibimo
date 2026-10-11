@@ -39,6 +39,7 @@ class LetterTypeController extends Controller
             'signer_id' => ['nullable', 'exists:staff,staff_id'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
+            'is_online' => ['boolean'],
         ]);
 
         $letterType = LetterType::create($validated);
@@ -78,6 +79,7 @@ class LetterTypeController extends Controller
             'signer_id' => ['nullable', 'exists:staff,staff_id'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
+            'is_online' => ['boolean'],
         ]);
 
         $letterType->update($validated);
