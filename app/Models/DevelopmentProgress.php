@@ -20,6 +20,18 @@ class DevelopmentProgress extends Model
         return ['percentage' => 'integer'];
     }
 
+    public function getImageAttribute($value): ?string
+    {
+        if (!$value) return null;
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $url = \Illuminate\Support\Facades\Storage::disk('public')->url($value);
+        return str_starts_with($url, '/')
+            ? rtrim((string) config('app.url'), '/') . $url
+            : $url;
+    }
+
     public function development()
     {
         return $this->belongsTo(Development::class, 'development_id', 'development_id');

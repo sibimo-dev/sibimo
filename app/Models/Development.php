@@ -68,9 +68,22 @@ class Development extends Model
         return $this->hasMany(DevelopmentProgress::class, 'development_id', 'development_id')
             ->orderBy('percentage');
     }
-}
-    public function creator()
+  
+//     public function creator()
+    public function getCoverImageAttribute($value): ?string
     {
-        return $this->belongsTo(User::class, 'created_by', 'user_id');
+        if (!$value) return null;
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $url = \Illuminate\Support\Facades\Storage::disk('public')->url($value);
+        return str_starts_with($url, '/')
+            ? rtrim((string) config('app.url'), '/') . $url
+            : $url;
     }
+
+//     public function progress()
+//     {
+//         return $this->belongsTo(User::class, 'created_by', 'user_id');
+//     }
 }
