@@ -105,12 +105,17 @@ class PermissionSeeder extends Seeder
                 'name' => 'Pembangunan',
                 'slug' => 'pembangunan',
                 'description' => 'Mengelola kegiatan pembangunan kalurahan.',
+                'name' => 'Pembangunan',
+                'slug' => 'pembangunan',
+                'description' => 'Mengelola data kegiatan pembangunan kalurahan.',
             ],
             [
                 'name' => 'Produk Hukum',
                 'slug' => 'produk-hukum',
                 'description' => 'Mengelola produk hukum kalurahan.',
             ],
+                'description' => 'Mengelola dokumen produk hukum kalurahan.',
+            ], 
         ];
 
         // Dashboard and any permission removed from this code-defined list are

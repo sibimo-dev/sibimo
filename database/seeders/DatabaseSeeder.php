@@ -79,6 +79,9 @@ class DatabaseSeeder extends Seeder
             LetterRequestStatusHistorySeeder::class,
             ComplaintAttachmentSeeder::class,
             ComplaintStatusHistorySeeder::class,
+            DevelopmentSeeder::class,
+            LegalProductSeeder::class,
+
         ]);
     }
 }

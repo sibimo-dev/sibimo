@@ -29,7 +29,7 @@ class GallerySeeder extends Seeder
         ];
 
         for ($i = 0; $i < 12; $i++) {
-            $image = Storage::disk('public')->url('galleries/' . $galleryImages[$i % count($galleryImages)]);
+            $image = 'galleries/' . $galleryImages[$i % count($galleryImages)];
 
             DB::table('galleries')->updateOrInsert(
                 ['image' => $image],

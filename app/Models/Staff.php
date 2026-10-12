@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
     'level',
     'description',
     'photo',
+    'signature_image',
     'is_signer',
 ])]
 class Staff extends Model

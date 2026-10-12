@@ -26,6 +26,11 @@ use Illuminate\Database\Eloquent\Model;
     'end_latitude',
     'end_longitude',
     'cover_image',
+    'name', 'slug', 'category', 'status', 'address', 'description',
+    'budget', 'volume', 'volume_unit', 'funding_source', 'executor',
+    'year', 'start_date', 'target_date',
+    'latitude', 'longitude', 'end_latitude', 'end_longitude',
+    'cover_image', 'photo_0', 'photo_50', 'photo_100', 'created_by',
 ])]
 class Development extends Model
 {
@@ -33,6 +38,8 @@ class Development extends Model
 
     protected $table = 'developments';
     protected $primaryKey = 'development_id';
+    protected $keyType = 'int';
+    public $incrementing = true;
 
     protected function casts(): array
     {
@@ -45,6 +52,13 @@ class Development extends Model
             'latitude' => 'float',
             'longitude' => 'float',
             'end_latitude' => 'float',
+            'start_date'    => 'date',
+            'target_date'   => 'date',
+            'budget'        => 'float',
+            'volume'        => 'float',
+            'latitude'      => 'float',
+            'longitude'     => 'float',
+            'end_latitude'  => 'float',
             'end_longitude' => 'float',
         ];
     }
@@ -53,5 +67,10 @@ class Development extends Model
     {
         return $this->hasMany(DevelopmentProgress::class, 'development_id', 'development_id')
             ->orderBy('percentage');
+    }
+}
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'user_id');
     }
 }
