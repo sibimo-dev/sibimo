@@ -10,7 +10,7 @@ class NewsCategorySeeder extends Seeder
 {
     public function run(): void
     {
-        $categories = ['Pengumuman', 'Kegiatan Desa', 'Berita Umum', 'Bantuan Sosial'];
+        $categories = ['Pemerintahan', 'Kegiatan Warga', 'Pembangunan', 'Pengumuman', 'Kesehatan'];
         foreach ($categories as $name) {
             DB::table('news_categories')->updateOrInsert(
                 ['slug' => Str::slug($name)],

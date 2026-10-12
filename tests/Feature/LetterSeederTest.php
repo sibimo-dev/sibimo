@@ -55,6 +55,10 @@ it('seeds a complete and connected letter fixture set', function () {
         ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(85)
         ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(85);
 
+    expect(DB::table('letter_types')->where('is_online', true)->count())->toBe(74)
+        ->and(DB::table('letter_types')->where('is_online', true)->whereNull('blade_view')->count())->toBe(0)
+        ->and($this->getJson('/api/public/letter-types')->json('data'))->toHaveCount(74);
+
     expect(DB::table('letter_types')
         ->whereIn('code', ['SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK', 'SKDPAK', 'SBP'])
         ->whereNotNull('blade_view')
@@ -84,6 +88,54 @@ it('seeds a complete and connected letter fixture set', function () {
         ->groupBy('letter_type_id', 'field_key')
         ->havingRaw('COUNT(*) > 1')
         ->count())->toBe(0);
+});
+
+it('accepts an online letter request and rejects non-online types', function () {
+    seedLetterFixtures();
+
+    $response = $this->post('/api/public/letter-requests', [
+        'letter_type_code' => 'SGC',
+        'applicant_nik' => '9999000000000001',
+        'applicant_name' => 'Warga Uji',
+        'applicant_phone' => '081234567890',
+        'applicant_address' => 'Bimomartani, Ngemplak, Sleman',
+        'form_data' => json_encode(['nama_penggugat' => 'Warga Uji']),
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.letter_type.code', 'SGC')
+        ->assertJsonPath('data.status', 'submitted');
+
+    $this->assertDatabaseHas('letter_requests', [
+        'request_code' => $response->json('data.request_code'),
+        'letter_type_id' => DB::table('letter_types')->where('code', 'SGC')->value('letter_type_id'),
+        'source' => 'Online',
+    ]);
+
+    $this->postJson('/api/public/letter-requests', [
+        'letter_type_code' => 'SKJ',
+        'applicant_nik' => '9999000000000001',
+        'applicant_name' => 'Warga Uji',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => '{}',
+    ])->assertUnprocessable();
+
+    config(['services.public_letters.test_mode' => true]);
+
+    $this->postJson('/api/public/citizens/check-nik', [
+        'nik' => '1234567890123456',
+    ])->assertOk()
+        ->assertJsonPath('data.registered', true)
+        ->assertJsonPath('data.test_mode', true)
+        ->assertJsonPath('data.resident.fullName', 'Warga Uji');
+
+    $this->postJson('/api/public/letter-requests', [
+        'letter_type_code' => 'SGC',
+        'applicant_nik' => '1234567890123456',
+        'applicant_name' => 'Warga Uji',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => ['nama_penggugat' => 'Warga Uji'],
+    ])->assertCreated();
 });
 
 it('renders a PDF for every seeded letter type', function () {

@@ -100,7 +100,12 @@ class LetterRequestController extends Controller
     public function show(int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::query()
-            ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner', 'attachments', 'statusHistories'])
+            ->with([
+                'letterType.signer',
+                'verifier',
+                'authorizedSigner',
+                'attachments.letterTypeDocument',
+            ])
             ->findOrFail($letterRequest_id);
 
         return response()->json([

@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
     'submitted_at',
     'verified_at',
     'authorized_at',
+    'completed_at',
 ])]
 class LetterRequest extends Model
 {
@@ -43,6 +44,7 @@ class LetterRequest extends Model
             'submitted_at' => 'datetime',
             'verified_at' => 'datetime',
             'authorized_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'public_letters' => [
+        // Hanya dapat aktif pada environment local/testing. Jangan aktifkan
+        // flag ini pada server production.
+        'test_mode' => env('PUBLIC_LETTER_TEST_MODE', false),
+    ],
+
 ];
