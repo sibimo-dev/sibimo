@@ -36,7 +36,23 @@ class Development extends Model
         ];
     }
 
+<<<<<<< Updated upstream
     public function creator()
+=======
+    public function getCoverImageAttribute($value): ?string
+    {
+        if (!$value) return null;
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $url = \Illuminate\Support\Facades\Storage::disk('public')->url($value);
+        return str_starts_with($url, '/')
+            ? rtrim((string) config('app.url'), '/') . $url
+            : $url;
+    }
+
+    public function progress()
+>>>>>>> Stashed changes
     {
         return $this->belongsTo(User::class, 'created_by', 'user_id');
     }
