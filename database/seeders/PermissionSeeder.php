@@ -96,6 +96,21 @@ class PermissionSeeder extends Seeder
                 'slug' => 'data-wilayah',
                 'description' => 'Mengelola data wilayah kalurahan.',
             ],
+            [
+                'name' => 'Pengaturan Footer',
+                'slug' => 'footer',
+                'description' => 'Mengelola informasi dan media footer website.',
+            ],
+            [
+                'name' => 'Pembangunan',
+                'slug' => 'pembangunan',
+                'description' => 'Mengelola kegiatan pembangunan kalurahan.',
+            ],
+            [
+                'name' => 'Produk Hukum',
+                'slug' => 'produk-hukum',
+                'description' => 'Mengelola produk hukum kalurahan.',
+            ],
         ];
 
         // Dashboard and any permission removed from this code-defined list are
