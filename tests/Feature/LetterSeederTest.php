@@ -55,9 +55,9 @@ it('seeds a complete and connected letter fixture set', function () {
         ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(85)
         ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(85);
 
-    expect(DB::table('letter_types')->where('is_online', true)->count())->toBe(44)
+    expect(DB::table('letter_types')->where('is_online', true)->count())->toBe(74)
         ->and(DB::table('letter_types')->where('is_online', true)->whereNull('blade_view')->count())->toBe(0)
-        ->and($this->getJson('/api/public/letter-types')->json('data'))->toHaveCount(44);
+        ->and($this->getJson('/api/public/letter-types')->json('data'))->toHaveCount(74);
 
     expect(DB::table('letter_types')
         ->whereIn('code', ['SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK', 'SKDPAK', 'SBP'])

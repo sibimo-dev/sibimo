@@ -8,6 +8,7 @@ use App\Models\Citizen;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterType;
+use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,9 @@ class PublicLetterController extends Controller
         'SPCCP', 'SKKMP', 'SKUMN', 'SPNIK', 'SPNIP', 'SKTNB', 'FPDN', 'SKBKN', 'SPBML', 'SPOT',
         'SKTA', 'SKTH', 'SPKLC', 'SKC',
         'SPU', 'SKDN',
+        'SKKL', 'PAK', 'SKAK', 'SPAKL', 'LPKL', 'FPK', 'LK', 'PPKT', 'LKLD', 'SPTJMPSI',
+        'DKA', 'SKKM', 'DKS', 'DKU', 'DKP', 'DKC', 'DKR', 'DKF',
+        'SKWNP', 'SPTKP', 'SKWHP', 'SKNNP', 'N1P', 'N2P', 'N4P', 'N5P', 'N6P', 'PNP', 'SKBK2', 'SPBMLP',
     ];
 
     public function types(): JsonResponse
@@ -245,6 +249,7 @@ class PublicLetterController extends Controller
         Request $request,
         string $request_code,
         LetterPdfService $pdfService,
+        DeathTemplateService $deathTemplateService,
     ) {
         $validated = $request->validate([
             'nik' => ['required', 'string', 'size:16', 'regex:/^\d{16}$/'],
@@ -263,6 +268,35 @@ class PublicLetterController extends Controller
                 'success' => false,
                 'message' => 'PDF belum tersedia sebelum surat disetujui.',
             ], 422);
+        }
+
+        $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+        $bladeView = (string) ($letterRequest->letterType?->blade_view ?? '');
+
+        // Template kematian memakai normalizer khusus agar field camelCase dari
+        // formulir public dapat dibaca oleh template Blade legacy.
+        if ($code === 'SKKM' || str_starts_with($bladeView, 'letters.death.')) {
+            $deathTemplate = $code === 'SKKM'
+                ? 'death-certificate'
+                : str($bladeView)->afterLast('.')->toString();
+
+            if (! $deathTemplateService->hasTemplate($deathTemplate)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Template kematian untuk tipe surat ini belum tersedia.',
+                ], 422);
+            }
+
+            $pdf = $deathTemplateService->pdf(
+                $deathTemplate,
+                $deathTemplateService->dataForRequest($letterRequest, $deathTemplate),
+            );
+
+            $filename = ($letterRequest->request_code ?: 'surat') . '.pdf';
+
+            return $request->boolean('download')
+                ? $pdf->download($filename)
+                : $pdf->stream($filename);
         }
 
         $template = $pdfService->rootTemplateForType($letterRequest->letterType);
