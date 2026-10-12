@@ -16,6 +16,11 @@ class LetterTypeSeeder extends Seeder
         'SPCCP', 'SKKMP', 'SKUMN', 'SPNIK', 'SPNIP', 'SKTNB', 'FPDN', 'SKBKN', 'SPBML', 'SPOT',
         'SKTA', 'SKTH', 'SPKLC', 'SKC',
         'SPU', 'SKDN',
+        // Surat kelahiran, kematian, dan paket nikah perempuan yang sudah
+        // memiliki template/field/dokumen legacy dan kini dibuka online.
+        'SKKL', 'PAK', 'SKAK', 'SPAKL', 'LPKL', 'FPK', 'LK', 'PPKT', 'LKLD', 'SPTJMPSI',
+        'DKA', 'SKKM', 'DKS', 'DKU', 'DKP', 'DKC', 'DKR', 'DKF',
+        'SKWNP', 'SPTKP', 'SKWHP', 'SKNNP', 'N1P', 'N2P', 'N4P', 'N5P', 'N6P', 'PNP', 'SKBK2', 'SPBMLP',
     ];
 
     public function run(): void
