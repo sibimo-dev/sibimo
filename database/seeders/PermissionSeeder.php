@@ -97,6 +97,14 @@ class PermissionSeeder extends Seeder
                 'description' => 'Mengelola data wilayah kalurahan.',
             ],
             [
+                'name' => 'Pengaturan Footer',
+                'slug' => 'footer',
+                'description' => 'Mengelola informasi dan media footer website.',
+            ],
+            [
+                'name' => 'Pembangunan',
+                'slug' => 'pembangunan',
+                'description' => 'Mengelola kegiatan pembangunan kalurahan.',
                 'name' => 'Pembangunan',
                 'slug' => 'pembangunan',
                 'description' => 'Mengelola data kegiatan pembangunan kalurahan.',
@@ -104,6 +112,8 @@ class PermissionSeeder extends Seeder
             [
                 'name' => 'Produk Hukum',
                 'slug' => 'produk-hukum',
+                'description' => 'Mengelola produk hukum kalurahan.',
+            ],
                 'description' => 'Mengelola dokumen produk hukum kalurahan.',
             ], 
         ];

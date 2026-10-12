@@ -478,7 +478,7 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Data Catin', 'label' => 'Pendidikan Terakhir', 'key' => 'pendidikan_terakhir', 'type' => 'text'],
             // Status Pernikahan
             ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_pernikahan', 'type' => 'select', 'options' => ['Jejaka', 'Duda', 'Beristri Lagi', 'Perawan', 'Janda']],
-            ['section' => 'Status Pernikahan', 'label' => 'Nama Isteri/Suami Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Status Pernikahan', 'label' => 'Nama Suami Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
             // Data Ayah
             ['section' => 'Data Ayah', 'label' => 'Nama Lengkap dan Alias', 'key' => 'nama_ayah', 'type' => 'text'],
             ['section' => 'Data Ayah', 'label' => 'NIK', 'key' => 'nik_ayah', 'type' => 'text'],
@@ -775,7 +775,7 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Data Catin', 'label' => 'Pendidikan Terakhir', 'key' => 'pendidikan_terakhir', 'type' => 'text'],
             // Status Pernikahan
             ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_perkawinan', 'type' => 'select', 'options' => ['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati']],
-            ['section' => 'Status Pernikahan', 'label' => 'Nama Isteri/Suami Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Status Pernikahan', 'label' => 'Nama Istri Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
             // Data Ayah
             ['section' => 'Data Ayah', 'label' => 'Nama Lengkap dan Alias', 'key' => 'nama_ayah', 'type' => 'text'],
             ['section' => 'Data Ayah', 'label' => 'NIK', 'key' => 'nik_ayah', 'type' => 'text'],

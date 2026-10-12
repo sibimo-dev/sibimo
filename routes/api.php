@@ -9,17 +9,21 @@ use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DevelopmentController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\FooterSettingController;
+use App\Http\Controllers\Api\DevelopmentController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\LegalProductController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\LegalProductController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserPermissionController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PublicLetterController;
 use App\Http\Controllers\Api\OrganizationalStructureController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\DashboardController;
@@ -47,10 +51,19 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::prefix('public')->group(function () {
+    Route::get('/footer', [FooterSettingController::class, 'showPublic']);
     Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
     Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
     Route::post('/complaints', [ComplaintController::class, 'storePublic']);
     Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/letter-types', [PublicLetterController::class, 'types']);
+        Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/letter-requests', [PublicLetterController::class, 'store']);
+        Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
+        Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);
+    });
 });
 
 Route::middleware([
@@ -100,6 +113,11 @@ Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service_id}', [ServiceController::class, 'show']);
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
 Route::get('/agendas', [AgendaController::class, 'index']);
 Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
 Route::get('/galleries', [GalleryController::class, 'index']);
@@ -215,6 +233,24 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('permission:struktur-organisasi')->group(function () {
         Route::apiResource('organizational-structures', OrganizationalStructureController::class)
             ->parameters(['organizational-structures' => 'organizational_structure_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:footer')->group(function () {
+        Route::get('/footer-settings', [FooterSettingController::class, 'index']);
+        Route::post('/footer-settings', [FooterSettingController::class, 'store']);
+        Route::put('/footer-settings/{footer_setting_id}', [FooterSettingController::class, 'update']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])
             ->except(['index', 'show']);
     });
 

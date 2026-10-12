@@ -45,6 +45,7 @@
     $isFemale      = str_starts_with($genderLower, 'p')
                      || in_array(strtolower($maritalStatus), ['perawan', 'janda']);
     $isMale        = !$isFemale && $maritalStatus !== '';
+    $previousSpouseLabel = $isFemale ? 'Nama suami terdahulu' : 'Nama istri terdahulu';
 @endphp
 
     <div class="form-ref">
@@ -94,7 +95,7 @@
             <td class="sep">:</td>
             <td class="val">{{ $isFemale ? $maritalStatus : '' }}</td>
         </tr>
-        <tr><td class="no">11.</td><td class="lbl">Nama istri/suami terdahulu</td><td class="sep">:</td><td class="val">{{ $applicant['previous_spouse_name'] ?? '' }}</td></tr>
+        <tr><td class="no">11.</td><td class="lbl">{{ $previousSpouseLabel }}</td><td class="sep">:</td><td class="val">{{ $applicant['previous_spouse_name'] ?? '' }}</td></tr>
     </table>
 
     <p class="gap-top">Adalah benar anak dari perkawinan seorang pria :</p>
