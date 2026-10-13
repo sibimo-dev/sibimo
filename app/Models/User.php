@@ -2,31 +2,93 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use App\Models\Role;
+use App\Models\UserPermission;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable([
+    'full_name',
+    'username',
+    'email',
+    'password',
+    'role',
+    'role_id',
+    'phone_number',
+    'is_active',
+])]
+#[Hidden([
+    'password',
+])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Primary key.
+     */
+    protected $primaryKey = 'user_id';
+
+    /**
+     * Primary key type.
+     */
+    protected $keyType = 'int';
+
+    /**
+     * Auto increment.
+     */
+    public $incrementing = true;
+
+    /**
+     * Cast attributes.
      */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function roleRelation()
+    {
+        return $this->belongsTo(
+            Role::class,
+            'role_id',
+            'role_id'
+        );
+    }
+
+    public function userPermissions()
+    {
+        return $this->hasMany(
+            UserPermission::class,
+            'user_id',
+            'user_id'
+        );
+    }
+
+    public function effectivePermissionSlugs(): array
+    {
+        $this->loadMissing([
+            'roleRelation.permissions:permission_id,slug',
+            'userPermissions.permissions:permission_id,slug',
+        ]);
+
+        $rolePermissions = $this->roleRelation?->permissions?->pluck('slug') ?? collect();
+
+        return $rolePermissions
+            ->merge($this->userPermissions->pluck('permissions.slug')->filter())
+            // Dashboard is universally available and is intentionally not a
+            // configurable row in the permissions table.
+            ->push('dashboard')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

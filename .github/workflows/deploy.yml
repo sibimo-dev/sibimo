@@ -1,0 +1,36 @@
+name: Deploy sibimo (backend)
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:   # opsional: bisa dijalankan manual dari tab Actions
+
+concurrency:
+  group: deploy-sibimo-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # protocol: ftps   # aktifkan kalau hosting mendukung FTPS
+          local-dir: ./
+          server-dir: ./sibimo/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env
+            .env.*
+            bootstrap/cache/*.php
+            tests/**

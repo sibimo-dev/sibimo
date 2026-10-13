@@ -1,0 +1,359 @@
+<?php
+
+use App\Http\Controllers\Api\AgendaController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BookCategoryController;
+use App\Http\Controllers\Api\BookController;
+use App\Http\Controllers\Api\BookLoanController;
+use App\Http\Controllers\Api\CitizenController;
+use App\Http\Controllers\Api\ComplaintController;
+use App\Http\Controllers\Api\DevelopmentController;
+use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\FooterSettingController;
+use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\LegalProductController;
+use App\Http\Controllers\Api\LetterRequestController;
+use App\Http\Controllers\Api\LetterTypeController;
+use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\UserPermissionController;
+use App\Http\Controllers\Api\NewsCategoryController;
+use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PublicLetterController;
+use App\Http\Controllers\Api\OrganizationalStructureController;
+use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SignerController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VillagePotentialController;
+use App\Http\Controllers\Api\VisionMissionController;
+use App\Services\LetterPdfService;
+use App\Services\DeathTemplateService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('auth')->group(function () {
+
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
+        Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    });
+
+});
+
+Route::prefix('public')->group(function () {
+    Route::get('/footer', [FooterSettingController::class, 'showPublic']);
+    Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
+    Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
+    Route::post('/complaints', [ComplaintController::class, 'storePublic']);
+    Route::post('/complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachmentPublic']);
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/letter-types', [PublicLetterController::class, 'types']);
+        Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/letter-requests', [PublicLetterController::class, 'store']);
+        Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
+        Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);
+    });
+});
+
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'permission:user-management',
+])
+    ->prefix('users')
+    ->group(function () {
+
+        Route::get('/', [UserController::class, 'index']);
+
+        Route::post('/', [UserController::class, 'store']);
+
+        Route::post('/bulk-action', [UserController::class, 'bulkAction']);
+
+        Route::get('/{user:user_id}', [UserController::class, 'show']);
+
+        Route::put('/{user:user_id}', [UserController::class, 'update']);
+
+        Route::delete('/{user:user_id}', [UserController::class, 'destroy']);
+
+    });
+
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'permission:user-management',
+])
+    ->group(function () {
+
+        Route::apiResource('roles', RoleController::class)
+            ->parameters(['roles' => 'role_id']);
+        Route::put('/roles/{role_id}/permissions', [RoleController::class, 'syncPermissions']);
+
+        Route::apiResource('permissions', PermissionController::class)
+            ->parameters(['permissions' => 'permission_id'])
+            ->only(['index', 'show']);
+
+        Route::get('/user-permissions', [UserPermissionController::class, 'index']);
+        Route::post('/user-permissions', [UserPermissionController::class, 'store']);
+        Route::delete('/user-permissions', [UserPermissionController::class, 'destroy']);
+
+    });
+
+Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
+Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
+Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{service_id}', [ServiceController::class, 'show']);
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
+Route::get('/agendas', [AgendaController::class, 'index']);
+Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
+Route::get('/galleries', [GalleryController::class, 'index']);
+Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
+Route::get('/news', [NewsController::class, 'index']);
+Route::get('/news/{news_id}', [NewsController::class, 'show']);
+Route::get('/news-categories', [NewsCategoryController::class, 'index']);
+Route::get('/histories', [HistoryController::class, 'index']);
+Route::get('/histories/{history_id}', [HistoryController::class, 'show']);
+Route::get('/vision-missions', [VisionMissionController::class, 'index']);
+Route::get('/vision-missions/{vision_mission_id}', [VisionMissionController::class, 'show']);
+Route::get('/organizational-structures', [OrganizationalStructureController::class, 'index']);
+Route::get('/organizational-structures/{organizational_structure_id}', [OrganizationalStructureController::class, 'show']);
+Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
+Route::post('/feedbacks', [FeedbackController::class, 'store']);
+Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
+Broadcast::routes([
+    'middleware' => ['auth:sanctum', 'active'],
+]);
+
+
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
+
+    Route::get(
+        'notifications',
+        [NotificationController::class, 'index'],
+    );
+
+    // Tipe Surat
+    Route::middleware('permission:tipe-surat')->group(function () {
+        Route::apiResource('letter-types', LetterTypeController::class)
+            ->parameters(['letter-types' => 'letterType_id']);
+        Route::get('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'documents']);
+        Route::post('letter-types/{letterType_id}/documents', [LetterTypeController::class, 'storeDocument']);
+        Route::put('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'updateDocument']);
+        Route::delete('letter-type-documents/{letterTypeDocument_id}', [LetterTypeController::class, 'destroyDocument']);
+
+        // Field Input Dinamis
+        Route::get('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'fields']);
+        Route::post('letter-types/{letterType_id}/fields', [LetterTypeController::class, 'storeField']);
+        Route::put('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'updateField']);
+        Route::delete('letter-type-fields/{letterTypeField_id}', [LetterTypeController::class, 'destroyField']);
+    });
+
+    // Pengelolaan Surat
+    Route::middleware('permission:pengelolaan-surat')->group(function () {
+        Route::apiResource('letter-requests', LetterRequestController::class)
+            ->parameters(['letter-requests' => 'letterRequest_id']);
+        Route::get('letter-requests/{letterRequest_id}/status-histories', [LetterRequestController::class, 'statusHistories']);
+        Route::post('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'storeAttachment']);
+        Route::get('letter-requests/{letterRequest_id}/attachments', [LetterRequestController::class, 'attachments']);
+    });
+
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/{letterRequest_id}/pdf',
+        [LetterRequestController::class, 'pdf'],
+    );
+
+    Route::middleware('permission:verifikasi-surat')->post(
+        'letter-requests/{letterRequest_id}/verify',
+        [LetterRequestController::class, 'verify'],
+    );
+
+    Route::middleware('permission:otorisasi-surat')->post(
+        'letter-requests/{letterRequest_id}/authorize',
+        [LetterRequestController::class, 'authorize'],
+    );
+
+    // Pengaduan
+    Route::apiResource('complaints', ComplaintController::class)
+        ->parameters(['complaints' => 'complaint_id']);
+    Route::post('complaints/{complaint_id}/status', [ComplaintController::class, 'updateStatus']);
+    Route::get('complaints/{complaint_id}/status-histories', [ComplaintController::class, 'statusHistories']);
+    Route::post('complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachment']);
+    Route::get('complaints/{complaint_id}/attachments', [ComplaintController::class, 'attachments']);
+
+    Route::apiResource('feedbacks', FeedbackController::class)
+        ->parameters(['feedbacks' => 'feedback_id'])
+        ->except(['store']);
+
+    // Perpustakaan
+    Route::apiResource('book-categories', BookCategoryController::class)
+        ->parameters(['book-categories' => 'category_id']);
+    Route::apiResource('books', BookController::class)
+        ->parameters(['books' => 'book_id']);
+    Route::apiResource('book-loans', BookLoanController::class)
+        ->parameters(['book-loans' => 'loan_id']);
+
+    // Manajemen akun citizen
+    Route::apiResource('citizens', CitizenController::class)
+        ->parameters(['citizens' => 'citizen_id']);
+
+    //Signers
+    Route::apiResource('signers', SignerController::class)
+        ->parameters(['signers' => 'signer_id']);
+
+    Route::middleware('permission:sejarah')->group(function () {
+        Route::apiResource('histories', HistoryController::class)
+            ->parameters(['histories' => 'history_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:visi-misi')->group(function () {
+        Route::apiResource('vision-missions', VisionMissionController::class)
+            ->parameters(['vision-missions' => 'vision_mission_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:struktur-organisasi')->group(function () {
+        Route::apiResource('organizational-structures', OrganizationalStructureController::class)
+            ->parameters(['organizational-structures' => 'organizational_structure_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:footer')->group(function () {
+        Route::get('/footer-settings', [FooterSettingController::class, 'index']);
+        Route::post('/footer-settings', [FooterSettingController::class, 'store']);
+        Route::put('/footer-settings/{footer_setting_id}', [FooterSettingController::class, 'update']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:layanan-desa')->group(function () {
+        Route::apiResource('services', ServiceController::class)
+            ->parameters(['services' => 'service_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:potensi-kalurahan')->group(function () {
+        Route::apiResource('village-potentials', VillagePotentialController::class)
+            ->parameters(['village-potentials' => 'potential_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:agenda')->group(function () {
+        Route::apiResource('agendas', AgendaController::class)
+            ->parameters(['agendas' => 'agenda_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:gallery')->group(function () {
+        Route::apiResource('galleries', GalleryController::class)
+            ->parameters(['galleries' => 'gallery_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:berita')->group(function () {
+        Route::apiResource('news-categories', NewsCategoryController::class)
+            ->parameters(['news-categories' => 'category_id'])->except(['index']);
+        Route::apiResource('news', NewsController::class)
+            ->parameters(['news' => 'news_id'])->except(['index', 'show']);
+    });
+
+});
+
+Route::middleware(['auth:sanctum', 'active'])
+    ->get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+Route::middleware(['auth:sanctum', 'active'])
+    ->get('/test-permission', function () {
+        return response()->json([
+            'success' => true,
+            'message' => 'Anda dapat mengakses endpoint terautentikasi.',
+        ]);
+    });
+
+// Preview template surat dengan data contoh (fiktif), hanya aktif di environment local.
+// Contoh: http://localhost:8000/api/dev/letters/surat-keterangan-usaha
+//         http://localhost:8000/api/dev/letters/land-origin-certificate-letter
+//         http://localhost:8000/api/dev/letters/marriage/n1
+// Tambah ?html=1 untuk versi browser (bisa Inspect Element).
+//
+// Nama view di-resolve otomatis: lewat LetterPdfService::viewName() (VIEW_FOLDERS),
+// lalu letters.{template}, lalu semua subfolder di resources/views/letters.
+if (app()->environment('local')) {
+    Route::get('/dev/letters/{template}', function (Request $request, string $template, LetterPdfService $service) {
+        $candidates = collect([
+                $service->viewName($template),
+                "letters.{$template}",
+            ])
+            ->merge(
+                collect(File::directories(resource_path('views/letters')))
+                    ->map(fn ($dir) => 'letters.' . basename($dir) . '.' . $template)
+            )
+            ->unique()
+            ->values();
+
+        $view = $candidates->first(fn ($c) => view()->exists($c));
+
+        abort_unless($view, 404, "View '{$template}' tidak ditemukan. Dicoba: " . $candidates->implode(', '));
+
+        $data = $service->sampleViewData($template);
+
+        return $request->boolean('html')
+            ? response($service->previewHtml($view, $data))
+            : $service->pdf($view, $data)->stream("{$template}.pdf");
+    })->where('template', '[a-z0-9\-]+');
+    Route::get('/dev/letters/marriage-women/{letter}', function (Request $request, string $letter, LetterPdfService $service) {
+        abort_unless(view()->exists('letters.marriage-women.letters.' . $letter), 404);
+        $data = $service->sampleViewData($letter) + ['letter' => $letter];
+
+        return $request->boolean('html')
+            ? response($service->previewHtml('letters.marriage-women.single', $data))
+            : $service->pdf('letters.marriage-women.single', $data)->stream("{$letter}.pdf");
+    })->where('letter', '[a-z0-9\-]+');
+
+    // Preview template kematian berdiri sendiri dari LetterPdfService.
+    // Tambah ?html=1 untuk melihat versi HTML di browser.
+    Route::get('/dev/death-letters/{template}', function (
+        Request $request,
+        string $template,
+        DeathTemplateService $service,
+    ) {
+        abort_unless($service->hasTemplate($template), 404);
+        $data = $service->sampleData($template);
+
+        return $request->boolean('html')
+            ? response()->view($service->viewName($template), $data)
+            : $service->pdf($template, $data)->stream("{$template}.pdf");
+    })->where('template', '[a-z0-9\-]+');
+}
