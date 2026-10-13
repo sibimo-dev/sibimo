@@ -120,11 +120,6 @@ Route::get('/agendas', [AgendaController::class, 'index']);
 Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
 Route::get('/galleries', [GalleryController::class, 'index']);
 Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
-Route::get('/developments', [DevelopmentController::class, 'index']);
-Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
-Route::get('/legal-products', [LegalProductController::class, 'index']);
-Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
-Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{news_id}', [NewsController::class, 'show']);
 Route::get('/news-categories', [NewsCategoryController::class, 'index']);
@@ -137,6 +132,13 @@ Route::get('/organizational-structures/{organizational_structure_id}', [Organiza
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
+// Konten publik pembangunan dan produk hukum.
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
 
 Broadcast::routes([
     'middleware' => ['auth:sanctum', 'active'],
@@ -272,21 +274,23 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             ->parameters(['galleries' => 'gallery_id'])->except(['index', 'show']);
     });
 
-    Route::middleware('permission:pembangunan')->group(function () {
-        Route::apiResource('developments', DevelopmentController::class)
-            ->parameters(['developments' => 'development_id'])->except(['index', 'show']);
-    });
-
-    Route::middleware('permission:produk-hukum')->group(function () {
-        Route::apiResource('legal-products', LegalProductController::class)
-            ->parameters(['legal-products' => 'legal_product_id'])->except(['index', 'show']);
-    });
-
     Route::middleware('permission:berita')->group(function () {
         Route::apiResource('news-categories', NewsCategoryController::class)
             ->parameters(['news-categories' => 'category_id'])->except(['index']);
         Route::apiResource('news', NewsController::class)
             ->parameters(['news' => 'news_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])
+            ->except(['index', 'show']);
     });
 
 });
