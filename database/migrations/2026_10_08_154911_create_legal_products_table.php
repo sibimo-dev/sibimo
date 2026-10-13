@@ -8,7 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('legal_products', function (Blueprint $table) {
+        if (Schema::hasTable('legal_products')) return;
+
+        Schema::create('legal_products', function (Blueprint $table): void {
             $table->id('legal_product_id');
             $table->string('title');
             $table->string('category', 50);
@@ -17,9 +19,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('year');
             $table->text('description')->nullable();
             $table->string('document')->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users', 'user_id')->nullOnDelete();
             $table->timestamps();
-
             $table->index(['year', 'category', 'status']);
         });
     }
