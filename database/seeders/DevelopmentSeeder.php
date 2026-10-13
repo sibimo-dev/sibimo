@@ -7,7 +7,6 @@ use App\Models\DevelopmentProgress;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -39,7 +38,7 @@ class DevelopmentSeeder extends Seeder
                 'name' => 'Peningkatan Sarana Posyandu Bimomartani',
                 'address' => 'Padukuhan Ngemplak, Kalurahan Bimomartani',
                 'category' => 'kesehatan',
-                'status' => 'sedang-berjalan',
+                'status' => 'sedang_berjalan',
                 'funding_source' => 'APBKal Bimomartani Tahun Anggaran 2026',
                 'budget' => 76000000,
                 'volume' => 1,
@@ -84,7 +83,6 @@ class DevelopmentSeeder extends Seeder
                 );
             }
         }
-    }
         $creatorId = User::query()->value('user_id');
         $disk      = Storage::disk('public');
 

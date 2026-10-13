@@ -6,7 +6,6 @@ use App\Models\LegalProduct;
 use Illuminate\Database\Seeder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Faker\Factory as FakerFactory;
-use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -47,7 +46,7 @@ class LegalProductSeeder extends Seeder
                 $item,
             );
         }
-    }
+    
         $faker = FakerFactory::create('id_ID');
         $faker->seed(20261009);
 

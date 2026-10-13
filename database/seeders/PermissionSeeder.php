@@ -112,8 +112,6 @@ class PermissionSeeder extends Seeder
             [
                 'name' => 'Produk Hukum',
                 'slug' => 'produk-hukum',
-                'description' => 'Mengelola produk hukum kalurahan.',
-            ],
                 'description' => 'Mengelola dokumen produk hukum kalurahan.',
             ], 
         ];
