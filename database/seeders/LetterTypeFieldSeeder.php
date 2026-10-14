@@ -296,10 +296,10 @@ class LetterTypeFieldSeeder extends Seeder
             ['label' => 'Tempat Tujuan', 'key' => 'tempat_tujuan', 'type' => 'text'],
             ['label' => 'Tanggal Berangkat', 'key' => 'tanggal_berangkat', 'type' => 'date'],
             ['label' => 'Tanggal Harus Kembali', 'key' => 'tanggal_kembali', 'type' => 'date'],
-            ['label' => 'Pengikut', 'key' => 'pengikut', 'type' => 'text'],
+            ['label' => 'Pengikut', 'key' => 'pengikut', 'type' => 'text', 'is_required' => false],
             ['label' => 'Pembebanan Anggaran (Instansi)', 'key' => 'anggaran_instansi', 'type' => 'text'],
             ['label' => 'Pembebanan Anggaran (Mata Anggaran)', 'key' => 'anggaran_mata_anggaran', 'type' => 'text'],
-            ['label' => 'Keterangan Lain-lain', 'key' => 'keterangan_lain', 'type' => 'textarea'],
+            ['label' => 'Keterangan Lain-lain', 'key' => 'keterangan_lain', 'type' => 'textarea', 'is_required' => false],
         ]);
 
     // SURAT PERNYATAAN

@@ -72,7 +72,11 @@ class LetterRequestController extends Controller
         ]);
 
         $letterType = LetterType::findOrFail($validated['letter_type_id']);
-        $this->validateFormData($letterType, $validated['form_data'] ?? []);
+        $this->validateFormData(
+            $letterType,
+            $validated['form_data'] ?? [],
+            ($validated['source'] ?? 'Manual (Kelurahan)') === 'Manual (Kelurahan)',
+        );
 
         // signature_type ikut default dari letter_type, bisa diubah lagi saat otorisasi
         $validated['signature_type'] = $letterType->signature_method === 'digital' ? 'digital' : 'manual';
@@ -389,13 +393,13 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    private function validateFormData(LetterType $letterType, array $formData): void
+    private function validateFormData(LetterType $letterType, array $formData, bool $allowLegacyKeys = false): void
     {
         $fields = $letterType->fields()->get();
         $allowedKeys = $fields->pluck('field_key')->all();
         $unknownKeys = array_diff(array_keys($formData), $allowedKeys);
 
-        if ($unknownKeys !== []) {
+        if ($unknownKeys !== [] && ! $allowLegacyKeys) {
             throw ValidationException::withMessages([
                 'form_data' => 'Terdapat field yang tidak terdaftar pada tipe surat: ' . implode(', ', $unknownKeys),
             ]);
@@ -404,7 +408,11 @@ class LetterRequestController extends Controller
         $errors = [];
         foreach ($fields as $field) {
             $value = $formData[$field->field_key] ?? null;
-            if ($field->is_required && ($value === null || $value === '')) {
+            // Form admin memiliki kontrak field lama/camelCase yang dinormalisasi
+            // saat render PDF. Validasi kelengkapan tetap dilakukan oleh wizard
+            // admin; jangan menolak request hanya karena key canonical lama tidak
+            // ada di metadata tipe surat.
+            if ($field->is_required && ($value === null || $value === '') && ! $allowLegacyKeys) {
                 $errors["form_data.{$field->field_key}"] = "Field {$field->field_label} wajib diisi.";
                 continue;
             }

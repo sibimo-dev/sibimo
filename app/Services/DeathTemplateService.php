@@ -107,6 +107,7 @@ class DeathTemplateService
         $request->loadMissing(['letterType.signer', 'authorizedSigner']);
         $data = $this->sampleData($this->hasTemplate($template) ? $template : 'death-certificate');
         $form = $request->form_data ?? [];
+        $form = $this->normalizeKeys($form);
         $death = $data['death'];
 
         $death['family'] = [
@@ -238,9 +239,12 @@ class DeathTemplateService
         // alias seluruh kolom digabung sekaligus, sehingga semua kolom
         // menemukan nilai pertama (nik_*) dan menampilkan NIK.
         $get = function (string $field, array $extra = []) use ($form, $prefix): mixed {
-            return $this->value($form, array_merge([
-                $field . '_' . $prefix,
-            ], $extra));
+            $keys = [$field . '_' . $prefix, $prefix . '_' . $field];
+            foreach ($aliases as $alias) {
+                $keys[] = $field . '_' . $alias;
+                $keys[] = $alias . '_' . $field;
+            }
+            return $this->value($form, array_merge($keys, $extra));
         };
 
         return [
@@ -263,6 +267,28 @@ class DeathTemplateService
         }
 
         return '';
+    }
+
+    /** Tambahkan alias snake_case untuk payload camelCase dari form admin. */
+    private function normalizeKeys(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $normalized = [];
+        foreach ($value as $key => $item) {
+            $item = $this->normalizeKeys($item);
+            $normalized[$key] = $item;
+            if (is_string($key)) {
+                $snake = strtolower((string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $key));
+                if ($snake !== $key && ! array_key_exists($snake, $normalized)) {
+                    $normalized[$snake] = $item;
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     private function date(mixed $value): string
