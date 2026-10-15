@@ -1,0 +1,1310 @@
+[
+    {
+        "slug": "ktp-application-form",
+        "code": "SPKTP",
+        "title": "Surat Permohonan KTP",
+        "status": "HAS_MISSING",
+        "total_fields": 7,
+        "missing_count": 6,
+        "missing_fields": [
+            "applicationType (Permohonan KTP)",
+            "name (Nama Lengkap)",
+            "kkNumber (No KK)",
+            "nik (NIK)",
+            "rt (RT)",
+            "rw (RW)"
+        ]
+    },
+    {
+        "slug": "resident-arrival-form",
+        "code": "SKDT",
+        "title": "Formulir Permohonan Pindah Datang WNI",
+        "status": "HAS_MISSING",
+        "total_fields": 38,
+        "missing_count": 15,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "originPhone (Nomor Telepon)",
+            "relocationReason (Alasan Pindah)",
+            "originKkStatus (Status KK bagi yang tidak Pindah)",
+            "relocationReasonOther (Sebutkan alasan lainnya)",
+            "relocationType (Jenis Kepindahan)",
+            "destinationKkStatus (1. Status KK Bagi Yang Pindah)",
+            "destinationPhone (Nomor Telepon)"
+        ]
+    },
+    {
+        "slug": "kia-application-form",
+        "code": "SPKIA",
+        "title": "Surat Permohonan Penerbitan KIA",
+        "status": "OK",
+        "total_fields": 15,
+        "missing_count": 0,
+        "missing_fields": []
+    },
+    {
+        "slug": "temporary-resident-request",
+        "code": "SKTS",
+        "title": "Surat Permohonan Menjadi Penduduk Sementara \/ SKTS",
+        "status": "HAS_MISSING",
+        "total_fields": 26,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)",
+            "hostFamilyCardNumber (Nomor KK keluarga yang dituju)"
+        ]
+    },
+    {
+        "slug": "divorce-lawsuit-letter",
+        "code": "SGC",
+        "title": "Surat Permohonan Cerai",
+        "status": "HAS_MISSING",
+        "total_fields": 22,
+        "missing_count": 15,
+        "missing_fields": [
+            "applicantName (Nama)",
+            "applicantBirth (Tempat, Tanggal Lahir)",
+            "applicantAddress (Alamat)",
+            "spouseBirth (Tempat, Tanggal Lahir)",
+            "reasons.text (Alasan)",
+            "witness1Name (Nama)",
+            "witness1Birth (Tempat, Tanggal Lahir)",
+            "witness1Religion (Agama)",
+            "witness1Occupation (Pekerjaan)",
+            "witness1Address (Alamat)",
+            "witness2Name (Nama)",
+            "witness2Birth (Tempat, Tanggal Lahir)",
+            "witness2Religion (Agama)",
+            "witness2Occupation (Pekerjaan)",
+            "witness2Address (Alamat)"
+        ]
+    },
+    {
+        "slug": "fuel-recommendation-letter",
+        "code": "SRBBM",
+        "title": "Surat Rekomendasi Pembelian Jenis BBM Tertentu",
+        "status": "HAS_MISSING",
+        "total_fields": 12,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)"
+        ]
+    },
+    {
+        "slug": "temporary-stay-application-form",
+        "code": "SPTTS",
+        "title": "Permohonan Tinggal Sementara",
+        "status": "HAS_MISSING",
+        "total_fields": 40,
+        "missing_count": 12,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "birthDate (Tanggal Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "familyCardNumber (Nomor KK)",
+            "destinationAddressLine1 (Alamat yang dituju (baris 1))",
+            "destinationAddressLine2 (Alamat yang dituju (baris 2))"
+        ]
+    },
+    {
+        "slug": "relocation-cover-letter",
+        "code": "SPPWNI",
+        "title": "Surat Pengantar Permohonan Pindah WNI",
+        "status": "HAS_MISSING",
+        "total_fields": 32,
+        "missing_count": 11,
+        "missing_fields": [
+            "headOfFamily (Nama Kepala Keluarga)",
+            "originPhone (Telepon)",
+            "nik (NIK Pemohon)",
+            "birthPlace (Tempat Lahir)",
+            "birthDate (Tanggal Lahir)",
+            "name (Nama Lengkap)",
+            "relocationReason (Alasan Pindah)",
+            "destinationPhone (Telepon)",
+            "relocationType (Jenis Kepindahan)",
+            "originKkStatus (Status KK bagi yang tidak pindah)",
+            "destinationKkStatus (Status Nomor KK bagi yang pindah)"
+        ]
+    },
+    {
+        "slug": "relocation-certificate-form",
+        "code": "SPPWF",
+        "title": "Formulir Keterangan Pindah WNI",
+        "status": "HAS_MISSING",
+        "total_fields": 32,
+        "missing_count": 9,
+        "missing_fields": [
+            "headOfFamily (Nama Kepala Keluarga)",
+            "originPhone (Telepon)",
+            "nik (NIK Pemohon)",
+            "name (Nama Lengkap)",
+            "relocationReason (Alasan Pindah)",
+            "destinationPhone (Telepon)",
+            "relocationType (Jenis Kepindahan)",
+            "originKkStatus (Status KK bagi yang tidak pindah)",
+            "destinationKkStatus (Status Nomor KK bagi yang pindah)"
+        ]
+    },
+    {
+        "slug": "population-occurrence-registration",
+        "code": "SPKIAF",
+        "title": "Formulir Pendaftaran Peristiwa Kependudukan",
+        "status": "HAS_MISSING",
+        "total_fields": 8,
+        "missing_count": 8,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (Nomor Induk Kependudukan)",
+            "familyCardNumber (Nomor Kartu Keluarga)",
+            "kkTypes (I. Kartu Keluarga)",
+            "ktpElTypes (II. KTP-el)",
+            "kiaTypes (III. Kartu Identitas Anak \/ KIA)",
+            "dataChangeTypes (IV. Perubahan Data)",
+            "requirements (Persyaratan yang dilampirkan)"
+        ]
+    },
+    {
+        "slug": "family-biodata",
+        "code": "FBWNI",
+        "title": "Formulir Biodata Penduduk WNI (Per Keluarga)",
+        "status": "HAS_MISSING",
+        "total_fields": 9,
+        "missing_count": 8,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "members.birthCertStatus (Akta Lahir\/Surat Lahir)",
+            "members.marriageCertStatus (Akta Perkawinan\/Buku Nikah)",
+            "members.divorceCertStatus (Akta Cerai\/Surat Cerai)",
+            "members.shdk (Status Hubungan dalam Keluarga)",
+            "members.disorder (Kelainan Fisik & Mental)",
+            "members.disability (Penyandang Cacat)"
+        ]
+    },
+    {
+        "slug": "birth-certificate-application-form",
+        "code": "PAK",
+        "title": "Permohonan Akta Kelahiran",
+        "status": "HAS_MISSING",
+        "total_fields": 25,
+        "missing_count": 3,
+        "missing_fields": [
+            "familyCardNumber (Nomor KK)",
+            "marriageCertificateNumber (Nomor Kutipan Akta Perkawinan)",
+            "documents (Dokumen yang dilampirkan)"
+        ]
+    },
+    {
+        "slug": "birth-report-form",
+        "code": "FPK",
+        "title": "Formulir Pelaporan Kelahiran (Untuk Mendapatkan Akta Kelahiran)",
+        "status": "HAS_MISSING",
+        "total_fields": 50,
+        "missing_count": 9,
+        "missing_fields": [
+            "familyCardNumber (Nomor KK)",
+            "witness1Nik (NIK)",
+            "witness1Name (Nama Lengkap)",
+            "witness1Age (Umur (tahun))",
+            "witness1Address (Alamat)",
+            "witness2Nik (NIK)",
+            "witness2Name (Nama Lengkap)",
+            "witness2Age (Umur (tahun))",
+            "witness2Address (Alamat)"
+        ]
+    },
+    {
+        "slug": "death-certificate-application",
+        "code": "DKA",
+        "title": "Permohonan Akta Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "death-report-form",
+        "code": "DKF",
+        "title": "Formulir Pelaporan Kematian (Untuk Mendapatkan Akta Kematian)",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "marriage-application-letter",
+        "code": "SPNIK",
+        "title": "Permohonan Kehendak Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 8,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)"
+        ]
+    },
+    {
+        "slug": "marriage-registration-data-sheet",
+        "code": "FPDN",
+        "title": "Data Isian Pendaftaran Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 80,
+        "missing_count": 17,
+        "missing_fields": [
+            "groomBin (Bin (nama ayah))",
+            "groomMotherBin (Binti (nama ayah dari ibu))",
+            "brideMotherBin (Binti (nama ayah dari ibu))",
+            "groomPrevName (Nama Lengkap)",
+            "groomPrevNik (NIK)",
+            "groomPrevBirthPlace (Tempat Lahir)",
+            "groomPrevNationality (Kewarganegaraan)",
+            "groomPrevReligion (Agama)",
+            "groomPrevOccupation (Pekerjaan)",
+            "groomPrevAddress (Alamat)",
+            "groomPrevBin (Bin\/Binti (nama ayah))",
+            "groomPrevParentName (Nama orang tua istri terdahulu)",
+            "groomPrevDeathPlace (Tempat Meninggal)",
+            "bridePrevName (Nama Lengkap)",
+            "bridePrevNik (NIK)",
+            "bridePrevBin (Bin (nama ayah))",
+            "bridePrevDeathPlace (Tempat Meninggal)"
+        ]
+    },
+    {
+        "slug": "registration-form",
+        "code": "PNP",
+        "title": "Data Isian Pendaftaran Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 23,
+        "missing_count": 20,
+        "missing_fields": [
+            "brideBirthDate (Tanggal Lahir)",
+            "akadPlace (Tempat Akad Nikah)",
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "groomNationality (Kewarganegaraan)",
+            "groomReligion (Agama)",
+            "groomOccupation (Pekerjaan)",
+            "groomEducation (Pendidikan Terakhir)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))",
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideEducation (Pendidikan Terakhir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))"
+        ]
+    },
+    {
+        "slug": "identity-discrepancy-statement-letter",
+        "code": "SPBNI",
+        "title": "Surat Pernyataan Beda Nama\/Identitas",
+        "status": "HAS_MISSING",
+        "total_fields": 6,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "statement-population-data-change",
+        "code": "SPDP",
+        "title": "Surat Pernyataan Perubahan Elemen Data Kependudukan",
+        "status": "HAS_MISSING",
+        "total_fields": 10,
+        "missing_count": 8,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "changeTypes (Elemen data yang berubah)",
+            "educationChanges.name (Nama anggota keluarga)",
+            "jobChanges.name (Nama anggota keluarga)",
+            "religionChanges.name (Nama anggota keluarga)",
+            "otherChanges.name (Nama anggota keluarga)",
+            "otherChanges.element (Elemen data (mis. Status Perkawinan))"
+        ]
+    },
+    {
+        "slug": "population-document-statement-letter",
+        "code": "SPTMDK",
+        "title": "Surat Pernyataan Tidak Memiliki Dokumen Kependudukan",
+        "status": "HAS_MISSING",
+        "total_fields": 7,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "unregistered-marriage-responsibility-letter",
+        "code": "SPTJP",
+        "title": "Surat Pernyataan Tanggung Jawab Mutlak Perkawinan Belum Tercatat",
+        "status": "OK",
+        "total_fields": 18,
+        "missing_count": 0,
+        "missing_fields": []
+    },
+    {
+        "slug": "heir-power-of-attorney-letter",
+        "code": "SKWKA",
+        "title": "Surat Kuasa Sidang Waris",
+        "status": "HAS_MISSING",
+        "total_fields": 14,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "population-service-authorization-letter",
+        "code": "SKDPAK",
+        "title": "Surat Kuasa Dalam Pelayanan Administrasi Kependudukan",
+        "status": "HAS_MISSING",
+        "total_fields": 13,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "grantorCondition (Kondisi pemberi kuasa saat ini)"
+        ]
+    },
+    {
+        "slug": "birth-report-statement",
+        "code": "LK",
+        "title": "Laporan Kelahiran",
+        "status": "HAS_MISSING",
+        "total_fields": 47,
+        "missing_count": 13,
+        "missing_fields": [
+            "fatherNik (NIK)",
+            "fatherBirthPlace (Tempat Lahir)",
+            "motherBirthDate (Tanggal Lahir)",
+            "fatherAge (Umur (tahun))",
+            "fatherOccupation (Pekerjaan)",
+            "motherNik (NIK)",
+            "motherBirthPlace (Tempat Lahir)",
+            "motherAge (Umur (tahun))",
+            "motherOccupation (Pekerjaan)",
+            "childBirthDayName (Hari Lahir)",
+            "childBirthDay (Tanggal)",
+            "childBirthMonth (Bulan)",
+            "childBirthYear (Tahun)"
+        ]
+    },
+    {
+        "slug": "spousal-relationship-responsibility-statement",
+        "code": "SPTJMPSI",
+        "title": "Surat Pernyataan Tanggung Jawab Mutlak Kebenaran Sebagai Pasangan Suami Istri",
+        "status": "HAS_MISSING",
+        "total_fields": 21,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "birth-certificate-power-of-attorney",
+        "code": "SKAK",
+        "title": "Surat Kuasa",
+        "status": "OK",
+        "total_fields": 7,
+        "missing_count": 0,
+        "missing_fields": []
+    },
+    {
+        "slug": "death-general-statement",
+        "code": "DKU",
+        "title": "Surat Keterangan Mohon Akta Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "death-data-statement",
+        "code": "DKS",
+        "title": "Surat Pernyataan Tanggung Jawab Mutlak (SPTJM) Kebenaran Data Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "death-power-of-attorney",
+        "code": "DKP",
+        "title": "Surat Kuasa",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "letter-c-data-statement-letter",
+        "code": "SPKLC",
+        "title": "Surat Pernyataan Permohonan Data Letter C",
+        "status": "HAS_MISSING",
+        "total_fields": 10,
+        "missing_count": 7,
+        "missing_fields": [
+            "name (Nama)",
+            "nik (NIK)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "hamlet (Padukuhan letak Letter C)",
+            "purposeType (Keperluan)",
+            "letterCOwnerName (Nama pemilik Letter C)",
+            "hamletHeadName (Nama Dukuh yang mengetahui)"
+        ]
+    },
+    {
+        "slug": "power-of-attorney-letter",
+        "code": "SKC",
+        "title": "Surat Kuasa",
+        "status": "HAS_MISSING",
+        "total_fields": 14,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)",
+            "attorneyBirthPlaceDate (Tempat\/Tgl. Lahir)"
+        ]
+    },
+    {
+        "slug": "not-remarried-statement-letter",
+        "code": "SPBML",
+        "title": "Surat Keterangan Belum Menikah Lagi",
+        "status": "HAS_MISSING",
+        "total_fields": 13,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "parental-consent-letter",
+        "code": "SPOT",
+        "title": "Surat Izin Orang Tua",
+        "status": "HAS_MISSING",
+        "total_fields": 36,
+        "missing_count": 2,
+        "missing_fields": [
+            "childBin (Bin\/Binti (nama ayah))",
+            "childSpouseBin (Bin\/Binti (nama ayah))"
+        ]
+    },
+    {
+        "slug": "bride-groom-consent-letter",
+        "code": "SPCCP",
+        "title": "Persetujuan Calon Pengantin",
+        "status": "HAS_MISSING",
+        "total_fields": 20,
+        "missing_count": 2,
+        "missing_fields": [
+            "groomEducation (Pendidikan Terakhir)",
+            "brideEducation (Pendidikan Terakhir)"
+        ]
+    },
+    {
+        "slug": "guardian-statement",
+        "code": "SKWNP",
+        "title": "Surat Keterangan Wali Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 21,
+        "missing_count": 18,
+        "missing_fields": [
+            "guardianName (Nama Lengkap)",
+            "guardianNik (NIK)",
+            "guardianBirthPlace (Tempat Lahir)",
+            "groomBirthDate (Tanggal Lahir)",
+            "guardianOccupation (Pekerjaan)",
+            "guardianAddress (Alamat)",
+            "guardianBin (Bin (nama ayah))",
+            "guardianRelation (Hubungan dengan calon istri)",
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))",
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))"
+        ]
+    },
+    {
+        "slug": "unmarried-statement",
+        "code": "SPBMLP",
+        "title": "Surat Keterangan Belum Menikah Lagi",
+        "status": "HAS_MISSING",
+        "total_fields": 11,
+        "missing_count": 11,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "birthDate (Tanggal Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "education (Pendidikan Terakhir)",
+            "nationality (Kewarganegaraan)"
+        ]
+    },
+    {
+        "slug": "unmarried-status-letter",
+        "code": "SKBK",
+        "title": "Surat Keterangan Belum Kawin",
+        "status": "HAS_MISSING",
+        "total_fields": 8,
+        "missing_count": 3,
+        "missing_fields": [
+            "applicantName (Nama Lengkap)",
+            "applicantNik (NIK)",
+            "applicantAddress (Alamat)"
+        ]
+    },
+    {
+        "slug": "bussiness-permit-letter",
+        "code": "SKU",
+        "title": "Surat Keterangan Usaha",
+        "status": "HAS_MISSING",
+        "total_fields": 11,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)",
+            "purposeLocation (di)"
+        ]
+    },
+    {
+        "slug": "general-statement-letter",
+        "code": "SKUM",
+        "title": "Surat Keterangan Umum",
+        "status": "HAS_MISSING",
+        "total_fields": 9,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "domicile-certificate",
+        "code": "SKD",
+        "title": "Surat Keterangan Domisili",
+        "status": "HAS_MISSING",
+        "total_fields": 15,
+        "missing_count": 5,
+        "missing_fields": [
+            "buildingUsage (Kegunaan Bangunan)",
+            "responsiblePerson (Nama Penanggung Jawab\/Pimpinan)",
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "sktm-general",
+        "code": "SKTM",
+        "title": "Surat Keterangan Tidak Mampu",
+        "status": "HAS_MISSING",
+        "total_fields": 14,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "income (Penghasilan per bulan)",
+            "destination (Surat ditujukan kepada \/ instansi)"
+        ]
+    },
+    {
+        "slug": "sktm-school",
+        "code": "SKTMS",
+        "title": "Surat Keterangan Tidak Mampu Sekolah",
+        "status": "HAS_MISSING",
+        "total_fields": 20,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "income (Penghasilan per bulan)"
+        ]
+    },
+    {
+        "slug": "income-permit-letter",
+        "code": "SKP",
+        "title": "Surat Keterangan Penghasilan",
+        "status": "HAS_MISSING",
+        "total_fields": 10,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)",
+            "income (Penghasilan per bulan)"
+        ]
+    },
+    {
+        "slug": "event-permit-letter",
+        "code": "SKK",
+        "title": "Surat Keterangan Keramaian",
+        "status": "HAS_MISSING",
+        "total_fields": 16,
+        "missing_count": 5,
+        "missing_fields": [
+            "name (Nama)",
+            "birthPlaceDate (Tempat\/Tgl. Lahir)",
+            "nik (NIK)",
+            "destination (Pergi ke)",
+            "necessity (Keperluan)"
+        ]
+    },
+    {
+        "slug": "travel-permit-letter-gov",
+        "code": "SKJG",
+        "title": "Surat Keterangan Jalan",
+        "status": "HAS_MISSING",
+        "total_fields": 13,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "destination (Tempat tujuan)"
+        ]
+    },
+    {
+        "slug": "skck-referral-letter",
+        "code": "SKCK",
+        "title": "Surat Keterangan Mohon SKCK",
+        "status": "HAS_MISSING",
+        "total_fields": 12,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "destination (Pergi ke (instansi tujuan))"
+        ]
+    },
+    {
+        "slug": "legalization-register",
+        "code": "RL",
+        "title": "Surat Legalisasi",
+        "status": "HAS_MISSING",
+        "total_fields": 5,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)"
+        ]
+    },
+    {
+        "slug": "birth-attestation-letter",
+        "code": "SKKL",
+        "title": "Surat Keterangan Kelahiran",
+        "status": "HAS_MISSING",
+        "total_fields": 50,
+        "missing_count": 9,
+        "missing_fields": [
+            "familyCardNumber (Nomor KK)",
+            "witness1Nik (NIK)",
+            "witness1Name (Nama Lengkap)",
+            "witness1Age (Umur (tahun))",
+            "witness1Address (Alamat)",
+            "witness2Nik (NIK)",
+            "witness2Name (Nama Lengkap)",
+            "witness2Age (Umur (tahun))",
+            "witness2Address (Alamat)"
+        ]
+    },
+    {
+        "slug": "death-certificate",
+        "code": "SKKM",
+        "title": "Surat Keterangan Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "death-commemoration-calculation",
+        "title": "Perhitungan Selamatan 3 Hari Sampai 1000 Hari",
+        "status": "NO_BACKEND_CODE",
+        "missing": []
+    },
+    {
+        "slug": "land-price-certificate-letter",
+        "code": "SKTH",
+        "title": "Surat Keterangan Harga Tanah",
+        "status": "HAS_MISSING",
+        "total_fields": 9,
+        "missing_count": 9,
+        "missing_fields": [
+            "certificateNumber (No. Sertifikat\/NIB)",
+            "area (Luas tanah (m\u00b2))",
+            "ownerName (Nama Pemilik)",
+            "hamlet (Padukuhan)",
+            "village (Kalurahan\/Desa)",
+            "district (Kapanewon)",
+            "city (Kota\/Kabupaten)",
+            "priceMin (Harga terendah (Rp))",
+            "priceMax (Harga tertinggi (Rp))"
+        ]
+    },
+    {
+        "slug": "land-origin-certificate-letter",
+        "code": "SKTA",
+        "title": "Surat Keterangan Asal Tanah",
+        "status": "HAS_MISSING",
+        "total_fields": 7,
+        "missing_count": 7,
+        "missing_fields": [
+            "certificateNumber (Nomor Sertifikat Hak Milik)",
+            "ownerName (Tertulis atas nama)",
+            "area (Luas tanah (m\u00b2))",
+            "areaInWords (Luas (dengan huruf))",
+            "measurementLetterNumber (Nomor surat ukur)",
+            "measurementLetterDate (Tanggal surat ukur)",
+            "hamlet (Terletak di Dusun)"
+        ]
+    },
+    {
+        "slug": "never-married-certificate-letter",
+        "code": "SKBKN",
+        "title": "Surat Keterangan Belum Pernah Menikah",
+        "status": "HAS_MISSING",
+        "total_fields": 10,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "maritalStatus (Status Perkawinan)",
+            "alias (Nama alias (bila ada))"
+        ]
+    },
+    {
+        "slug": "marriage-lodging-certificate-letter",
+        "code": "SKTNB",
+        "title": "Surat Keterangan Numpang Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 21,
+        "missing_count": 6,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "applicantBin (Bin\/Binti (nama ayah))",
+            "spouseBin (Binti (nama ayah))"
+        ]
+    },
+    {
+        "slug": "death-certificate-for-marriage-letter",
+        "code": "SKKMP",
+        "title": "Surat Keterangan Kematian",
+        "status": "HAS_MISSING",
+        "total_fields": 22,
+        "missing_count": 10,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "applicantBin (Bin (nama ayah))",
+            "nationality (Kewarganegaraan)"
+        ]
+    },
+    {
+        "slug": "general-certificate-letter",
+        "code": "SKUMN",
+        "title": "Surat Pengantar Tes Kesehatan",
+        "status": "HAS_MISSING",
+        "total_fields": 16,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "behavior (Kelakuan)",
+            "destination (Tujuan ke)"
+        ]
+    },
+    {
+        "slug": "unmarried-certificate",
+        "code": "SKBK2",
+        "title": "Surat Keterangan Belum Pernah Menikah",
+        "status": "HAS_MISSING",
+        "total_fields": 11,
+        "missing_count": 11,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "birthDate (Tanggal Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "education (Pendidikan Terakhir)",
+            "nationality (Kewarganegaraan)"
+        ]
+    },
+    {
+        "slug": "n1",
+        "code": "N1P",
+        "title": "Pengantar Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 30,
+        "missing_count": 28,
+        "missing_fields": [
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideMotherBirthDate (Tanggal Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideEducation (Pendidikan Terakhir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))",
+            "brideStatus (Status)",
+            "exHusbandName (Nama suami terdahulu (bila janda))",
+            "brideFatherName (Nama Lengkap)",
+            "brideFatherNik (NIK)",
+            "brideFatherBirthPlace (Tempat Lahir)",
+            "brideFatherNationality (Kewarganegaraan)",
+            "brideFatherReligion (Agama)",
+            "brideFatherOccupation (Pekerjaan)",
+            "brideFatherAddress (Alamat)",
+            "brideFatherBin (Bin (nama ayah dari ayah))",
+            "brideMotherName (Nama Lengkap)",
+            "brideMotherNik (NIK)",
+            "brideMotherBirthPlace (Tempat Lahir)",
+            "brideMotherNationality (Kewarganegaraan)",
+            "brideMotherReligion (Agama)",
+            "brideMotherOccupation (Pekerjaan)",
+            "brideMotherAddress (Alamat)",
+            "brideMotherBin (Binti (nama ayah dari ibu))"
+        ]
+    },
+    {
+        "slug": "n2",
+        "code": "N2P",
+        "title": "Permohonan Kehendak Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 8,
+        "missing_count": 5,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)",
+            "groomName (Nama Calon Suami)",
+            "brideName (Nama Calon Istri)"
+        ]
+    },
+    {
+        "slug": "n4",
+        "code": "N4P",
+        "title": "Persetujuan Calon Pengantin",
+        "status": "HAS_MISSING",
+        "total_fields": 18,
+        "missing_count": 17,
+        "missing_fields": [
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "brideBirthDate (Tanggal Lahir)",
+            "groomNationality (Kewarganegaraan)",
+            "groomReligion (Agama)",
+            "groomOccupation (Pekerjaan)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))",
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))"
+        ]
+    },
+    {
+        "slug": "n5",
+        "code": "N5P",
+        "title": "Surat Izin Orang Tua",
+        "status": "HAS_MISSING",
+        "total_fields": 36,
+        "missing_count": 33,
+        "missing_fields": [
+            "brideFatherName (Nama Lengkap)",
+            "brideFatherNik (NIK)",
+            "brideFatherBirthPlace (Tempat Lahir)",
+            "groomBirthDate (Tanggal Lahir)",
+            "brideFatherNationality (Kewarganegaraan)",
+            "brideFatherReligion (Agama)",
+            "brideFatherOccupation (Pekerjaan)",
+            "brideFatherAddress (Alamat)",
+            "brideFatherBin (Bin (nama ayah dari ayah))",
+            "brideMotherName (Nama Lengkap)",
+            "brideMotherNik (NIK)",
+            "brideMotherBirthPlace (Tempat Lahir)",
+            "brideMotherNationality (Kewarganegaraan)",
+            "brideMotherReligion (Agama)",
+            "brideMotherOccupation (Pekerjaan)",
+            "brideMotherAddress (Alamat)",
+            "brideMotherBin (Binti (nama ayah dari ibu))",
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))",
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "groomNationality (Kewarganegaraan)",
+            "groomReligion (Agama)",
+            "groomOccupation (Pekerjaan)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))"
+        ]
+    },
+    {
+        "slug": "n6",
+        "code": "N6P",
+        "title": "Surat Keterangan Kematian",
+        "status": "HAS_MISSING",
+        "total_fields": 21,
+        "missing_count": 18,
+        "missing_fields": [
+            "exHusbandName (Nama Lengkap)",
+            "exHusbandNik (NIK)",
+            "exHusbandBirthPlace (Tempat Lahir)",
+            "exHusbandNationality (Kewarganegaraan)",
+            "exHusbandReligion (Agama)",
+            "exHusbandOccupation (Pekerjaan)",
+            "exHusbandAddress (Alamat)",
+            "exHusbandBin (Bin (nama ayah))",
+            "exHusbandDiedPlace (Tempat Meninggal)",
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideEducation (Pendidikan Terakhir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))"
+        ]
+    },
+    {
+        "slug": "duty-travel-order-letter",
+        "code": "SPPD",
+        "title": "SPPD",
+        "status": "HAS_MISSING",
+        "total_fields": 19,
+        "missing_count": 5,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)",
+            "purpose (Maksud perjalanan dinas)",
+            "notes (Keterangan lain-lain)"
+        ]
+    },
+    {
+        "slug": "late-birth-registration-approval-decree",
+        "code": "PPKT",
+        "title": "Surat Pencatatan Kelahiran Terlambat",
+        "status": "OK",
+        "total_fields": 10,
+        "missing_count": 0,
+        "missing_fields": []
+    },
+    {
+        "slug": "permit-followup-letter",
+        "code": "SMLPI",
+        "title": "Surat Tindak Lanjut Permohonan Izin",
+        "status": "HAS_MISSING",
+        "total_fields": 13,
+        "missing_count": 12,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "address (Alamat)",
+            "permitType (Jenis izin yang dimohonkan)",
+            "requestNumber (Nomor surat permohonan)",
+            "followUpDate (Tanggal tindak lanjut)",
+            "requestSubject (Perihal surat permohonan)",
+            "followUpResult (Hasil tindak lanjut)",
+            "followUpContent (Isi tanggapan \/ tindak lanjut)",
+            "followUpConditions (Syarat atau ketentuan lanjutan)",
+            "destination (Surat ditujukan kepada)",
+            "carbonCopy (Tembusan)"
+        ]
+    },
+    {
+        "slug": "lease-offer-letter",
+        "code": "SPSKG",
+        "title": "Surat Penawaran Sewa Kontrak Gedung BRI Unit Ngemplak II",
+        "status": "HAS_MISSING",
+        "total_fields": 16,
+        "missing_count": 15,
+        "missing_fields": [
+            "requestNumber (Nomor surat permintaan)",
+            "rentStartDate (Tanggal mulai sewa)",
+            "requestSubject (Perihal surat permintaan)",
+            "tenantName (Nama instansi penyewa)",
+            "tenantRepresentative (Nama pimpinan \/ penerima surat)",
+            "tenantPosition (Jabatan)",
+            "tenantAddress (Alamat instansi penyewa)",
+            "propertyName (Nama objek sewa)",
+            "propertyAddress (Alamat \/ lokasi objek sewa)",
+            "buildingArea (Luas bangunan (m\u00b2))",
+            "landArea (Luas tanah (m\u00b2))",
+            "rentPrice (Harga sewa)",
+            "rentPeriod (Jangka waktu sewa)",
+            "paymentTerms (Cara pembayaran)",
+            "otherTerms (Ketentuan lain)"
+        ]
+    },
+    {
+        "slug": "research-response-letter",
+        "code": "SBP",
+        "title": "Surat Balasan Penelitian",
+        "status": "HAS_MISSING",
+        "total_fields": 14,
+        "missing_count": 11,
+        "missing_fields": [
+            "requestNumber (Nomor surat permohonan)",
+            "researchEndDate (Tanggal selesai penelitian)",
+            "requestInstitution (Asal instansi \/ perguruan tinggi)",
+            "researcherNumber (NIM \/ NIP \/ NIDN)",
+            "researcherStudyProgram (Program studi \/ jurusan)",
+            "researcherPhone (Nomor telepon)",
+            "researchTitle (Judul penelitian)",
+            "researchLocation (Lokasi penelitian)",
+            "responseResult (Hasil tanggapan)",
+            "responseConditions (Ketentuan selama penelitian)",
+            "destination (Surat ditujukan kepada)"
+        ]
+    },
+    {
+        "slug": "marriage-certificate-duplicate-letter",
+        "code": "SKDN",
+        "title": "Surat Pengantar Duplikat Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 11,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "destination (Tujuan)"
+        ]
+    },
+    {
+        "slug": "general-cover-letter",
+        "code": "SPU",
+        "title": "Surat Pengantar Umum",
+        "status": "HAS_MISSING",
+        "total_fields": 11,
+        "missing_count": 3,
+        "missing_fields": [
+            "name (Nama)",
+            "nik (NIK)",
+            "destination (Pergi ke)"
+        ]
+    },
+    {
+        "slug": "birth-certificate-referral-letter",
+        "code": "SPAKL",
+        "title": "Surat Keterangan Mohon Akta Kelahiran",
+        "status": "HAS_MISSING",
+        "total_fields": 10,
+        "missing_count": 2,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)"
+        ]
+    },
+    {
+        "slug": "marriage-introduction-letter",
+        "code": "SPNIP",
+        "title": "Pengantar Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 30,
+        "missing_count": 4,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "fatherBin (Bin (nama ayah dari ayah))",
+            "motherBin (Binti (nama ayah dari ibu))"
+        ]
+    },
+    {
+        "slug": "marriage-lodging",
+        "code": "SKNNP",
+        "title": "Surat Keterangan Numpang Nikah",
+        "status": "HAS_MISSING",
+        "total_fields": 20,
+        "missing_count": 19,
+        "missing_fields": [
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "groomBirthDate (Tanggal Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideEducation (Pendidikan Terakhir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))",
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "groomNationality (Kewarganegaraan)",
+            "groomReligion (Agama)",
+            "groomOccupation (Pekerjaan)",
+            "groomEducation (Pendidikan Terakhir)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))"
+        ]
+    },
+    {
+        "slug": "health-referral",
+        "code": "SPTKP",
+        "title": "Surat Pengantar Tes Kesehatan",
+        "status": "HAS_MISSING",
+        "total_fields": 15,
+        "missing_count": 15,
+        "missing_fields": [
+            "name (Nama Lengkap)",
+            "nik (NIK)",
+            "birthPlace (Tempat Lahir)",
+            "birthDate (Tanggal Lahir)",
+            "gender (Jenis Kelamin)",
+            "maritalStatus (Status Perkawinan)",
+            "religion (Agama)",
+            "occupation (Pekerjaan)",
+            "address (Alamat)",
+            "education (Pendidikan Terakhir)",
+            "nationality (Kewarganegaraan)",
+            "conduct (Kelakuan)",
+            "destination (Tujuan ke)",
+            "need (Keperluan)",
+            "note (Keterangan lain-lain)"
+        ]
+    },
+    {
+        "slug": "judge-guardian",
+        "code": "SKWHP",
+        "title": "Surat Keterangan Wali Hakim",
+        "status": "HAS_MISSING",
+        "total_fields": 21,
+        "missing_count": 20,
+        "missing_fields": [
+            "brideName (Nama Lengkap)",
+            "brideNik (NIK)",
+            "brideBirthPlace (Tempat Lahir)",
+            "groomBirthDate (Tanggal Lahir)",
+            "brideNationality (Kewarganegaraan)",
+            "brideReligion (Agama)",
+            "brideOccupation (Pekerjaan)",
+            "brideEducation (Pendidikan Terakhir)",
+            "brideAddress (Alamat)",
+            "brideBinti (Binti (nama ayah))",
+            "groomName (Nama Lengkap)",
+            "groomNik (NIK)",
+            "groomBirthPlace (Tempat Lahir)",
+            "groomNationality (Kewarganegaraan)",
+            "groomReligion (Agama)",
+            "groomOccupation (Pekerjaan)",
+            "groomEducation (Pendidikan Terakhir)",
+            "groomAddress (Alamat)",
+            "groomBin (Bin (nama ayah))",
+            "judgeGuardianReason (Sebab dilangsungkan dengan wali hakim)"
+        ]
+    },
+    {
+        "slug": "death-report",
+        "code": "DKR",
+        "title": "Laporan Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "death-registration-report",
+        "code": "DKC",
+        "title": "Pelaporan Pencatatan Kematian",
+        "status": "RENDER_ERROR",
+        "error": "Undefined variable $aliases"
+    },
+    {
+        "slug": "birth-registration-report",
+        "code": "LPKL",
+        "title": "Pelaporan Pencatatan Kelahiran",
+        "status": "HAS_MISSING",
+        "total_fields": 54,
+        "missing_count": 10,
+        "missing_fields": [
+            "familyCardNumber (Nomor KK)",
+            "marriageCertificateNumber (Nomor Akta Nikah\/Akta Perkawinan)",
+            "witness1Nik (NIK)",
+            "witness1Name (Nama Lengkap)",
+            "witness1Age (Umur (tahun))",
+            "witness1Address (Alamat)",
+            "witness2Nik (NIK)",
+            "witness2Name (Nama Lengkap)",
+            "witness2Age (Umur (tahun))",
+            "witness2Address (Alamat)"
+        ]
+    },
+    {
+        "slug": "out-of-domicile-birth-report",
+        "code": "LKLD",
+        "title": "Laporan Kelahiran Luar Domisili",
+        "status": "HAS_MISSING",
+        "total_fields": 52,
+        "missing_count": 9,
+        "missing_fields": [
+            "familyCardNumber (Nomor KK)",
+            "witness1Nik (NIK)",
+            "witness1Name (Nama Lengkap)",
+            "witness1Age (Umur (tahun))",
+            "witness1Address (Alamat)",
+            "witness2Nik (NIK)",
+            "witness2Name (Nama Lengkap)",
+            "witness2Age (Umur (tahun))",
+            "witness2Address (Alamat)"
+        ]
+    }
+]
