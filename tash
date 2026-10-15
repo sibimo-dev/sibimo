@@ -1,0 +1,335 @@
+[1mdiff --git a/app/Services/LetterPdfService.php b/app/Services/LetterPdfService.php[m
+[1mindex d364828..bee8338 100644[m
+[1m--- a/app/Services/LetterPdfService.php[m
+[1m+++ b/app/Services/LetterPdfService.php[m
+[36m@@ -7,10 +7,26 @@[m
+ use Barryvdh\DomPDF\PDF as DomPdf;[m
+ use Illuminate\Support\Carbon;[m
+ [m
+[31m-[m
+[32m+[m[32m/**[m
+[32m+[m[32m * MERGE NOTE (gabungan File 1 + File 2):[m
+[32m+[m[32m * - Dari File 1 dipertahankan: MARRIAGE_LETTERS, key 'marriage' di viewData(),[m
+[32m+[m[32m *   marriageData(), marriagePerson(), longDate(), birthLong(), sampleMarriageForm(),[m
+[32m+[m[32m *   dan entri sampleOverrides() untuk surat pernikahan perempuan[m
+[32m+[m[32m *   (registration-form, n1, n2, ... numpang-nikah).[m
+[32m+[m[32m * - Dari File 2 dipertahankan: parameter $template di viewData(), VIEW_FOLDERS,[m
+[32m+[m[32m *   viewName(), MARRIED_LETTER_SLUGS + marriedLetterData()/personBlock(),[m
+[32m+[m[32m *   SIGNATURE_DIRECT_SLUGS, KALURAHAN_KOP_TEMPLATES, DATE_PLACEHOLDER,[m
+[32m+[m[32m *   surat akta kelahiran (birthLetterFromForm dst), letter-c/land/endorser/[m
+[32m+[m[32m *   application, regionData($blank), signature(..., $directPrefix), kopData(..., $kalurahanKop).[m
+[32m+[m[32m * - Revisi terbaru: 'unmarried-certificate' (Surat Keterangan Belum Kawin) di[m
+[32m+[m[32m *   MARRIAGE_LETTERS/marriageData()/sampleOverrides(); marriedLetterData() memakai[m
+[32m+[m[32m *   longDate() untuk tanggal; fallback applicant_name, registration & village[m
+[32m+[m[32m *   letter_number di viewData().[m
+[32m+[m[32m * - Kedua set surat pernikahan (lama: slug n1/n2/..; baru: slug *-letter di folder[m
+[32m+[m[32m *   married-man) berjalan berdampingan tanpa bentrok slug.[m
+[32m+[m[32m */[m
+ class LetterPdfService[m
+ {[m
+[31m-[m
+     public const PAPER = 'folio';[m
+     public const SIGNATURE_CITY = 'Bimomartani';[m
+     public const SIGNATURE_LURAH = 'a.n LURAH BIMOMARTANI';[m
+[36m@@ -18,31 +34,131 @@[m [mclass LetterPdfService[m
+ [m
+     public const VILLAGE_SUFFIX = 'Bimomartani, Ngemplak, Sleman';[m
+ [m
+[32m+[m[32m    /** Placeholder titik-titik untuk field yang belum terisi (tanggal TTD, dll). */[m
+[32m+[m[32m    private const BLANK_PLACEHOLDER = '..........................';[m
+[32m+[m
+[32m+[m[32m    public const DATE_PLACEHOLDER = self::BLANK_PLACEHOLDER;[m
+ [m
+[31m-    public function viewData(LetterRequest $letterRequest): array[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Slug letter_type yang kopnya HARUS selalu format "PEMERINTAH KALURAHAN[m
+[32m+[m[32m     * BIMOMARTANI" biasa, walau signer-nya Lurah langsung. TTD tetap ikut[m
+[32m+[m[32m     * jabatan signer asli, tapi kop tidak berubah.[m
+[32m+[m[32m     */[m
+[32m+[m[32m    private const KOP_ALWAYS_KALURAHAN_SLUGS = [[m
+[32m+[m[32m        'permit-followup-letter',[m
+[32m+[m[32m        'surat-tindak-lanjut-izin',[m
+[32m+[m[32m        'lease-offer-letter',[m
+[32m+[m[32m        'surat-penawaran-sewa',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    /** Slug yang TTD-nya cukup "a.n LURAH" (tanpa rantai Carik / u.b.). */[m
+[32m+[m[32m    private const SIGNATURE_DIRECT_SLUGS = [[m
+[32m+[m[32m        'birth-attestation-letter',[m
+[32m+[m[32m        'birth-certificate-referral-letter',[m
+[32m+[m[32m        'birth-certificate-power-of-attorney',[m
+[32m+[m[32m        'spousal-relationship-responsibility-statement',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    /** Template yang kopnya selalu "PEMERINTAH KALURAHAN BIMOMARTANI". */[m
+[32m+[m[32m    private const KALURAHAN_KOP_TEMPLATES = [[m
+[32m+[m[32m        'land-price-certificate-letter',[m
+[32m+[m[32m        'land-origin-certificate-letter',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    private const VIEW_FOLDERS = [[m
+[32m+[m[32m        'letter-c-data-statement-letter' => 'letter-c',[m
+[32m+[m[32m        'power-of-attorney-letter' => 'letter-c',[m
+[32m+[m[32m        'land-price-certificate-letter' => 'letter-c',[m
+[32m+[m[32m        'land-origin-certificate-letter' => 'letter-c',[m
+[32m+[m[32m        'general-certificate-letter' => 'married-man',[m
+[32m+[m[32m        'marriage-application-letter' => 'married-man',[m
+[32m+[m[32m        'marriage-lodging-certificate-letter' => 'married-man',[m
+[32m+[m[32m        'never-married-certificate-letter' => 'married-man',[m
+[32m+[m[32m        'not-remarried-statement-letter' => 'married-man',[m
+[32m+[m[32m        'death-certificate-for-marriage-letter' => 'married-man',[m
+[32m+[m[32m        'bride-groom-consent-letter' => 'married-man',[m
+[32m+[m[32m        'parental-consent-letter' => 'married-man',[m
+[32m+[m[32m        'marriage-introduction-letter' => 'married-man',[m
+[32m+[m[32m        'marriage-registration-data-sheet' => 'married-man',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    private const MARRIED_LETTER_SLUGS = [[m
+[32m+[m[32m        'general-certificate-letter',[m
+[32m+[m[32m        'marriage-application-letter',[m
+[32m+[m[32m        'marriage-lodging-certificate-letter',[m
+[32m+[m[32m        'never-married-certificate-letter',[m
+[32m+[m[32m        'not-remarried-statement-letter',[m
+[32m+[m[32m        'death-certificate-for-marriage-letter',[m
+[32m+[m[32m        'bride-groom-consent-letter',[m
+[32m+[m[32m        'parental-consent-letter',[m
+[32m+[m[32m        'marriage-introduction-letter',[m
+[32m+[m[32m        'marriage-registration-data-sheet',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    public const MARRIAGE_LETTERS = [[m
+[32m+[m[32m        'registration-form'   => 'Data Isian Pendaftaran Nikah',[m
+[32m+[m[32m        'n1'                  => 'Pengantar Nikah (N1)',[m
+[32m+[m[32m        'n2'                  => 'Permohonan Kehendak Nikah (N2)',[m
+[32m+[m[32m        'n4'                  => 'Persetujuan Calon Pengantin (N4)',[m
+[32m+[m[32m        'n5'                  => 'Surat Izin Orang Tua (N5)',[m
+[32m+[m[32m        'n6'                  => 'Surat Keterangan Kematian (N6)',[m
+[32m+[m[32m        'guardian-statement'  => 'Surat Keterangan Wali Nikah',[m
+[32m+[m[32m        'judge-guardian'      => 'Surat Keterangan Wali Hakim',[m
+[32m+[m[32m        'health-referral'     => 'Surat Keterangan (Pengantar Puskesmas)',[m
+[32m+[m[32m        'unmarried-statement' => 'Surat Pernyataan Belum Menikah Lagi',[m
+[32m+[m[32m        'unmarried-certificate' => 'Surat Keterangan Belum Kawin',[m
+[32m+[m[32m        'numpang-nikah'       => 'Surat Keterangan Numpang Nikah',[m
+[32m+[m[32m    ];[m
+[32m+[m
+[32m+[m[32m    public function viewData(LetterRequest $letterRequest, ?string $template = null): array[m
+     {[m
+         $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);[m
+ [m
+         $form = $letterRequest->form_data ?? [];[m
+         $citizen = $letterRequest->citizen;[m
+         $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;[m
+[31m-        $letterDate = $letterRequest->authorized_at ?? now();[m
+[32m+[m
+[32m+[m[32m        // Tidak fallback ke now(): kalau belum authorized_at, tanggal TTD tampil[m
+[32m+[m[32m        // placeholder titik-titik (lihat signature()).[m
+[32m+[m[32m        $letterDate = $letterRequest->authorized_at;[m
+ [m
+         $birthPlace = $form['birth_place'] ?? $citizen?->birth_place;[m
+         $birthDate = $form['birth_date'] ?? $citizen?->birth_date;[m
+         $address = $this->fullAddress($letterRequest->applicant_address ?? $citizen?->address);[m
+[32m+[m[32m        $templateSlug = $template ?? $letterRequest->letterType?->slug;[m
+[32m+[m[32m        $signerPosition = $signer?->position;[m
+[32m+[m[32m        if ([m
+[32m+[m[32m            in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)[m
+[32m+[m[32m            && in_array([m
+[32m+[m[32m                strtolower(trim($signerPosition ?? '')),[m
+[32m+[m[32m                ['kaur tata laksana', 'kepala urusan tata laksana'],[m
+[32m+[m[32m                true[m
+[32m+[m[32m            )[m
+[32m+[m[32m        ) {[m
+[32m+[m[32m            $signerPosition = 'KAMITUWA';[m
+[32m+[m[32m        }[m
+ [m
+[31m-        return [[m
+[31m-            // Dikirim dengan 2 nama key: 'number' (versi baru) dan 'nomor' (alias,[m
+[31m-            // supaya blade lama yang masih pakai $nomor tidak error). Setelah semua[m
+[31m-            // blade dipastikan pakai $number, alias 'nomor' ini boleh dihapus.[m
+[32m+[m[32m        $kalurahanKop = $this->usesKalurahanKop($templateSlug)[m
+[32m+[m[32m            || in_array($templateSlug, self::KOP_ALWAYS_KALURAHAN_SLUGS, true);[m
+[32m+[m
+[32m+[m[32m        // Kode formulir tetap (mis. "F-1.06"); diisi ke 2 key ('form_code' & 'kodeForm').[m
+[32m+[m[32m        $formCode = $form['kode_form'] ?? $letterRequest->letterType?->form_code ?? null;[m
+[32m+[m
+[32m+[m[32m        $data = [[m
+[32m+[m[32m            // 'number' (baru) dan 'nomor' (alias untuk blade lama).[m
+             'number' => $number = $letterRequest->letter_number[m
+                 ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),[m
+             'nomor' => $number,[m
+ [m
+[32m+[m[32m            // surat pernikahan (set lama: n1, n2, dst)[m
+[32m+[m[32m            'marriage' => $this->marriageData($form, $number, $letterDate),[m
+[32m+[m
+[32m+[m[32m            'form_code' => $formCode,[m
+[32m+[m[32m            'kodeForm' => $formCode,[m
+[32m+[m
+             'signer' => [[m
+                 'name' => $signer?->name,[m
+[31m-                'position' => $signer?->position,[m
+[32m+[m[32m                'position' => $signerPosition,[m
+             ],[m
+ [m
+             'applicant' => [[m
+[36m@@ -58,6 +174,8 @@[m [mpublic function viewData(LetterRequest $letterRequest): array[m
+                 'rt' => $form['rt'] ?? $citizen?->rt,[m
+                 'rw' => $form['rw'] ?? $citizen?->rw,[m
+                 'phone' => $form['phone'] ?? $citizen?->phone,[m
+[32m+[m[32m                'mother_name' => $form['mother_name'] ?? $citizen?->mother_name,[m
+[32m+[m[32m                'father_name' => $form['father_name'] ?? $citizen?->father_name,[m
+             ],[m
+ [m
+             // surat keterangan usaha[m
+[36m@@ -68,8 +186,11 @@[m [mpublic function viewData(LetterRequest $letterRequest): array[m
+             'purpose' => $form['purpose'] ?? null,[m
+             'destination' => $form['destination_agency'] ?? null,[m
+ [m
+[31m-            // surat keterangan keramaian[m
+[32m+[m[32m            // surat keterangan keramaian + surat tindak lanjut permohonan izin[m
+             'event' => [[m
+[32m+[m[32m                'day_name' => isset($form['event_date'])[m
+[32m+[m[32m                    ? Carbon::parse($form['event_date'])->locale('id')->translatedFormat('l')[m
+[32m+[m[32m                    : null,[m
+                 'date' => $form['event_date'] ?? null,[m
+                 'time' => $form['event_time'] ?? null,[m
+                 'place' => $form['event_place'] ?? null,[m
+[36m@@ -125,44 +246,329 @@[m [mpublic function viewData(LetterRequest $letterRequest): array[m
+                 'address' => isset($w['address']) ? $this->fullAddress($w['address']) : null,[m
+             ])->all(),[m
+ [m
+[32m+[m[32m            // surat pernyataan beda nama/identitas[m
+[32m+[m[32m            'other_identity' => [[m
+[32m+[m[32m                'name' => $form['other_name'] ?? null,[m
+[32m+[m[32m                'address' => isset($form['other_address']) ? $this->fullAddress($form['other_address']) : null,[m
+[32m+[m[32m                'nik' => $form['other_nik'] ?? null,[m
+[32m+[m[32m            ],[m
+[32m+[m
+[32m+[m[32m            // surat pernyataan tanggung jawab mutlak perkawinan belum tercatat[m
+[32m+[m[32m            'husband' => [[m
+[32m+[m[32m                'name' => $form['husband_name'] ?? null,[m
+[32m+[m[32m                'nik' => $form['husband_nik'] ?? null,[m
+[32m+[m[32m                'birth' => $this->birth($form['husband_birth_place'] ?? null, $form['husband_birth_date'] ?? null),[m
+[32m+[m[32m                'occupation' => $form['husband_occupation'] ?? null,[m
+[32m+[m[32m                'address' => isset($form['husband_address']) ? $this->fullAddress($form['husband_address']) : null,[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            'wife' => [[m
+[32m+[m[32m                'name' => $form['wife_name'] ?? null,[m
+[32m+[m[32m                'nik' => $form['wife_nik'] ?? null,[m
+[32m+[m[32m                'birth' => $this->birth($form['wife_birth_place'] ?? null, $form['wife_birth_date'] ?? null),[m
+[32m+[m[32m                'occupation' => $form['wife_occupation'] ?? null,[m
+[32m+[m[32m                'address' => isset($form['wife_address']) ? $this->fullAddress($form['wife_address']) : null,[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            'marriage_date' => $form['marriage_date'] ?? null,[m
+[32m+[m[32m            'marriage_witnesses' => collect($form['marriage_witnesses'] ?? [])->map(fn ($w) => [[m
+[32m+[m[32m                'name' => $w['name'] ?? null,[m
+[32m+[m[32m                'nik' => $w['nik'] ?? null,[m
+[32m+[m[32m            ])->all(),[m
+[32m+[m[32m            'children' => collect($form['children'] ?? [])->map(fn ($c) => [[m
+[32m+[m[32m                'name' => $c['name'] ?? null,[m
+[32m+[m[32m                'birth_cert_number' => $c['birth_cert_number'] ?? null,[m
+[32m+[m[32m                'shdk' => $c['shdk'] ?? null,[m
+[32m+[m[32m            ])->all(),[m
+[32m+[m
+[32m+[m[32m            // F-1.06: rincian anggota keluarga (sesuai KK)[m
+[32m+[m[32m            'family_members' => collect($form['family_members'] ?? [])->map(fn ($m) => [[m
+[32m+[m[32m                'name' => $m['name'] ?? null,[m
+[32m+[m[32m                'nik' => $m['nik'] ?? null,[m
+[32m+[m[32m                'shdk' => $m['shdk'] ?? null,[m
+[32m+[m[32m                'note' => $m['note'] ?? null,[m
+[32m+[m[32m            ])->all(),[m
+[32m+[m
+[32m+[m[32m            // F-1.06: tabel A (Pendidikan Terakhir & Pekerjaan)[m
+[32m+[m[32m            'education_job_changes' => collect($form['education_job_changes'] ?? [])->map(fn ($c) => [[m
+[32m+[m[32m                'education' => [[m
+[32m+[m[32m                    'before' => $c['education_before'] ?? null,[m
+[32m+[m[32m                    'after' => $c['education_after'] ?? null,[m
+[32m+[m[32m                    'basis' => $c['education_basis'] ?? null,[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                'job' => [[m
+[32m+[m[32m                    'before' => $c['job_before'] ?? null,[m
+[32m+[m[32m                    'after' => $c['job_after'] ?? null,[m
+[32m+[m[32m                    'basis' => $c['job_basis'] ?? null,[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                'note' => $c['note'] ?? null,[m
+[32m+[m[32m            ])->all(),[m
+[32m+[m
+[32m+[m[32m            // F-1.06: tabel B (Agama & elemen "Lainnya")[m
+[32m+[m[32m            'religion_other_changes' => collect($form['religion_other_changes'] ?? [])->map(fn ($c) => [[m
+[32m+[m[32m                'religion' => [[m
+[32m+[m[32m                    'before' => $c['religion_before'] ?? null,[m
+[32m+[m[32m                    'after' => $c['religion_after'] ?? null,[m
+[32m+[m[32m                    'basis' => $c['religion_basis'] ?? null,[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                'other' => [[m
+[32m+[m[32m                    'before' => $c['other_before'] ?? null,[m
+[32m+[m[32m                    'after' => $c['other_after'] ?? null,[m
+[32m+[m[32m                    'basis' => $c['other_basis'] ?? null,[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                'note' => $c['note'] ?? null,[m
+[32m+[m[32m            ])->all(),[m
+[32m+[m[32m            'other_element_label' => $form['other_element_label'] ?? null,[m
+[32m+[m
+[32m+[m[32m            // surat balasan penelitian[m
+[32m+[m[32m            'researcher' => [[m
+[32m+[m[32m                'name' => $form['researcher_name'] ?? null,[m
+[32m+[m[32m                'nim' => $form['researcher_nim'] ?? null,[m
+[32m+[m[32m                'study_program' => $form['study_program'] ?? null,[m
+[32m+[m[32m                'faculty' => $form['faculty'] ?? null,[m
+[32m+[m[32m            ],[m
+[32m+[m
+[32m+[m[32m            // "Kepada Yth" (surat balasan penelitian, tindak lanjut izin, penawaran sewa, dll)[m
+[32m+[m[32m            'recipient' => $form['recipient_name'] ?? null,[m
+[32m+[m[32m            'recipient_address' => $form['recipient_address'] ?? null,[m
+[32m+[m[32m            'ref_number' => $form['ref_letter_number'] ?? null,[m
+[32m+[m
+[32m+[m[32m            // surat penawaran sewa kontrak gedung[m
+[32m+[m[32m            'lease' => [[m
+[32m+[m[32m                'building_name' => $form['lease_building_name'] ?? null,[m
+[32m+[m[32m                'building_address' => $form['lease_building_address'] ?? null,[m
+[32m+[m[32m                'duration_years' => $form['lease_duration_years'] ?? null,[m
+[32m+[m[32m            ],[m
+[32m+[m
+[32m+[m[32m            // daftar "Tembusan Dikirim Kepada"[m
+[32m+[m[32m            'tembusan' => $form['tembusan'] ?? [],[m
+[32m+[m
+[32m+[m[32m            // surat kuasa waris & surat kuasa administrasi kependudukan (field digabung)[m
+[32m+[m[32m            'attorney' => [[m
+[32m+[m[32m                'name' => $form['attorney_name'] ?? null,[m
+[32m+[m[32m                'nik' => $form['attorney_nik'] ?? null,[m
+[32m+[m[32m                'birth' => $this->birth($form['attorney_birth_place'] ?? null, $form['attorney_birth_date'] ?? null),[m
+[32m+[m[32m                'gender' => $form['attorney_gender'] ?? null,[m
+[32m+[m[32m                'occupation' => $form['attorney_occupation'] ?? null,[m
+[32m+[m[32m                'address' => isset($form['attorney_address']) ? $this->fullAddress($form['attorney_address']) : null,[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            // data almarhum/almarhumah pewaris[m
+[32m+[m[32m            'deceased' => [[m
+[32m+[m[32m                'name' => $form['deceased_name'] ?? null,[m
+[32m+[m[32m                'death_place' => $form['deceased_death_place'] ?? $form['death_place'] ?? null,[m
+[32m+[m[32m            ],[m
+[32m+[m[32m            // alasan/kondisi pemberi kuasa tidak bisa hadir sendiri[m
+[32m+[m[32m            'condition' => $form['condition'] ?? null,[m
+[32m+[m
+[32m+[m[32m            'endorser' => [[m
+[32m+[m[32m                'office' => $form['endorser_office'] ?? null,[m
+[32m+[m[32m                'name' => $form['endorser_name'] ?? null,[m
+[32m+[m[32m            ],[m
+[32m+[m
+[32m+[m[32m            // Sengaja tetap fallback ke tanggal hari ini walau $letterDate null[m
+[32m+[m[32m            // (surat kuasa antar-warga tidak melalui authorized_at) — lihat dateParts().[m
+[32m+[m[32m            'date_parts' => $this->dateParts($letterDate),[m
+[32m+[m
+[32m+[m[32m            // Carbon::parse(null) = now(), jadi tetap terisi tahun berjalan.[m
+[32m+[m[32m            'year' => Carbon::parse($letterDate)->format('Y'),[m
+[32m+[m
+[32m+[m[32m            // SPPD[m
+[32m+[m[32m            'travelOrder' => $this->travelOrderFromForm($form),[m
+[32m+[m
+[32m+[m[32m            // permohonan tinggal sementara[m
+[32m+[m[32m            'stayApplication' => $this->stayApplicationFromForm($form),[m
+[32m+[m
+[32m+[m[32m            // permohonan menjadi penduduk sementara (SKTS)[m
+[32m+[m[32m            'residentRequest' => $this->residentRequestFromForm($form),[m
+[32m+[m
+[32m+[m[32m            // surat akta kelahiran[m
+[32m+[m[32m            'birth' => $this->birthLetterFromForm($form, [[m
+[32m+[m[32m                'name' => $letterRequest->applicant_name,[m
+[32m+[m[32m                'nik' => $letterRequ
