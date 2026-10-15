@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Events\NotificationAvailable;
+use App\Models\LetterNumberSequence;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
@@ -12,9 +13,10 @@ use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Storage;
 
 class LetterRequestController extends Controller
 {
@@ -265,16 +267,19 @@ class LetterRequestController extends Controller
         ]);
     }
 
-    // ===== Halaman Otorisasi Surat (LetterAuthorizationView.vue) =====
-    // Pilih penandatangan + jenis TTD, keputusan Diverifikasi (masih menunggu) / Disetujui
+    // ===== Halaman Verifikasi+Otorisasi Surat (digabung) =====
+    // Pilih penandatangan + jenis TTD, keputusan: authorized / rejected
     public function authorize(Request $request, int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['authorized'])],
-            'authorized_by_signer_id' => ['required_if:status,authorized', 'nullable', 'exists:staff,staff_id'],
-            'signature_type' => ['required_if:status,authorized', 'nullable', Rule::in(['digital', 'manual'])],
+            // FIX #1: tambah 'rejected' sebagai opsi valid
+            'status'                 => ['required', Rule::in(['authorized', 'rejected'])],
+            'notes'                  => ['nullable', 'string'],
+            // FIX #2: hapus 'nullable' agar required_if benar-benar enforce
+            'authorized_by_signer_id' => ['required_if:status,authorized', 'exists:staff,staff_id'],
+            'signature_type'          => ['required_if:status,authorized', Rule::in(['digital', 'manual'])],
         ]);
 
         if ($letterRequest->status !== 'verified') {
@@ -283,24 +288,29 @@ class LetterRequestController extends Controller
             ]);
         }
 
-        $updateData = [
-            'status' => $validated['status'],
-        ];
+        // notes hanya relevan sebagai alasan penolakan.
+        // Saat authorized, kolom notes TIDAK disentuh agar catatan verifikasi tidak tertimpa.
+        $updateData = ['status' => $validated['status']];
 
         if ($validated['status'] === 'authorized') {
             $updateData['authorized_by_signer_id'] = $validated['authorized_by_signer_id'];
-            $updateData['signature_type'] = $validated['signature_type'];
-            $updateData['authorized_at'] = now();
-            $updateData['letter_number'] = $this->generateLetterNumber($letterRequest->letterType);
+            $updateData['signature_type']           = $validated['signature_type'];
+            $updateData['authorized_at']            = now();
+            // FIX #3: gunakan LetterNumberSequence + DB transaction (atomic)
+            $updateData['letter_number']            = $this->generateLetterNumber($letterRequest->letterType);
+        } elseif ($validated['status'] === 'rejected') {
+            // Simpan alasan penolakan; fallback ke catatan sebelumnya jika kosong.
+            $updateData['notes'] = $validated['notes'] ?? $letterRequest->notes;
         }
 
         $letterRequest->update($updateData);
 
         LetterRequestStatusHistory::create([
             'letter_request_id' => $letterRequest->letter_request_id,
-            'status' => $validated['status'],
-            'note' => null,
-            'change_by' => $request->user()->user_id ?? null,
+            'status'            => $validated['status'],
+            'note'              => $validated['notes'] ?? null,
+            'change_by'         => $request->user()->user_id ?? null,
+            'changed_at'        => now(),
         ]);
 
         event(new NotificationAvailable(
@@ -321,18 +331,37 @@ class LetterRequestController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Otorisasi permohonan surat berhasil disimpan.',
+            'message' => $validated['status'] === 'authorized'
+                ? 'Otorisasi permohonan surat berhasil disimpan.'
+                : 'Permohonan surat berhasil ditolak.',
             'data' => $letterRequest,
         ]);
     }
 
+    /**
+     * Generate nomor surat secara atomic menggunakan tabel letter_number_sequences.
+     * Memakai DB::transaction + lockForUpdate() untuk mencegah race condition
+     * saat dua permohonan diotorisasi bersamaan (nomor surat tidak akan duplikat).
+     */
     private function generateLetterNumber(LetterType $letterType): string
     {
-        $prefix = $letterType->number_prefix ?? '';
-        $countSamePrefix = LetterRequest::where('letter_number', 'like', "{$prefix}%")->count();
-        $sequence = str_pad($countSamePrefix + 1, 3, '0', STR_PAD_LEFT);
+        return DB::transaction(function () use ($letterType) {
+            $seq = LetterNumberSequence::lockForUpdate()->firstOrCreate(
+                [
+                    'letter_type_id' => $letterType->letter_type_id,
+                    'year'           => now()->year,
+                ],
+                ['last_sequence' => 0],
+            );
 
-        return $prefix . $sequence;
+            $seq->increment('last_sequence');
+            $seq->refresh();
+
+            $prefix   = $letterType->number_prefix ?? '';
+            $sequence = str_pad($seq->last_sequence, 3, '0', STR_PAD_LEFT);
+
+            return $prefix . $sequence;
+        });
     }
 
     // ===== Riwayat status =====
