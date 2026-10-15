@@ -264,8 +264,8 @@
         sebagaimana mestinya.
     </p>
 
-    <p class="date-right">.......................................... {{ $year }}</p>
-
+    <p class="date-right">{{ $signature['date_long'] }}</p>
+    
     <table class="signature">
         <tr>
             <td>

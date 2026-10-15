@@ -40,7 +40,8 @@
 <div class="judul-form" style="margin-top:0;">ADMINISTRASI KEPENDUDUKAN</div>
 
 <p class="kuasa-p">
-    Pada hari ini........... Tanggal...........Bulan...........Tahun...... bertempat di
+    Pada hari ini {{ $date_parts['day_name'] }} Tanggal {{ $date_parts['date_day'] }}
+    Bulan {{ $date_parts['month_name'] }} Tahun {{ $date_parts['year'] }} bertempat di
 </p>
 <p>Bimomartani&nbsp;&nbsp;&nbsp;saya :</p>
 
@@ -104,7 +105,7 @@
 <p class="kuasa-p">
     Untuk mengisi formulir dalam pelayanan administrasi kependudukan, sesuai keterangan dan
     kelengkapan persyaratan yang saya berikan seperti keadaan yang sebenarnya dikarenakan
-    kondisi saya dalam keadaan...............
+    kondisi saya dalam keadaan {{ $condition ?: '...............' }}
 </p>
 
 <table class="kuasa-ttd">
@@ -112,6 +113,7 @@
         <td class="kt-col">
             <div class="kt-label">Yang Diberi Kuasa</div>
             <div class="kt-space"></div>
+            <div class="kt-label">{{ $attorney['name'] }}</div>
         </td>
         <td class="kt-col">
             <div class="kt-label">Yang Memberi Kuasa</div>

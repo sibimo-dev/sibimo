@@ -115,9 +115,6 @@
             <td class="sep">&nbsp;</td>
             <td class="val">&nbsp;</td>
         </tr>
-        <tr class="gap-row">
-            <td colspan="3">&nbsp;</td>
-        </tr>
         <tr>
             <td class="lbl">Tempat Dan Tanggal Lahir</td>
             <td class="sep">:</td>
