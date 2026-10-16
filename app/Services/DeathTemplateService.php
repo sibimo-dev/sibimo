@@ -163,7 +163,10 @@ class DeathTemplateService
             'relationship' => $this->value($form, ['hubungan_pelapor']),
         ];
 
-        $data['number'] = $data['nomor'] = $request->letter_number ?? '';
+        $now = $request->authorized_at ?? now();
+        $code = rtrim($request->letterType?->number_prefix ?: ($request->letterType?->code ?? ''), '/');
+        $draftNumber = $code !== '' ? "{$code}/.../{$this->toRomanMonth($now->month)}/{$now->year}" : '';
+        $data['number'] = $data['nomor'] = $request->letter_number ?? $draftNumber;
         $data['document_title'] = $request->letterType?->letter_name
             ?? $data['document_title'];
         $data['request'] = [
@@ -171,16 +174,63 @@ class DeathTemplateService
             'source' => $request->source,
             'notes' => $request->notes,
         ];
+        $signer = $request->authorizedSigner ?? $request->letterType?->signer;
         $data['death'] = $death;
         $data['signature']['date'] = $request->authorized_at?->format('d-m-Y') ?? '';
-        $data['signature']['position'] = $request->authorizedSigner?->position
-            ?? $request->letterType?->signer?->position
-            ?? '';
-        $data['signature']['name'] = $request->authorizedSigner?->name
-            ?? $request->letterType?->signer?->name
-            ?? '';
+        $data['signature']['position'] = $signer?->position ?? '';
+        $data['signature']['name'] = $signer?->name ?? '';
+        $data['signature']['image'] = $this->signatureImageBase64($signer?->signature_image);
 
         return $data;
+    }
+
+    private function signatureImageBase64(?string $pathOrUrl): ?string
+    {
+        if (blank($pathOrUrl)) {
+            return null;
+        }
+
+        if (str_starts_with($pathOrUrl, 'data:')) {
+            return $pathOrUrl;
+        }
+
+        $clean = strtok($pathOrUrl, '?#');
+
+        if (str_starts_with($clean, '/')) {
+            $absPath = public_path(ltrim($clean, '/'));
+        } elseif (preg_match('#^https?://#', $clean)) {
+            $parsed  = parse_url($clean);
+            $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+        } else {
+            $absPath = $clean;
+        }
+
+        if (! is_file($absPath) || ! is_readable($absPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($absPath) ?: 'image/png';
+
+        return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+    }
+
+    public function toRomanMonth(int $month): string
+    {
+        return match ($month) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+            default => (string) $month,
+        };
     }
 
     /** Samakan metadata title PDF dengan nama service type. */

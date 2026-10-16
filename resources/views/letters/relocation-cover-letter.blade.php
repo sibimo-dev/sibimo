@@ -233,7 +233,14 @@
             </tr>
             <tr style="page-break-inside: avoid;">
                 <td><div class="ttd-space"></div>{{ $form['registration_officer'] ?? '' }}</td>
-                <td><div class="ttd-space"></div>{{ $signature['name'] }}</td>
+                <td>
+                    @if (!empty($signature['image']))
+                        <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 45pt; max-width: 120pt; display: block; margin: 0 auto;">
+                    @else
+                        <div class="ttd-space"></div>
+                    @endif
+                    {{ $signature['name'] }}
+                </td>
                 <td><div class="ttd-space"></div>{{ $applicant['name'] ?? '' }}</td>
             </tr>
         </table>

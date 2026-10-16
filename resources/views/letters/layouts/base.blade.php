@@ -88,6 +88,7 @@
             padding-top: 26pt;
         }
         .ttd-space { height: 52pt; }
+        .ttd-image { max-height: 52pt; max-width: 130pt; display: block; }
 
         /* ===== TEMBUSAN =====
            Opsional: surat yang butuh baris "Tembusan Dikirim Kepada" (mis.
@@ -167,7 +168,11 @@
                         <div>{{ $line }}</div>
                     @endforeach
                     <div>{{ $signature['position'] }}</div>
-                    <div class="ttd-space"></div>
+                    @if (!empty($signature['image']))
+                        <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan">
+                    @else
+                        <div class="ttd-space"></div>
+                    @endif
                     <div>{{ $signature['name'] }}</div>
                 </td>
             </tr>

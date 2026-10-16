@@ -383,7 +383,7 @@ class LetterPdfService
 
             // 'number' (baru) dan 'nomor' (alias untuk blade lama).
             'number' => $number = $letterRequest->letter_number
-                ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
+                ?? $this->draftLetterNumber($letterRequest, $letterDate),
             'nomor' => $number,
 
             // surat pernikahan (set lama: n1, n2, dst)
@@ -679,6 +679,7 @@ class LetterPdfService
                 $signerPosition,
                 $letterDate,
                 in_array($templateSlug, self::SIGNATURE_DIRECT_SLUGS, true),
+                $signer?->signature_image,
             ),
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
@@ -2114,7 +2115,36 @@ class LetterPdfService
         };
     }
 
-    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false): array
+    public function toRomanMonth(int $month): string
+    {
+        return match ($month) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+            default => (string) $month,
+        };
+    }
+
+    private function draftLetterNumber(LetterRequest $letterRequest, $letterDate): string
+    {
+        $now = $letterDate ? Carbon::parse($letterDate) : now();
+        $code = rtrim($letterRequest->letterType?->number_prefix ?: ($letterRequest->letterType?->code ?? ''), '/');
+
+        return $code !== ''
+            ? "{$code}/.../{$this->toRomanMonth($now->month)}/{$now->year}"
+            : '......';
+    }
+
+    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null): array
     {
         $parsed = $date ? Carbon::parse($date) : null;
 
@@ -2125,7 +2155,52 @@ class LetterPdfService
             'prefix' => $this->signaturePrefix($position, $directPrefix),
             'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
+            'image' => $this->signatureImageBase64($signatureImagePath),
         ];
+    }
+
+    /**
+     * Konversi path / URL gambar tanda tangan ke data-URI base64 agar bisa
+     * dirender DomPDF tanpa request HTTP tambahan.
+     * Mendukung:
+     *  - URL relatif: /storage/signatures/xxx.png  → public_path()
+     *  - URL absolut: https://...  → dibaca via file_get_contents (jika lokal)
+     *  - Path absolut langsung
+     * Return null jika file tidak ditemukan / tidak bisa dibaca.
+     */
+    private function signatureImageBase64(?string $pathOrUrl): ?string
+    {
+        if (blank($pathOrUrl)) {
+            return null;
+        }
+
+        // Kalau sudah berupa data-URI, langsung kembalikan.
+        if (str_starts_with($pathOrUrl, 'data:')) {
+            return $pathOrUrl;
+        }
+
+        // Bersihkan query string / fragment.
+        $clean = strtok($pathOrUrl, '?#');
+
+        // Ubah URL relatif ke path absolut di public/.
+        if (str_starts_with($clean, '/')) {
+            $absPath = public_path(ltrim($clean, '/'));
+        } elseif (preg_match('#^https?://#', $clean)) {
+            // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
+            // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
+            $parsed  = parse_url($clean);
+            $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+        } else {
+            $absPath = $clean;
+        }
+
+        if (! is_file($absPath) || ! is_readable($absPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($absPath) ?: 'image/png';
+
+        return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
     }
 
     /** true jika Lurah menandatangani sendiri (bukan "a.n LURAH" oleh Carik/Kaur/dll). */

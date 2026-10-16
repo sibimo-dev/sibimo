@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'letter_type_id',
     'year',
+    'month',
     'last_sequence',
 ])]
 class LetterNumberSequence extends Model
