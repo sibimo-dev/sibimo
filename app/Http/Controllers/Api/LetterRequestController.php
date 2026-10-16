@@ -9,6 +9,7 @@ use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
 use App\Models\LetterType;
+use App\Models\Staff;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
@@ -132,6 +133,13 @@ class LetterRequestController extends Controller
             ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner'])
             ->findOrFail($letterRequest_id);
 
+        if ($request->filled('signer_id')) {
+            $signer = Staff::find($request->input('signer_id'));
+            if ($signer) {
+                $letterRequest->setRelation('authorizedSigner', $signer);
+            }
+        }
+
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $bladeView = (string) ($letterRequest->letterType?->blade_view ?? '');
 
@@ -159,7 +167,7 @@ class LetterRequestController extends Controller
                 : $pdf->stream($filename);
         }
 
-        $template = $pdfService->rootTemplateForType($letterRequest->letterType);
+        $template = $pdfService->resolveTemplate($letterRequest);
 
         if (! $template) {
             return response()->json([
