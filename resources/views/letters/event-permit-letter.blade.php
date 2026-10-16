@@ -109,7 +109,7 @@
         <tr>
             <td class="lbl">Pada Hari/Tanggal</td>
             <td class="sep">:</td>
-            <td class="val">{{ $event['date'] }}</td>
+            <td class="val">{{ $event['date_long'] ?? $event['date'] }}</td>
         </tr>
         <tr>
             <td class="lbl">Jam</td>

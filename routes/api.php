@@ -7,9 +7,12 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\BookLoanController;
 use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\ComplaintController;
+use App\Http\Controllers\Api\DevelopmentController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\FooterSettingController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\HistoryController;
+use App\Http\Controllers\Api\LegalProductController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\PermissionController;
@@ -46,6 +49,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::prefix('public')->group(function () {
+    Route::get('/footer', [FooterSettingController::class, 'showPublic']);
     Route::get('/complaints', [ComplaintController::class, 'indexPublic']);
     Route::get('/complaints/{complaint_id}', [ComplaintController::class, 'showPublic']);
     Route::post('/complaints', [ComplaintController::class, 'storePublic']);
@@ -107,6 +111,11 @@ Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service_id}', [ServiceController::class, 'show']);
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
 Route::get('/agendas', [AgendaController::class, 'index']);
 Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
 Route::get('/galleries', [GalleryController::class, 'index']);
@@ -123,6 +132,13 @@ Route::get('/organizational-structures/{organizational_structure_id}', [Organiza
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
 Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
+// Konten publik pembangunan dan produk hukum.
+Route::get('/developments', [DevelopmentController::class, 'index']);
+Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
+Route::get('/legal-products', [LegalProductController::class, 'index']);
+Route::get('/legal-products/{legal_product_id}', [LegalProductController::class, 'show']);
+Route::get('/legal-products/{legal_product_id}/download', [LegalProductController::class, 'download']);
 
 Broadcast::routes([
     'middleware' => ['auth:sanctum', 'active'],
@@ -220,6 +236,24 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             ->except(['index', 'show']);
     });
 
+    Route::middleware('permission:footer')->group(function () {
+        Route::get('/footer-settings', [FooterSettingController::class, 'index']);
+        Route::post('/footer-settings', [FooterSettingController::class, 'store']);
+        Route::put('/footer-settings/{footer_setting_id}', [FooterSettingController::class, 'update']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])
+            ->except(['index', 'show']);
+    });
+
     Route::middleware('permission:layanan-desa')->group(function () {
         Route::apiResource('services', ServiceController::class)
             ->parameters(['services' => 'service_id'])->except(['index', 'show']);
@@ -245,6 +279,18 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             ->parameters(['news-categories' => 'category_id'])->except(['index']);
         Route::apiResource('news', NewsController::class)
             ->parameters(['news' => 'news_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:pembangunan')->group(function () {
+        Route::apiResource('developments', DevelopmentController::class)
+            ->parameters(['developments' => 'development_id'])
+            ->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:produk-hukum')->group(function () {
+        Route::apiResource('legal-products', LegalProductController::class)
+            ->parameters(['legal-products' => 'legal_product_id'])
+            ->except(['index', 'show']);
     });
 
 });

@@ -66,6 +66,14 @@
             width: 150pt;
             height: 32pt;
         }
+        .sign-name {
+            width: 170pt;
+            margin-top: 34pt;          /* ruang kosong untuk tanda tangan di atas nama */
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            line-height: 14pt;
+            padding-bottom: 1pt;
+        }
 
         /* Baris "Nomor :" dan "Tanggal :" — label sempit rata kiri */
         table.meta {
@@ -144,7 +152,7 @@
         <div>Sleman</div>
         <div>Yang Membuat Pernyataan</div>
         <div class="materai-box">materai<br>RP 10000</div>
-        <div class="signature-space">&nbsp;</div>
+        <div class="sign-name">{{ $applicant['name'] ?? '' }}&nbsp;</div>
 
         <table class="meta">
             <tr>

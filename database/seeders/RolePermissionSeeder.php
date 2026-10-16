@@ -29,6 +29,8 @@ class RolePermissionSeeder extends Seeder
                 'struktur-organisasi',
                 'data-wilayah',
                 'potensi-kalurahan',
+                'pembangunan',
+                'produk-hukum',
             ],
         ];
 

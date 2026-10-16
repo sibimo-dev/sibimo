@@ -45,12 +45,12 @@
         table.grid { width: 100%; border-collapse: collapse; margin: 3pt 0 6pt 0; page-break-inside: avoid; }
         table.grid tr { page-break-inside: avoid; }
         table.grid th, table.grid td {
-            border: 1px solid #000; padding: 1.5pt 3pt; vertical-align: middle;
-            font-size: 9pt;
+            border: 1px solid #000; padding: 1pt 2pt; vertical-align: middle;
+            font-size: 8.5pt;
         }
         table.grid th { font-weight: bold; text-align: center; }
         table.grid td.no-col { width: 16pt; text-align: center; }
-        table.grid td.data-row { height: 13pt; }
+        table.grid td.data-row { height: 11pt; }
 
         /* Tabel "dengan rincian KK sebagai berikut" */
         table.family col.col-no   { width: 5%; }
@@ -61,8 +61,8 @@
 
         /* Tabel perubahan (A. Pendidikan & Pekerjaan / B. Agama & Lainnya) */
         table.change col.col-no    { width: 4%; }
-        table.change col.col-sub   { width: 16%; }
-        table.change col.col-note  { width: 16%; }
+        table.change col.col-sub   { width: 13%; }
+        table.change col.col-note  { width: 18%; }
 
         .section-title { font-weight: bold; margin: 6pt 0 2pt 0; font-size: 10pt; }
 

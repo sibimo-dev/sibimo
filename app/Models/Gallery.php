@@ -47,6 +47,18 @@ class Gallery extends Model
         return $this->belongsTo(User::class, 'uploaded_by', 'user_id');
     }
 
+    public function getImageAttribute($value): ?string
+    {
+        if (!$value) return null;
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $url = \Illuminate\Support\Facades\Storage::disk('public')->url($value);
+        return str_starts_with($url, '/')
+            ? rtrim((string) config('app.url'), '/') . $url
+            : $url;
+    }
+
     protected function casts(): array
     {
         return [
