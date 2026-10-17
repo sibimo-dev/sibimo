@@ -10,30 +10,85 @@ class VillagePotentialSeeder extends Seeder
 {
     public function run(): void
     {
+        // Bersihkan data dummy generic lama jika ada
+        DB::table('village_potentials')->where('slug', 'like', 'seed-potential-%')->delete();
+
         $potentials = [
-            ['UMKM', 'potential-umkm.jpg'],
-            ['Agriculture', 'potential-agriculture.jpeg'],
-            ['Tourism', 'potential-tourism.jpg'],
-            ['BUMDes', 'potential-bumdes.jpeg'],
+            [
+                'slug' => 'batik-permata-ukmk-bimomartani',
+                'category' => 'UMKM',
+                'title' => 'Batik Permata UKMK Bimomartani',
+                'short_desc' => 'Salah satu produk unggulan UMKM di Kalurahan Bimomartani adalah Batik Permata di bawah naungan kelompok UMKM Desa Prima.',
+                'description' => 'Adapun beberapa produk unggulan merupakan ciri khas Batik Parijoto Sleman DIY. Bagi customer yang berminat produk Batik Parijoto buatan Batik Permata dapat langsung datang ke Padukuhan Sorasan RT 04/ RW 25, Bimomartani, Ngemplak, Sleman.',
+                'image' => 'village-potentials/potential-umkm.jpg',
+                'location' => 'Padukuhan Sorasan, Bimomartani',
+                'contact' => '0812-xxxx-xxxx (Ibu Siti, Ketua Kelompok UMKM)',
+                'extra_info' => [
+                    'Harga Mulai' => 'Rp45.000 / 100gr',
+                    'Jam Operasional' => '08.00 – 17.00 WIB',
+                    'Kapasitas Produksi' => '±20 kg / bulan',
+                ],
+            ],
+            [
+                'slug' => 'penanaman-kelapa-genjah',
+                'category' => 'Agriculture',
+                'title' => 'Penanaman Kelapa Genjah Sebagai Alternatif Tanaman Lahan Kering',
+                'short_desc' => 'Kegiatan penanaman dan serah terima bantuan Bibit Kelapa Genjah kepada Gapoktan “Bimo Makmur” Kalurahan Bimomartani.',
+                'description' => 'Pada hari ini Selasa 07 Oktober 2025 dilakukan kegiatan penanaman dan serah terima bantuan Bibit Kelapa Genjah dari Kementerian Pertanian dan Dinas Pertanian Kabupaten Sleman kepada Gapoktan “Bimo Makmur” Kalurahan Bimomartani di Komplek Embung Bimomartani. Rencananya penanaman bibit kelapa genjah ini akan tersebar seluas 10 hektar di wilayah Kalurahan Bimomartani. Dengan kegiatan tersebut harapannya Bimomartani dapat menjadi lumbung/sentra hasil pertanian kelapa genjah untuk wilayah Kapanewon Ngemplak.',
+                'image' => 'village-potentials/potential-agriculture.jpeg',
+                'location' => 'Komplek Embung Bimomartani, Bimomartani',
+                'contact' => 'Kelompok Tani Makmur — Bapak Wagiyo (Ketua)',
+                'extra_info' => [
+                    'Luas Lahan' => '±12 Ha',
+                    'Komoditas' => 'Buah Segar, Kelapa Kopyor, Bibit Pohon',
+                    'Musim Panen' => '3x per tahun',
+                ],
+            ],
+            [
+                'slug' => 'embung-bimomartani',
+                'category' => 'Tourism',
+                'title' => 'Embung Bimomartani',
+                'short_desc' => 'Destinasi wisata air buatan yang menawarkan pemandangan asri, spot memancing, dan area rekreasi keluarga.',
+                'description' => 'Embung Bimomartani merupakan embung (kolam penampung air) yang disulap menjadi destinasi wisata air oleh Kelompok Sadar Wisata (Pokdarwis) setempat. Selain berfungsi sebagai penampung air untuk irigasi pertanian, area ini juga dilengkapi gazebo, spot memancing, dan jalur jogging mengelilingi embung yang ramai dikunjungi warga di akhir pekan.',
+                'image' => 'village-potentials/potential-tourism.jpg',
+                'location' => 'Padukuhan Nengahan, Bimomartani',
+                'contact' => 'Pokdarwis Bimomartani',
+                'extra_info' => [
+                    'Jam Buka' => '06.00 – 18.00 WIB',
+                    'Tiket Masuk' => 'Rp5.000 / orang',
+                    'Fasilitas' => 'Gazebo, spot memancing, area parkir',
+                ],
+            ],
+            [
+                'slug' => 'toko-desa-mandiri',
+                'category' => 'BUMDes',
+                'title' => 'Toko Desa Mandiri',
+                'short_desc' => 'Pusat perbelanjaan kebutuhan pokok dan produk lokal yang dikelola oleh BUMDes Bimomartani.',
+                'description' => 'Toko Desa Mandiri adalah unit usaha BUMDes Bimomartani Sejahtera yang menyediakan kebutuhan pokok sehari-hari dengan harga terjangkau, sekaligus menjadi etalase produk UMKM lokal seperti kopi, kerajinan tangan, dan hasil pertanian warga. Keuntungan dari unit usaha ini dikembalikan untuk mendukung program pembangunan dan pemberdayaan masyarakat desa.',
+                'image' => 'village-potentials/potential-bumdes.jpeg',
+                'location' => 'Kompleks Balai Desa Bimomartani',
+                'contact' => 'BUMDes Bimomartani Sejahtera',
+                'extra_info' => [
+                    'Jam Operasional' => '07.00 – 20.00 WIB',
+                    'Produk Unggulan' => 'Sembako, kopi lokal, kerajinan tangan',
+                ],
+            ],
         ];
 
-        for ($i = 0; $i < 8; $i++) {
-            [$category, $image] = $potentials[$i % count($potentials)];
-            $slug = 'seed-potential-' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT);
-
+        foreach ($potentials as $item) {
             DB::table('village_potentials')->updateOrInsert(
-                ['slug' => $slug],
+                ['slug' => $item['slug']],
                 [
-                    'category' => $category,
-                    'title' => 'Potensi Kalurahan ' . ($i + 1),
-                    'description' => 'Potensi unggulan Kalurahan Bimomartani untuk mendukung pemberdayaan masyarakat.',
-                    'image' => 'village-potentials/' . $image,
-                    'location' => 'Kalurahan Bimomartani',
-                    'short_desc' => 'Potensi unggulan Kalurahan Bimomartani.',
-                    'contact' => 'Kalurahan Bimomartani',
-                    'extra_info' => json_encode(['seeded' => true, 'index' => $i + 1]),
+                    'category' => $item['category'],
+                    'title' => $item['title'],
+                    'short_desc' => $item['short_desc'],
+                    'description' => $item['description'],
+                    'image' => $item['image'],
+                    'location' => $item['location'],
+                    'contact' => $item['contact'],
+                    'extra_info' => json_encode($item['extra_info']),
                     'created_at' => now(),
-                ],
+                ]
             );
         }
     }
