@@ -86,7 +86,11 @@
     <div class="signature-block">
         <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
         <div>{{ $signature['position'] ?? '' }}</div>
-        <div style="height: 34pt;">&nbsp;</div>
+        @if (!empty($signature['image']))
+            <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 40pt; max-width: 120pt; display: block; margin: 2pt 0;">
+        @else
+            <div style="height: 34pt;">&nbsp;</div>
+        @endif
         <div>{{ $signature['name'] ?? '' }}</div>
     </div>
 

@@ -375,7 +375,11 @@
                     <div>Dikeluarkan Oleh</div>
                     <div>a.n Kepala Dinas Kependudukan Dan Pencatatan Sipil Kabupaten Sleman</div>
                     <div>Lurah</div>
-                    <div class="ttd-space"></div>
+                    @if (!empty($signature['image']))
+                        <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 45pt; max-width: 120pt; display: block; margin: 4pt 0;">
+                    @else
+                        <div class="ttd-space"></div>
+                    @endif
                     <div>{{ $signature['name'] }}</div>
                 </td>
             </tr>

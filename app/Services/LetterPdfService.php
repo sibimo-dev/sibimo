@@ -84,11 +84,15 @@ class LetterPdfService
         'SKBK' => 'unmarried-status-letter',
         'SKU' => 'business-permit-letter',
         'SKUM' => 'general-statement-letter',
+        'SKUMG' => 'general-statement-letter-gov',
         'SKD' => 'domicile-certificate',
         'SKTM' => 'sktm-general',
+        'SKTMS' => 'sktm-school',
         'SKP' => 'income-permit-letter',
         'SKK' => 'event-permit-letter',
         'SKJ' => 'travel-permit-letter',
+        'SKJG' => 'travel-permit-letter-gov',
+        'SKJV' => 'travel-permit-letter-vill',
         'SKCK' => 'skck-referral-letter',
         'SPKTP' => 'ktp-application-form',
         'SPKIA' => 'kia-application-form',
@@ -300,6 +304,33 @@ class LetterPdfService
         return $this->rootTemplateForType($letterType) !== null;
     }
 
+    /**
+     * Tentukan template surat berdasarkan request & siapa yang menandatangani.
+     * Surat 2 jenis kop & template:
+     * 1. Surat keterangan umum (SKUM / SKUMG):
+     *    - TTD Lurah => general-statement-letter (kop lurah)
+     *    - TTD Selain Lurah => general-statement-letter-gov (kop pemerintahan)
+     * 2. Surat keterangan jalan (SKJ / SKJG / SKJV):
+     *    - TTD Lurah => travel-permit-letter (kop lurah)
+     *    - TTD Selain Lurah => travel-permit-letter-gov (kop pemerintahan)
+     */
+    public function resolveTemplate(LetterRequest $letterRequest, ?\App\Models\Staff $overrideSigner = null): ?string
+    {
+        $signer = $overrideSigner ?? $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+        $isLurah = $this->signedByLurah($signer?->position);
+
+        if (in_array($code, ['SKUM', 'SKUMG'], true)) {
+            return $isLurah ? 'general-statement-letter' : 'general-statement-letter-gov';
+        }
+
+        if (in_array($code, ['SKJ', 'SKJG', 'SKJV'], true)) {
+            return $isLurah ? 'travel-permit-letter' : 'travel-permit-letter-gov';
+        }
+
+        return $this->rootTemplateForType($letterRequest->letterType);
+    }
+
     public function viewData(LetterRequest $letterRequest, ?string $template = null): array
     {
         $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
@@ -332,10 +363,15 @@ class LetterPdfService
             $signerPosition = 'KAMITUWA';
         }
 
-        // SPTKP mengikuti kop pada template asli: aksara Bimomartani dan
-        // baris "PEMERINTAH KALURAHAN BIMOMARTANI". Jabatan penandatangan
-        // tetap dipakai hanya untuk bagian tanda tangan di bawah surat.
-        $kalurahanKop = $code === 'SPTKP'
+        $isLurah = $this->signedByLurah($signerPosition);
+
+        // Pengkondisian Kop:
+        // - Kalau yang ttd lurah: otomatis pakai kop lurah ($kalurahanKop = false)
+        // - Kalau yang ttd selain lurah: otomatis pakai kop pemerintahan ($kalurahanKop = true)
+        // - Template -gov atau template khusus pemerintahan selalu memakai kop pemerintahan.
+        $kalurahanKop = ! $isLurah
+            || $code === 'SPTKP'
+            || in_array($templateSlug, ['general-statement-letter-gov', 'travel-permit-letter-gov'], true)
             || $this->usesKalurahanKop($templateSlug)
             || in_array($templateSlug, self::KOP_ALWAYS_KALURAHAN_SLUGS, true);
 
@@ -348,7 +384,7 @@ class LetterPdfService
 
             // 'number' (baru) dan 'nomor' (alias untuk blade lama).
             'number' => $number = $letterRequest->letter_number
-                ?? (($letterRequest->letterType?->number_prefix ?? '') . '......'),
+                ?? $this->draftLetterNumber($letterRequest, $letterDate),
             'nomor' => $number,
 
             // surat pernikahan (set lama: n1, n2, dst)
@@ -647,6 +683,7 @@ class LetterPdfService
                 $signerPosition,
                 $letterDate,
                 in_array($templateSlug, self::SIGNATURE_DIRECT_SLUGS, true),
+                $signer?->signature_image,
             ),
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
@@ -2329,7 +2366,36 @@ class LetterPdfService
         };
     }
 
-    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false): array
+    public function toRomanMonth(int $month): string
+    {
+        return match ($month) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+            default => (string) $month,
+        };
+    }
+
+    private function draftLetterNumber(LetterRequest $letterRequest, $letterDate): string
+    {
+        $now = $letterDate ? Carbon::parse($letterDate) : now();
+        $code = rtrim($letterRequest->letterType?->number_prefix ?: ($letterRequest->letterType?->code ?? ''), '/');
+
+        return $code !== ''
+            ? "{$code}/.../{$this->toRomanMonth($now->month)}/{$now->year}"
+            : '......';
+    }
+
+    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null): array
     {
         $parsed = $date ? Carbon::parse($date) : null;
 
@@ -2340,11 +2406,56 @@ class LetterPdfService
             'prefix' => $this->signaturePrefix($position, $directPrefix),
             'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
+            'image' => $this->signatureImageBase64($signatureImagePath),
         ];
     }
 
+    /**
+     * Konversi path / URL gambar tanda tangan ke data-URI base64 agar bisa
+     * dirender DomPDF tanpa request HTTP tambahan.
+     * Mendukung:
+     *  - URL relatif: /storage/signatures/xxx.png  → public_path()
+     *  - URL absolut: https://...  → dibaca via file_get_contents (jika lokal)
+     *  - Path absolut langsung
+     * Return null jika file tidak ditemukan / tidak bisa dibaca.
+     */
+    private function signatureImageBase64(?string $pathOrUrl): ?string
+    {
+        if (blank($pathOrUrl)) {
+            return null;
+        }
+
+        // Kalau sudah berupa data-URI, langsung kembalikan.
+        if (str_starts_with($pathOrUrl, 'data:')) {
+            return $pathOrUrl;
+        }
+
+        // Bersihkan query string / fragment.
+        $clean = strtok($pathOrUrl, '?#');
+
+        // Ubah URL relatif ke path absolut di public/.
+        if (str_starts_with($clean, '/')) {
+            $absPath = public_path(ltrim($clean, '/'));
+        } elseif (preg_match('#^https?://#', $clean)) {
+            // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
+            // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
+            $parsed  = parse_url($clean);
+            $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+        } else {
+            $absPath = $clean;
+        }
+
+        if (! is_file($absPath) || ! is_readable($absPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($absPath) ?: 'image/png';
+
+        return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+    }
+
     /** true jika Lurah menandatangani sendiri (bukan "a.n LURAH" oleh Carik/Kaur/dll). */
-    private function signedByLurah(?string $position): bool
+    public function signedByLurah(?string $position): bool
     {
         $p = mb_strtolower((string) $position);
 

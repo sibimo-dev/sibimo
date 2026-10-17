@@ -104,7 +104,11 @@
                         {{ $prefix }}<br>
                     @endforeach
                     {{ $signature['position'] ?? '' }}
-                    <div class="signature-space"></div>
+                    @if (!empty($signature['image']))
+                        <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 52pt; max-width: 130pt; display: block; margin: 4pt 0;">
+                    @else
+                        <div class="signature-space"></div>
+                    @endif
                     <strong><u>{{ $signature['name'] ?? '' }}</u></strong>
                 </td>
             </tr>
