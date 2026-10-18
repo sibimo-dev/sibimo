@@ -346,19 +346,19 @@
             @for ($i = 0; $i < $totalRows; $i++)
                 <tr @if ($i === $totalRows - 1) class="last" @endif>
                     <td class="no">{{ $i + 1 }}</td>
-                    <td class="bxc">{{ $box($m($i, 'gender')) }}</td>
+                    <td>{{ $m($i, 'gender') }}</td>
                     <td>{{ $m($i, 'birth_place') }}</td>
                     <td class="c">{{ $fmtDate($m($i, 'birth_date')) }}</td>
                     <td class="c">{{ $ageOf($i) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'birth_cert')) }}</td>
+                    <td>{{ $m($i, 'birth_cert') }}</td>
                     <td>{{ $m($i, 'birth_cert_number') }}</td>
-                    <td class="bxc">{{ $box($m($i, 'blood_type')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'religion')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'marital_status')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'marriage_cert')) }}</td>
+                    <td>{{ $m($i, 'blood_type') }}</td>
+                    <td>{{ $m($i, 'religion') }}</td>
+                    <td>{{ $m($i, 'marital_status') }}</td>
+                    <td>{{ $m($i, 'marriage_cert') }}</td>
                     <td>{{ $m($i, 'marriage_cert_number') }}</td>
                     <td class="c">{{ $fmtDate($m($i, 'marriage_date')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'divorce_cert')) }}</td>
+                    <td>{{ $m($i, 'divorce_cert') }}</td>
                     <td>{{ $m($i, 'divorce_cert_number') }}</td>
                     <td class="c">{{ $fmtDate($m($i, 'divorce_date')) }}</td>
                 </tr>
@@ -392,11 +392,11 @@
             @for ($i = 0; $i < $totalRows; $i++)
                 <tr @if ($i === $totalRows - 1) class="last" @endif>
                     <td class="no">{{ $i + 1 }}</td>
-                    <td class="bxc">{{ $box($m($i, 'family_status')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'disability_mental')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'disability_type')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'education')) }}</td>
-                    <td class="bxc">{{ $box($m($i, 'occupation')) }}</td>
+                    <td>{{ $m($i, 'family_status') }}</td>
+                    <td>{{ $m($i, 'disability_mental') }}</td>
+                    <td>{{ $m($i, 'disability_type') }}</td>
+                    <td>{{ $m($i, 'education') }}</td>
+                    <td>{{ $m($i, 'occupation') }}</td>
                     <td>{{ $m($i, 'mother_nik') }}</td>
                     <td>{{ $m($i, 'mother_name') }}</td>
                     <td>{{ $m($i, 'father_nik') }}</td>

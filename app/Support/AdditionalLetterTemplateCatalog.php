@@ -362,6 +362,7 @@ final class AdditionalLetterTemplateCatalog
             self::field('Agama Ayah', 'father_religion'),
             self::field('Pekerjaan Ayah', 'father_occupation'),
             self::field('Alamat Ayah', 'father_address', 'textarea'),
+            self::field('Bin Ayah (nama ayah dari ayah)', 'father_bin'),   // BARU
             self::field('Nama Ibu', 'mother_name'),
             self::field('NIK Ibu', 'mother_nik'),
             self::field('Tempat Lahir Ibu', 'mother_birth_place'),
@@ -370,6 +371,7 @@ final class AdditionalLetterTemplateCatalog
             self::field('Agama Ibu', 'mother_religion'),
             self::field('Pekerjaan Ibu', 'mother_occupation'),
             self::field('Alamat Ibu', 'mother_address', 'textarea'),
+            self::field('Binti Ibu (nama ayah dari ibu)', 'mother_binti'), // BARU
             self::field('Nama Pasangan', 'spouse_name'),
             self::field('Bin/Binti Pasangan', 'spouse_bin'),
             self::field('Binti Pasangan', 'spouse_binti'),

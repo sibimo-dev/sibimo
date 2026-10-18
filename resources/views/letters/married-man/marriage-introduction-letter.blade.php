@@ -21,17 +21,17 @@
         .form-ref { text-align:right; font-size: 8.5pt; line-height: 1.2; }
         .kop-block { margin-top: 5pt; }
         .kop-block table { border-collapse: collapse; font-size: 9pt; white-space: nowrap; }
-        .kop-block td.lbl { width: 115pt; font-weight:bold; white-space: nowrap; }
-        .kop-block td.sep { width: 10pt; font-weight:bold; }
+        .kop-block td.lbl { width: 191pt; font-weight:bold; white-space: nowrap; }
+        .kop-block td.sep { width: 12pt; font-weight:bold; }
         .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 7pt; }
         .number { text-align:center; margin-bottom: 6pt; }
-        table.data { width:100%; border-collapse:collapse; margin-top: 2pt; }
         table.data td { padding: 0.55pt 0; vertical-align:top; }
         td.no { width: 16pt; }
         td.lbl { width: 175pt; }
         td.sep { width: 12pt; }
         td.val { padding-left: 3pt; height: 9pt; }
-        tr.status-row td.lbl { width: auto; }
+        /* tabel tanpa kolom nomor: lebar label = 16pt (nomor) + 175pt (label), supaya titik dua sejajar */
+        table.data.nonum td.lbl { width: 191pt; }
         p.gap-top { margin-top: 5pt; }
         .signature-block { margin-top: 8pt; margin-left: 62%; }
         .signature-block div { line-height: 12pt; }
@@ -83,15 +83,13 @@
             <td class="sep">:</td>
             <td class="val"></td>
         </tr>
-        <tr class="status-row">
-            <td></td>
-            <td class="lbl" style="padding-left: 16pt;">a. Laki-laki : Jejaka, Duda, atau beristri ke .....</td>
+        <tr>
+            <td colspan="2" style="padding-left: 16pt;">a. Laki-laki : Jejaka, Duda, atau beristri ke .....</td>
             <td class="sep">:</td>
             <td class="val">{{ $isMale ? $maritalStatus : '' }}</td>
         </tr>
-        <tr class="status-row">
-            <td></td>
-            <td class="lbl" style="padding-left: 16pt;">b. Perempuan : Perawan, atau janda</td>
+        <tr>
+            <td colspan="2" style="padding-left: 16pt;">b. Perempuan : Perawan, atau janda</td>
             <td class="sep">:</td>
             <td class="val">{{ $isFemale ? $maritalStatus : '' }}</td>
         </tr>
@@ -99,7 +97,7 @@
     </table>
 
     <p class="gap-top">Adalah benar anak dari perkawinan seorang pria :</p>
-    <table class="data">
+    <table class="data nonum">
         <tr><td class="lbl">&bull; Nama lengkap dan alias</td><td class="sep">:</td><td class="val">{{ $father['full_name_alias'] ?? '' }}</td></tr>
         <tr><td class="lbl">&bull; NIK</td><td class="sep">:</td><td class="val">{{ $father['nik'] ?? '' }}</td></tr>
         <tr><td class="lbl">&bull; Tempat dan tanggal lahir</td><td class="sep">:</td><td class="val">{{ $father['birth_place_date'] ?? '' }}</td></tr>
@@ -110,7 +108,7 @@
     </table>
 
     <p class="gap-top">dengan seorang wanita :</p>
-    <table class="data">
+    <table class="data nonum">
         <tr><td class="lbl">&bull; Nama lengkap dan alias</td><td class="sep">:</td><td class="val">{{ $mother['full_name_alias'] ?? '' }}</td></tr>
         <tr><td class="lbl">&bull; NIK</td><td class="sep">:</td><td class="val">{{ $mother['nik'] ?? '' }}</td></tr>
         <tr><td class="lbl">&bull; Tempat dan tanggal lahir</td><td class="sep">:</td><td class="val">{{ $mother['birth_place_date'] ?? '' }}</td></tr>
@@ -128,11 +126,7 @@
     <div class="signature-block">
         <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
         <div>{{ $signature['position'] ?? 'Kamituwa' }}</div>
-        @if (!empty($signature['image']))
-            <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 40pt; max-width: 120pt; display: block; margin: 2pt 0;">
-        @else
-            <div style="height: 22pt;">&nbsp;</div>
-        @endif
+        <div style="height: 48pt;">&nbsp;</div>
         <div>{{ $signature['name'] ?? '' }}</div>
     </div>
 

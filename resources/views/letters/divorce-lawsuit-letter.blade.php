@@ -46,7 +46,31 @@
 --}}
 @extends('letters.layouts.base')
 
+@php
+    // Hapus tambahan otomatis ", Bimomartani, Ngemplak, Sleman" di akhir alamat
+    $cleanAddress = fn ($a) => trim(preg_replace('/,?\s*Bimomartani,\s*Ngemplak,\s*Sleman\s*$/i', '', (string) $a));
+
+    // Ubah tanggal dd/mm/yyyy di dalam teks menjadi 15 Oktober 2026
+    $longDates = function ($text) {
+        return preg_replace_callback('/\b(\d{2})\/(\d{2})\/(\d{4})\b/', function ($m) {
+            try {
+                return \Illuminate\Support\Carbon::createFromFormat('d/m/Y', $m[0])
+                    ->locale('id')->translatedFormat('d F Y');
+            } catch (\Throwable) {
+                return $m[0];
+            }
+        }, (string) $text);
+    };
+
+    // Pecah alamat per ~48 karakter (tanpa memotong kata), tiap baris dapat garis sendiri
+    $addressLines = function ($a) use ($cleanAddress) {
+        $text = $cleanAddress($a);
+        return $text === '' ? [''] : explode("\n", wordwrap($text, 48, "\n", true));
+    };
+@endphp
+
 @section('title', 'Surat Gugat Cerai')
+@section('date_long', '1')
 
 @section('extra_css')
     /* Surat ini lebih padat isinya (2 tabel + 2 saksi) dibanding surat lain,
@@ -73,6 +97,21 @@
     table.numbered td.sep { width: 11pt; }
     table.numbered td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
 
+    table.numbered td.val.multiline-value {
+        border-bottom: 0 none;
+        padding: 0;
+        height: auto;
+        vertical-align: bottom;
+    }
+    table.numbered td.val.multiline-value .value-line {
+        height: 13pt;
+        line-height: 13pt;
+        border-bottom: 1px dashed #000;
+        padding: 0 0 0 2pt;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+    }
 
     /* Bungkus tiap blok (paragraf + tabel) supaya tidak terpotong halaman */
     .keep-together { page-break-inside: avoid; }
@@ -103,7 +142,7 @@
             <td class="num">2.</td>
             <td class="lbl">Tempat tgl lhr</td>
             <td class="sep">:</td>
-            <td class="val">{{ $applicant['birth'] ?? '' }}</td>
+            <td class="val">{{ $longDates($applicant['birth'] ?? '') }}</td>
         </tr>
         <tr>
             <td class="num">3.</td>
@@ -121,7 +160,11 @@
             <td class="num">5.</td>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val">{{ $applicant['address'] ?? '' }}</td>
+            <td class="val multiline-value">
+                @foreach ($addressLines($applicant['address'] ?? '') as $line)
+                    <div class="value-line">{{ $line }}</div>
+                @endforeach
+            </td>        
         </tr>
     </table>
     </div>
@@ -139,7 +182,7 @@
             <td class="num">2.</td>
             <td class="lbl">Tempat tgl lhr</td>
             <td class="sep">:</td>
-            <td class="val">{{ $spouse['birth'] ?? '' }}</td>
+            <td class="val">{{ $longDates($spouse['birth'] ?? '') }}</td>
         </tr>
         <tr>
             <td class="num">3.</td>
@@ -151,7 +194,11 @@
             <td class="num">4.</td>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val">{{ $spouse['address'] ?? '' }}</td>
+            <td class="val multiline-value">
+                @foreach ($addressLines($spouse['address'] ?? '') as $line)
+                    <div class="value-line">{{ $line }}</div>
+                @endforeach
+            </td>        
         </tr>
         <tr>
             <td class="num">5.</td>
@@ -189,7 +236,7 @@
                 <td class="num">2.</td>
                 <td class="lbl">Tempat tgl lhr</td>
                 <td class="sep">:</td>
-                <td class="val">{{ $witness['birth'] ?? '' }}</td>
+                <td class="val">{{ $longDates($witness['birth'] ?? '') }}</td>
             </tr>
             <tr>
                 <td class="num">3.</td>
@@ -207,7 +254,11 @@
                 <td class="num">5.</td>
                 <td class="lbl">Alamat</td>
                 <td class="sep">:</td>
-                <td class="val">{{ $witness['address'] ?? '' }}</td>
+                <td class="val multiline-value">
+                    @foreach ($addressLines($witness['address'] ?? '') as $line)
+                        <div class="value-line">{{ $line }}</div>
+                    @endforeach
+                </td>            
             </tr>
         </table>
         </div>

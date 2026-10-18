@@ -40,7 +40,14 @@
         // Alamat asal/tujuan: $form['origin']['x'] atau origin_x / originX
         $relGroup = function (string $group, string $key) use ($form) {
             $studly = str_replace(' ', '', ucwords(str_replace('_', ' ', $key)));
-            foreach ([$form[$group][$key] ?? null, $form[$group . '_' . $key] ?? null, $form[$group . $studly] ?? null] as $v) {
+            $alias = $key === 'hamlet' ? ['dusun', 'dukuh', 'kampung', 'padukuhan'] : [];
+            $candidates = [$form[$group][$key] ?? null, $form[$group . '_' . $key] ?? null, $form[$group . $studly] ?? null];
+            foreach ($alias as $a) {
+                $candidates[] = $form[$group][$a] ?? null;
+                $candidates[] = $form[$group . '_' . $a] ?? null;
+                $candidates[] = $form[$group . ucfirst($a)] ?? null;
+            }
+            foreach ($candidates as $v) {
                 if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v);
             }
             return '';
@@ -307,9 +314,8 @@
     <div style="page-break-inside: avoid;">
         <table style="width:100%; border-collapse:collapse; margin-top:4pt;">
             <tr>
-                <td style="width:34%;"></td>
-                <td style="width:33%; text-align:center; font-size:9.5pt;">{{ $signature['city'] }}</td>
-                <td style="width:33%; text-align:right; font-size:9.5pt;">{{ $signature['date'] }}</td>
+                <td style="width:67%;"></td>
+                <td style="width:33%; text-align:left; font-size:9pt;">{{ $signature['city'] }}, {{ $signature['date'] }}</td>
             </tr>
         </table>
         <table class="ttd-multi" style="page-break-inside: avoid;">

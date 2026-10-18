@@ -2,6 +2,8 @@
 
 @section('title', 'Surat Rekomendasi Pembelian Jenis BBM Tertentu')
 
+@section('date_long', '1')
+
 @section('extra_css')
     /* Kompensasi surat ini agak panjang — dirapatkan supaya tetap 1 halaman */
     @page { margin: 1.6cm 2cm 1.4cm 2cm; }

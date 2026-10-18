@@ -15,12 +15,13 @@
         }
 
         .form-code {
-            border: 1px solid #000;
-            width: 56pt;
-            text-align: center;
+            width: 100%;
+            text-align: right;
             font-weight: bold;
-            padding: 3pt 0;
-            float: right;
+            font-size: 11pt;
+            padding: 0 0 10pt 0;
+            border: none;
+            float: none;
         }
         .clear { clear: both; }
 
@@ -47,15 +48,18 @@
 
         /* KTP request type row: each option = small checkbox + label box,
            joined together; options are spaced apart. */
-        table.option-row { width: 100%; border-collapse: separate; border-spacing: 14pt 0; margin-top: 10pt; }
-        table.option-row td { padding: 0; vertical-align: middle; font-size: 9.5pt; }
-        table.option-row td.option-label { font-weight: bold; }
+        table.option-row { border-spacing: 10pt 0; margin-top: 14pt; }
         table.option-group { border-collapse: collapse; }
         table.option-group td.option-check {
-            border: 1px solid #000; width: 13pt; height: 13pt;
-            text-align: center; font-weight: bold; font-size: 9pt;
+            border: 1px solid #000;
+            width: 24pt; height: 20pt;
+            text-align: center; font-weight: bold; font-size: 13pt;
+            font-family: "DejaVu Sans", sans-serif;
         }
-        table.option-group td.option-text { border: 1px solid #000; border-left: none; padding: 2pt 10pt; }
+        table.option-group td.option-text {
+            border: 1px solid #000; border-left: none;
+            height: 20pt; padding: 2pt 46pt 2pt 8pt;
+        }
 
         /* Applicant data table (name / KK no. / NIK / address) - a single flat table,
            no nested tables, so borders are not doubled. */
@@ -71,12 +75,16 @@
         table.form-data td.free-text { text-align: left; padding-left: 4pt; }
 
         /* RT / RW */
-        table.rt-rw { width: auto; border-collapse: separate; border-spacing: 0; margin-top: 8pt; }
+        table.rt-rw { margin-left: 62pt; margin-top: 12pt; }
         table.rt-rw td { vertical-align: middle; font-size: 9.5pt; padding: 0 4pt; }
         table.rt-rw td.rt-rw-label { font-weight: bold; }
-        table.digit-box { border-collapse: collapse; display: inline-table; }
-        table.digit-box td { border: 1px solid #000; width: 14pt; height: 13pt; text-align: center; }
-
+        table.digit-box { border-collapse: collapse; }
+        table.digit-box td {
+            border: 1px solid #000;
+            width: 20pt; height: 18pt;
+            text-align: center;
+        }
+        
         /* Photo / 3 small boxes / signature specimen (left) + signature block (right).
            No rowspan, so the tall signature block cannot stretch the left rows. */
         table.photo-section { width: 100%; border-collapse: collapse; margin-top: 14pt; }
@@ -93,12 +101,24 @@
 </head>
 <body>
 
-    <div class="form-code">{{ $kodeForm ?? '' }}</div>
-    <div class="clear"></div>
+    <table style="width:100%; border-collapse:collapse;">
+        <tr>
+            <td style="text-align:right; font-weight:bold; font-size:11pt; padding:0 0 10pt 0; border:none;">
+                {{ $kodeForm ?: 'F-107' }}
+            </td>
+        </tr>
+    </table>
 
     @php
-        $type = $application['type'] ?? null;
+        $rawType = strtolower(trim((string) ($application['type'] ?? '')));
+        $type = match (true) {
+            str_contains($rawType, 'baru') || $rawType === 'new' => 'new',
+            str_contains($rawType, 'perpanjang') || $rawType === 'extension' => 'extension',
+            str_contains($rawType, 'ganti') || $rawType === 'replacement' => 'replacement',
+            default => null,
+        };
         $totalChars = 20;
+        $mark = '✓';
     @endphp
 
     <table class="form-data" style="margin-top:0;">
@@ -168,19 +188,19 @@
             <td class="option-label" style="width:100pt;">PERMOHONAN KTP</td>
             <td>
                 <table class="option-group"><tr>
-                    <td class="option-check">{{ $type === 'new' ? 'X' : '' }}</td>
-                    <td class="option-text">Baru</td>
+                    <td class="option-check">{{ $type === 'new' ? $mark : '' }}</td>
+                    <td class="option-text" style="padding-right:22pt;">Baru</td>
                 </tr></table>
             </td>
             <td>
                 <table class="option-group"><tr>
-                    <td class="option-check">{{ $type === 'extension' ? 'X' : '' }}</td>
+                    <td class="option-check">{{ $type === 'extension' ? $mark : '' }}</td>
                     <td class="option-text">Perpanjangan</td>
                 </tr></table>
             </td>
             <td>
                 <table class="option-group"><tr>
-                    <td class="option-check">{{ $type === 'replacement' ? 'X' : '' }}</td>
+                    <td class="option-check">{{ $type === 'replacement' ? $mark : '' }}</td>
                     <td class="option-text">Penggantian</td>
                 </tr></table>
             </td>
@@ -188,30 +208,30 @@
     </table>
 
     <table class="form-data">
-        <tr>
-            <td class="label">Nama Lengkap</td>
-            @include('letters.char-boxes', ['value' => $applicant['name'], 'length' => $totalChars])
-        </tr>
-        <tr>
-            <td class="label">No KK</td>
-            @include('letters.char-boxes', ['value' => $applicant['kk_number'], 'length' => $totalChars])
-        </tr>
-        <tr>
-            <td class="label">NIK</td>
-            @include('letters.char-boxes', ['value' => $applicant['nik'], 'length' => $totalChars])
-        </tr>
-        <tr>
-            <td class="label">Alamat</td>
-            <td class="free-text" colspan="{{ $totalChars }}">{{ $applicant['address'] }}</td>
-        </tr>
-    </table>
+            <tr>
+                <td class="label">Nama Lengkap</td>
+                @include('letters.char-boxes', ['value' => $applicant['name'], 'length' => $totalChars])
+            </tr>
+            <tr>
+                <td class="label">No KK</td>
+                @include('letters.char-boxes', ['value' => $applicant['kk_number'], 'length' => $totalChars])
+            </tr>
+            <tr>
+                <td class="label">NIK</td>
+                @include('letters.char-boxes', ['value' => $applicant['nik'], 'length' => $totalChars])
+            </tr>
+            <tr>
+                <td class="label">Alamat</td>
+                <td class="free-text" colspan="{{ $totalChars }}">{{ $applicant['address'] }}</td>
+            </tr>
+        </table>
 
-    <table class="rt-rw">
+        <table class="rt-rw">
         <tr>
             <td class="rt-rw-label">RT</td>
             <td>
                 <table class="digit-box"><tr>
-                    @foreach (array_pad(str_split((string) $applicant['rt']), 2, '') as $digit)
+                    @foreach (array_pad(str_split((string) ($applicant['rt'] ?? '')), 3, '') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
@@ -220,9 +240,17 @@
             <td class="rt-rw-label">RW</td>
             <td>
                 <table class="digit-box"><tr>
-                    @foreach (array_pad(str_split((string) $applicant['rw']), 5, '') as $digit)
+                    @foreach (array_pad(str_split((string) ($applicant['rw'] ?? '')), 3, '') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
+                </tr></table>
+            </td>
+            <td style="width:14pt;"></td>
+            <td>
+                <table class="digit-box"><tr>
+                    @for ($i = 0; $i < 5; $i++)
+                        <td>&nbsp;</td>
+                    @endfor
                 </tr></table>
             </td>
         </tr>

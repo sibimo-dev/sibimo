@@ -51,7 +51,7 @@
     <tr>
         <td class="wg-label">DUSUN/DUKUH/KAMPUNG</td>
         <td class="wg-sep">:</td>
-        <td colspan="2" class="wg-val">{{ $form['hamlet'] ?? '' }}</td>
+        <td colspan="2" class="wg-val">{{ $form['origin']['hamlet'] ?? $form['origin_hamlet'] ?? $form['originHamlet'] ?? $form['hamlet'] ?? '' }}</td>    
     </tr>
     @endif
 </table>

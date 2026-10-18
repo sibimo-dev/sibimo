@@ -48,7 +48,7 @@
         <tr>
             <td class="lbl">Tanggal</td>
             <td class="sep">:</td>
-            <td class="val">{{ $event['date'] }}</td>
+            <td class="val">{{ $event['date'] ? \Illuminate\Support\Carbon::parse($event['date'])->locale('id')->translatedFormat('d F Y') : '' }}</td>
         </tr>
         <tr>
             <td class="lbl">Waktu</td>

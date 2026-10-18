@@ -129,7 +129,7 @@
     <div>Sleman, {{ $kia['date'] }}</div>
     <div>Pemohon</div>
     <div class="s-space"></div>
-    <div>NIK</div>
+    <div>NIK : {{ $kia['nik'] ?? '' }}</div>
 </div>
 
 <div class="kia-cut">&#9986; potong di sini</div>
