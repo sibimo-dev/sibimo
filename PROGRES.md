@@ -15,3 +15,9 @@
 - Konvensi key backend tidak seragam: groom_*/bride_*, groom_father_*, father_*/mother_*, surat kematian nama_ibu/nama_saksi_1 (suffix)
 - Belum terbukti end-to-end: Tahap 3 harus menguji mapFieldsToBackend -> viewData -> HTML
 - sibimo-public: cek apakah punya salinan matchLabelWithRole/mapFieldsToBackend yang sama
+
+## Bug B: commit final
+- sibimo-admin: e34b15f (kode di letter-create.service.js), e0e78e8 (tes tests/bug-b-role-label.mjs, 22 pass).
+- Catatan: tes memakai SALINAN matchLabelWithRole; Tahap 3 harus menggantinya dengan tes yang mengimpor dari service.
+- Bug A (4c91125) dan B: jangan disentuh lagi kecuali tes Tahap 3 membuktikan masalah.
+- Berikutnya: Bug C, D, J (kuota agent habis, refresh 25/10/2026 17:34).
