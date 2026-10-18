@@ -149,6 +149,10 @@ class LetterTypeFieldSeeder extends Seeder
             ['label' => 'RT', 'key' => 'rt', 'type' => 'text'],
             ['label' => 'RW', 'key' => 'rw', 'type' => 'text'],
             ['label' => 'Spesimen Tanda Tangan', 'key' => 'spesimen_tanda_tangan', 'type' => 'select', 'options' => ['Cap Jempol', 'Tanda Tangan']],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Pemohon', 'key' => 'nama_pemohon', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Dukuh', 'key' => 'nama_dukuh', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Camat', 'key' => 'nama_camat', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Lurah', 'key' => 'nama_lurah', 'type' => 'text', 'is_required' => false],
         ]);
             
         $this->seedForCode('SPKIA', [ // Surat permohonan penerbitan KIA
@@ -172,6 +176,8 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Alamat', 'label' => 'Kecamatan', 'key' => 'kecamatan', 'type' => 'text'], 
             // Tanda Bukti Penerimaan
             ['section' => 'Tanda Bukti Penerimaan', 'label' => 'Tanggal Pengambilan', 'key' => 'tgl_pengambilan', 'type' => 'date', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Pemohon (orang tua/wali)', 'key' => 'nama_pemohon', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Petugas', 'key' => 'nama_petugas', 'type' => 'text', 'is_required' => false],
         ]);
 
         $this->seedForCode('SRBBM', [ // Surat Rekomendasi Pembelian Jenis BBM Tertentu

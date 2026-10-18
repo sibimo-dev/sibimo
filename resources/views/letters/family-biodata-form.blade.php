@@ -418,6 +418,7 @@
             <td style="width:19%;">
                 <div class="ttd-title">Mengetahui,<br>Petugas kecamatan</div>
                 <div class="ttd-space"></div>
+                {{ $f('district_officer_name') }}<br>
                 NIP :
             </td>
             <td style="width:19%;">
