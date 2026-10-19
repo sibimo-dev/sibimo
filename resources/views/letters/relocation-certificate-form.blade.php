@@ -115,8 +115,8 @@
                 'shdk'        => $r['shdk'] ?? $r['SHDK'] ?? '',
             ])
             ->filter(fn ($r) => trim(implode('', $r)) !== '')
-            ->values()->take(7)->all();
-        $relFamily = array_pad($relFamily, 7, ['nik' => '', 'name' => '', 'valid_until' => '', 'shdk' => '']);
+            ->values()->take(4)->all();
+        $relFamily = array_pad($relFamily, 4, ['nik' => '', 'name' => '', 'valid_until' => '', 'shdk' => '']);
 
         $rel = [
             'reason'      => $relCode($relFirst(['relocation_reason_code', 'relocation_reason', 'relocationReason', 'alasan_pindah']) ?: $relFind('/alasan|reason/', '/lain|other/'), $relReasonLabels),
@@ -351,7 +351,7 @@
         </tr>
         @foreach ($rel['family'] as $i => $row)
             <tr>
-                <td style="border:1px solid #000; padding:1pt 2pt; height:11pt; line-height:1.1;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.05;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['nik'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['name'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['valid_until'] ?? '' }}</td>

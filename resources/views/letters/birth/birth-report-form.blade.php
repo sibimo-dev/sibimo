@@ -4,26 +4,27 @@
 
 {{-- Mandiri: TIDAK lagi meng-include partial apa pun dari letters.birth.partials.*. --}}
 @section('extra_css')
+    @page { margin: 0.7cm 1.8cm 0.6cm 1.8cm; }
     body { font-family: "Times New Roman", Times, serif; }
-    .bf { font-size: 10pt; line-height: 1.15; }
-    .bf-title { text-align: center; font-weight: bold; font-size: 12pt; text-transform: uppercase; }
-    .bf-sub { text-align: center; font-size: 10pt; font-weight: bold; }
-    .sec-title { font-weight: bold; margin-top: 5pt; }
+    .bf { font-size: 9.5pt; line-height: 1.12; }
+    .bf-title { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; }
+    .bf-sub { text-align: center; font-size: 9.5pt; font-weight: bold; }
+    .sec-title { font-weight: bold; margin-top: 2.5pt; font-size: 8.5pt; }
 
     table.rows { width: 100%; border-collapse: collapse; }
-    table.rows td { padding: 1.7pt 0; vertical-align: top; }
+    table.rows td { padding: 0.8pt 0; vertical-align: top; }
     table.rows td.r-no { width: 14pt; padding-left: 10pt; }
     table.rows.flat td.r-no { padding-left: 0; }
     table.rows td.r-sep { width: 10pt; }
     table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
 
-    .frame { border: 1px solid #000; padding: 1pt 6pt 2pt 6pt; margin-top: 3pt; page-break-inside: avoid; }
-    .frame-title { font-weight: bold; }
+    .frame { border: 1px solid #000; padding: 1pt 5pt; margin-top: 2pt; page-break-inside: avoid; }
+    .frame-title { font-weight: bold; font-size: 8.8pt; }
 
     table.split { width: 100%; border-collapse: collapse; }
     table.split td { width: 50%; vertical-align: top; }
-    table.split td.gap-r { padding-right: 10pt; }
-    table.split td.gap-l { padding-left: 10pt; }
+    table.split td.gap-r { padding-right: 8pt; }
+    table.split td.gap-l { padding-left: 8pt; }
 @endsection
 
 @section('content')

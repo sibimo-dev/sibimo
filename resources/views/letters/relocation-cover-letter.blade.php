@@ -2,9 +2,7 @@
 
 @section('title', 'Surat Pengantar Permohonan Pindah WNI')
 
-@php
-    $kodeForm = 'F.1-25';
-@endphp
+@php($kodeForm = 'F.1-25')
 
 @section('content')
     @php
@@ -165,7 +163,7 @@
         <tr><td class="f-no">4.</td><td style="width:135pt;">NIK Pemohon</td><td class="f-box">{{ $rel['nik'] }}</td></tr>
         <tr>
             <td class="f-no">5.</td><td>Tempat/Tanggal Lahir</td>
-            <td class="f-box">{{ $rel['birth_place'] }} &nbsp;&nbsp;&nbsp;&nbsp; {{ $rel['birth_date'] }}</td>
+            <td class="f-box">{{ $applicant['birth_place'] ?? '' }} &nbsp;&nbsp;&nbsp;&nbsp; {{ $applicant['birth_date'] ?? '' }}</td>
         </tr>
         <tr><td class="f-no">6.</td><td>Nama Lengkap</td><td class="f-box">{{ $rel['name'] }}</td></tr>
     </table>
@@ -295,7 +293,7 @@
         </tr>
         @foreach ($rel['family'] as $i => $row)
             <tr>
-                <td style="border:1px solid #000; padding:1pt 2pt; height:14pt; line-height:1.1;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.1;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['nik'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['name'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['valid_until'] ?? '' }}</td>

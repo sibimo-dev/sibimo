@@ -5,7 +5,7 @@
     <title>Surat Kuasa</title>
     <style>
         @page {
-            margin: 2cm 2.3cm 1.6cm 2.3cm;
+            margin: 1cm 2cm 1cm 2cm;
         }
 
         * {
@@ -14,8 +14,8 @@
 
         body {
             font-family: 'DejaVu Serif', serif;
-            font-size: 10.5pt;
-            line-height: 1.3;
+            font-size: 9.8pt;
+            line-height: 1.22;
             color: #000;
             margin: 0;
         }
@@ -24,14 +24,14 @@
             text-align: center;
             font-weight: bold;
             text-decoration: underline;
-            font-size: 12.5pt;
+            font-size: 11.5pt;
             letter-spacing: 1px;
-            margin: 0 0 12px 0;
+            margin: 0 0 6px 0;
         }
 
         p {
             text-align: justify;
-            margin: 6px 0;
+            margin: 4px 0;
         }
 
         table.data {

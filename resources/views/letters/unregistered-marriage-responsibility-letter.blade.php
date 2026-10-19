@@ -5,13 +5,13 @@
     <title>Surat Pernyataan Tanggung Jawab Mutlak Perkawinan Belum Tercatat</title>
     <style>
         /* Margin halaman untuk DomPDF */
-        @page { margin: 1.8cm 2cm 1.8cm 2cm; }
+        @page { margin: 1cm 1.8cm; }
 
         body {
             margin: 0;
             font-family: Helvetica, Arial, sans-serif;
-            font-size: 10.3pt;
-            line-height: 1.25;
+            font-size: 9.8pt;
+            line-height: 1.2;
             color: #000;
         }
 
