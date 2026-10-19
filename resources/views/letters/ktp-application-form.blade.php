@@ -264,8 +264,14 @@
                         <td style="text-align:right; padding-top:2pt;">Pemohon</td>
                     </tr>
                 </table>
-                {{-- Ruang tanda tangan dikosongkan; nama diisi manual / dari SIBIMO publik nanti. --}}
+                {{-- Nama penandatangan opsional: dari $signers (hamlet_head_name, applicant_name); kosong = dibiarkan manual. --}}
                 <div style="height:50pt;"></div>
+                <table class="signature-inner">
+                    <tr>
+                        <td style="text-align:left;">{{ $signers['hamlet_head_name'] ?? '' }}</td>
+                        <td style="text-align:right;">{{ $signers['applicant_name'] ?? '' }}</td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
@@ -278,11 +284,11 @@
                     <tr>
                         <td style="text-align:left;">
                             <div style="height:40pt;"></div>
-                            Camat
+                            Camat<br>{{ $signers['district_head_name'] ?? '' }}
                         </td>
                         <td style="text-align:right;">
                             <div style="height:40pt;"></div>
-                            Mengetahui Lurah
+                            Mengetahui Lurah<br>{{ $signers['village_officer_name'] ?? '' }}
                         </td>
                     </tr>
                 </table>

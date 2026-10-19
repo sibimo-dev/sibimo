@@ -145,6 +145,7 @@
         <div>Yang Membuat Penyataan</div>
         <div class="materai-box">Materai<br>Cukup</div>
         <div class="signature-space">&nbsp;</div>
+        <div>( {{ ($applicant['name'] ?? '') !== '' ? $applicant['name'] : '.....................................' }} )</div>
     </div>
 
 </body>

@@ -261,9 +261,9 @@
             <td class="sig-col sig-left"><div class="materai-box">Materai<br>Cukup</div></td>
         </tr>
         <tr>
-            <td class="sig-col"><div class="sig-line-mark">&nbsp;</div></td>
+            <td class="sig-col"><div class="sig-line-mark">{{ $wife['name'] ?? '' }}&nbsp;</div></td>
             <td class="sig-gap"></td>
-            <td class="sig-col"><div class="sig-line-mark">&nbsp;</div></td>
+            <td class="sig-col"><div class="sig-line-mark">{{ $husband['name'] ?? '' }}&nbsp;</div></td>
         </tr>
     </table>
 
@@ -279,9 +279,9 @@
             <td class="sig-col"><div class="sig-space">&nbsp;</div></td>
         </tr>
         <tr>
-            <td class="sig-col"><div class="sig-line-mark">&nbsp;</div></td>
+            <td class="sig-col"><div class="sig-line-mark">{{ $marriage_witnesses[1]['name'] ?? '' }}&nbsp;</div></td>
             <td class="sig-gap"></td>
-            <td class="sig-col"><div class="sig-line-mark">&nbsp;</div></td>
+            <td class="sig-col"><div class="sig-line-mark">{{ $marriage_witnesses[0]['name'] ?? '' }}&nbsp;</div></td>
         </tr>
     </table>
 

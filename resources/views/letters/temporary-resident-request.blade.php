@@ -249,7 +249,7 @@
                 <td class="trr-sign-space"></td>
             </tr>
             <tr>
-                <td>Mengetahui</td>
+                <td><span class="trr-sign-name">{{ $residentRequest['hamletHeadName'] ?? '' }}</span><br>Mengetahui</td>
                 <td class="trr-sign-name">{{ $residentRequest['applicantSignerName'] ?? '' }}</td>
             </tr>
             <tr>
