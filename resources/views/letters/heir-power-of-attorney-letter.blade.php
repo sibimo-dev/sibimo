@@ -272,13 +272,13 @@
                 Penerima Kuasa
                 <div class="materai-placeholder"></div>
                 <div class="sign-space"></div>
-                (....................................)
+                ({{ ($attorney['name'] ?? '') !== '' ? $attorney['name'] : '....................................' }})
             </td>
             <td>
                 Pemberi Kuasa
                 <div class="materai">Materai<br>Rp. 10.000</div>
                 <div class="sign-space"></div>
-                (....................................)
+                ({{ ($applicant['name'] ?? '') !== '' ? $applicant['name'] : '....................................' }})
             </td>
         </tr>
     </table>
@@ -287,7 +287,7 @@
         <p>Mengetahui</p>
         <p>Kelurahan/Notaris..........................</p>
         <div class="sign-space"></div>
-        (....................................)
+        ({{ ($signers['notary_name'] ?? '') !== '' ? $signers['notary_name'] : '....................................' }})
     </div>
 
 </body>

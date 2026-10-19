@@ -193,14 +193,7 @@
             </td>
         </tr>
         <tr>
-            <td>
-                @if (!empty($signature['image']))
-                    <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 45pt; max-width: 120pt; display: block; margin: 4pt 0;">
-                @else
-                    <div class="sign-space"></div>
-                @endif
-                {{ $signature['name'] }}
-            </td>
+            <td><div class="sign-space"></div>{{ $signature['name'] }}</td>
             <td><div class="sign-space"></div>{{ $birth['reporter']['name'] }}</td>
         </tr>
     </table>

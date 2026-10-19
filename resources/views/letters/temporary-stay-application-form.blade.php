@@ -254,7 +254,7 @@
                 <td class="tsa-sign-space"></td>
             </tr>
             <tr>
-                <td>Mengetahui</td>
+                <td><span class="tsa-sign-name">{{ $stayApplication['hamletHeadName'] ?? '' }}</span><br>Mengetahui</td>
                 <td class="tsa-sign-name">{{ $stayApplication['applicantSignerName'] ?? '' }}</td>
             </tr>
             <tr>

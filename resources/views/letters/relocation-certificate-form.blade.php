@@ -2,9 +2,7 @@
 
 @section('title', 'Formulir Keterangan Pindah WNI')
 
-@php
-    $kodeForm = 'F.1-26';
-@endphp
+@php($kodeForm = 'F.1-26')
 
 @section('extra_css')
     @page { margin: 0.6cm 1.5cm 0.4cm 1.5cm; }
@@ -165,50 +163,50 @@
 
     <div class="sub-heading">DATA DAERAH ASAL</div>
     <table class="frow">
-        <tr><td class="f-no">1.</td><td style="width:135pt;">Nomor Kartu Keluarga</td><td class="f-box">{{ $rel['kk_number'] }}</td></tr>
-        <tr><td class="f-no">2.</td><td>Nama Kepala Keluarga</td><td class="f-box">{{ $rel['head'] }}</td></tr>
+        <tr><td class="f-no">1.</td><td style="width:135pt;">Nomor Kartu Keluarga</td><td class="f-box">{{ $form['origin']['kk_number'] ?? '' }}</td></tr>
+        <tr><td class="f-no">2.</td><td>Nama Kepala Keluarga</td><td class="f-box">{{ $form['origin']['head_of_family'] ?? '' }}</td></tr>
     </table>
 
     <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
         <tr>
             <td style="width:15pt; font-size:9pt;">3.</td>
             <td style="width:135pt; font-size:9pt;">Alamat</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('origin', 'address') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['origin']['address'] ?? '' }}</td>
             <td style="width:26pt; font-size:9pt; text-align:center;">RT</td>
-            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $relGroup('origin', 'rt') }}</td>
+            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $form['origin']['rt'] ?? '' }}</td>
             <td style="width:28pt; font-size:9pt; text-align:center;">RW</td>
-            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $relGroup('origin', 'rw') }}</td>
+            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $form['origin']['rw'] ?? '' }}</td>
         </tr>
     </table>
 
     <table class="frow">
-        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $relGroup('origin', 'hamlet') }}</td></tr>
+        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $form['origin']['hamlet'] ?? '' }}</td></tr>
     </table>
 
     <table style="width:100%; border-collapse:separate; border-spacing:0 2pt; margin-top:1pt;">
         <tr>
             <td style="width:15pt;"></td>
             <td style="width:135pt; font-size:9pt;">a. Desa/Kelurahan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('origin', 'village') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['origin']['village'] ?? '' }}</td>
             <td style="width:70pt; font-size:9pt; padding-left:6pt;">c. Kab/Kota</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $relGroup('origin', 'regency') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['origin']['regency'] ?? '' }}</td>
         </tr>
         <tr>
             <td></td>
             <td style="font-size:9pt;">b. Kecamatan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('origin', 'district') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['origin']['district'] ?? '' }}</td>
             <td style="font-size:9pt; padding-left:6pt;">d. Provinsi</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $relGroup('origin', 'province') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['origin']['province'] ?? '' }}</td>
         </tr>
         <tr>
             <td style="width:15pt;"></td>
             <td style="width:135pt; font-size:9pt;">Kode Pos</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $relGroup('origin', 'postal_code') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $form['origin']['postal_code'] ?? '' }}</td>
             <td style="width:70pt; font-size:9pt; padding-left:6pt;">Telepon</td>
             <td>
                 <table class="digit-box-full"><tr>
                     @for ($i = 0; $i < 15; $i++)
-                        <td>{{ $rel['origin_phone'][$i] ?? '' }}</td>
+                        <td>{{ $form['origin']['phone'][$i] ?? '' }}</td>
                     @endfor
                 </tr></table>
             </td>
@@ -216,14 +214,18 @@
     </table>
 
     <table class="frow">
-        <tr><td class="f-no">4.</td><td style="width:135pt;">NIK Pemohon</td><td class="f-box">{{ $rel['nik'] }}</td></tr>
+        <tr><td class="f-no">4.</td><td style="width:135pt;">NIK Pemohon</td><td class="f-box">{{ $applicant['nik'] ?? '' }}</td></tr>
         <tr>
             <td class="f-no">5.</td><td>Tempat/Tanggal Lahir</td>
             <td class="f-box">
-                {{ $rel['birth'] }}
+                @if (!empty($applicant['birth_place']) || !empty($applicant['birth_date']))
+                    {{ $applicant['birth_place'] ?? '' }} &nbsp;&nbsp;&nbsp;&nbsp; {{ $applicant['birth_date'] ?? '' }}
+                @else
+                    {{ $applicant['birth'] ?? '' }}
+                @endif
             </td>
         </tr>
-        <tr><td class="f-no">6.</td><td>Nama Lengkap</td><td class="f-box">{{ $rel['name'] }}</td></tr>
+        <tr><td class="f-no">6.</td><td>Nama Lengkap</td><td class="f-box">{{ $applicant['name'] ?? '' }}</td></tr>
     </table>
 
     <div class="sub-heading">DATA KEPINDAHAN</div>
@@ -234,7 +236,7 @@
             <td style="width:15pt; font-size:9pt; vertical-align:top;">1.</td>
             <td style="width:135pt; font-size:9pt; vertical-align:top;">Alasan Pindah</td>
             <td style="border:1px solid #000; padding:2pt 4pt;">
-                <span class="opsi-box">{{ $rel['reason'] }}</span>
+                <span class="opsi-box">{{ $form['relocation_reason_code'] ?? '' }}</span>
                 <table style="width:100%; border-collapse:collapse; margin-top:2pt;">
                     <tr>
                         <td style="width:23%; font-size:9pt; padding:1pt 0;">1. Pekerjaan</td>
@@ -246,7 +248,7 @@
                         <td style="font-size:9pt; padding:1pt 0;">2. Pendidikan</td>
                         <td style="font-size:9pt; padding:1pt 0;">4. Kesehatan</td>
                         <td style="font-size:9pt; padding:1pt 0;">6. Keluarga</td>
-                        <td style="font-size:9pt; padding:1pt 0;">{{ $rel['reason_other'] }}</td>
+                        <td style="font-size:9pt; padding:1pt 0;">{{ $form['relocation_reason_other'] ?? '.....................' }}</td>
                     </tr>
                 </table>
             </td>
@@ -258,42 +260,42 @@
         <tr>
             <td style="width:15pt; font-size:9pt;">2.</td>
             <td style="width:135pt; font-size:9pt;">Alamat Tujuan Pindah</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('destination', 'address') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['destination']['address'] ?? '' }}</td>
             <td style="width:26pt; font-size:9pt; text-align:center;">RT</td>
-            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $relGroup('destination', 'rt') }}</td>
+            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $form['destination']['rt'] ?? '' }}</td>
             <td style="width:28pt; font-size:9pt; text-align:center;">RW</td>
-            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $relGroup('destination', 'rw') }}</td>
+            <td style="border:1px solid #000; width:40pt; text-align:center;">{{ $form['destination']['rw'] ?? '' }}</td>
         </tr>
     </table>
 
     <table class="frow">
-        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $relGroup('destination', 'hamlet') }}</td></tr>
+        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $form['destination']['hamlet'] ?? '' }}</td></tr>
     </table>
 
     <table style="width:100%; border-collapse:separate; border-spacing:0 2pt; margin-top:1pt;">
         <tr>
             <td style="width:15pt;"></td>
             <td style="width:135pt; font-size:9pt;">a. Desa/Kelurahan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('destination', 'village') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['destination']['village'] ?? '' }}</td>
             <td style="width:70pt; font-size:9pt; padding-left:6pt;">c. Kab/Kota</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $relGroup('destination', 'regency') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['destination']['regency'] ?? '' }}</td>
         </tr>
         <tr>
             <td></td>
             <td style="font-size:9pt;">b. Kecamatan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $relGroup('destination', 'district') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['destination']['district'] ?? '' }}</td>
             <td style="font-size:9pt; padding-left:6pt;">d. Provinsi</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $relGroup('destination', 'province') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['destination']['province'] ?? '' }}</td>
         </tr>
         <tr>
             <td style="width:15pt;"></td>
             <td style="width:135pt; font-size:9pt;">Kode Pos</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $relGroup('destination', 'postal_code') }}</td>
+            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $form['destination']['postal_code'] ?? '' }}</td>
             <td style="width:70pt; font-size:9pt; padding-left:6pt;">Telepon</td>
             <td>
                 <table class="digit-box-full"><tr>
                     @for ($i = 0; $i < 15; $i++)
-                        <td>{{ $rel['destination_phone'][$i] ?? '' }}</td>
+                        <td>{{ $form['destination']['phone'][$i] ?? '' }}</td>
                     @endfor
                 </tr></table>
             </td>
@@ -306,7 +308,7 @@
             <td style="width:15pt; font-size:9pt; vertical-align:top;">3.</td>
             <td style="width:135pt; font-size:9pt; vertical-align:top;">Jenis Kepindahan</td>
             <td style="border:1px solid #000; padding:2pt 4pt;">
-                <span class="opsi-box">{{ $rel['type'] }}</span>
+                <span class="opsi-box">{{ $form['relocation_type_code'] ?? '' }}</span>
                 <table style="width:100%; border-collapse:collapse; margin-top:2pt;">
                     <tr>
                         <td style="width:50%; font-size:9pt; padding:1pt 0;">1. Kep. Keluarga</td>
@@ -326,7 +328,7 @@
             <td style="width:15pt; font-size:9pt;">4.</td>
             <td style="width:135pt; font-size:9pt;">Status KK bagi yang tidak Pindah</td>
             <td style="border:1px solid #000; padding:2pt 4pt;">
-                <span class="opsi-box">{{ $rel['origin_kk'] }}</span>
+                <span class="opsi-box">{{ $form['origin_kk_status_code'] ?? '' }}</span>
                 1. Numpang KK &nbsp;&nbsp;&nbsp;2. Membuat KK Baru &nbsp;&nbsp;&nbsp;3. Nomor KK Tetap
             </td>
         </tr>
@@ -334,7 +336,7 @@
             <td style="font-size:9pt;">5.</td>
             <td style="font-size:9pt;">Status Nomor KK bagi yang Pindah</td>
             <td style="border:1px solid #000; padding:2pt 4pt;">
-                <span class="opsi-box">{{ $rel['dest_kk'] }}</span>
+                <span class="opsi-box">{{ $form['destination_kk_status_code'] ?? '' }}</span>
                 1. Numpang KK &nbsp;&nbsp;&nbsp;2. Membuat KK Baru &nbsp;&nbsp;&nbsp;3. Nomor KK Tetap
             </td>
         </tr>
@@ -349,7 +351,7 @@
             <th style="border:1px solid #000; width:60pt; padding:0 2pt; line-height:1.05;">MASA BERLAKU KTP S/D</th>
             <th style="border:1px solid #000; width:55pt; padding:0 2pt; line-height:1.05;">SHDK</th>
         </tr>
-        @foreach ($rel['family'] as $i => $row)
+        @forelse (($form['family_members'] ?? []) as $i => $row)
             <tr>
                 <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.05;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['nik'] ?? '' }}</td>
@@ -357,7 +359,17 @@
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['valid_until'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['shdk'] ?? '' }}</td>
             </tr>
-        @endforeach
+        @empty
+            @for ($i = 0; $i < 7; $i++)
+                <tr>
+                    <td style="border:1px solid #000; padding:1pt 2pt; height:11pt; line-height:1.1;">{{ $i + 1 }}</td>
+                    <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;"></td>
+                    <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;"></td>
+                    <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;"></td>
+                    <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;"></td>
+                </tr>
+            @endfor
+        @endforelse
     </table>
 
     {{-- ===== TTD: rata kiri di separuh kanan halaman, sesuai formulir asli ===== --}}
@@ -375,11 +387,7 @@
                     <div>Dikeluarkan Oleh</div>
                     <div>a.n Kepala Dinas Kependudukan Dan Pencatatan Sipil Kabupaten Sleman</div>
                     <div>Lurah</div>
-                    @if (!empty($signature['image']))
-                        <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 45pt; max-width: 120pt; display: block; margin: 4pt 0;">
-                    @else
-                        <div class="ttd-space"></div>
-                    @endif
+                    <div class="ttd-space"></div>
                     <div>{{ $signature['name'] }}</div>
                 </td>
             </tr>
