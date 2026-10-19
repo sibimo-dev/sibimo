@@ -399,11 +399,7 @@
             </td>
 
             <td>
-                @if (!empty($signature['image']))
-                    <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 40pt; max-width: 120pt; display: block; margin: 2pt auto;">
-                @else
-                    <div class="signature-space">&nbsp;</div>
-                @endif
+                <div class="signature-space">&nbsp;</div>
             </td>
         </tr>
 
