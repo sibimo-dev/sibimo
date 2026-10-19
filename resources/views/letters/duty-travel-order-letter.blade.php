@@ -41,29 +41,30 @@
 --}}
 
 @section('extra_css')
+    @page { margin: 0.8cm 2cm 0.8cm 2cm; }
     .dto-title {
         text-align: center; font-weight: bold; text-decoration: underline;
-        font-size: 11.5pt; margin-top: 8pt;
+        font-size: 11pt; margin-top: 4pt;
     }
 
-    table.dto-grid { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    table.dto-grid { width: 100%; border-collapse: collapse; margin-top: 4pt; }
     table.dto-grid td {
-        border: 1px solid #000; padding: 4pt 7pt; vertical-align: top; font-size: 9.3pt;
+        border: 1px solid #000; padding: 2.2pt 5pt; vertical-align: top; font-size: 8.8pt;
     }
     table.dto-grid td.no { width: 14pt; text-align: center; }
-    table.dto-grid td.label { width: 190pt; }
+    table.dto-grid td.label { width: 185pt; }
     table.dto-grid td.val { width: auto; }
     .dto-sub { margin-left: 8pt; }
 
     /* Garis hitam pemisah HANYA muncul di antara dua seksi berurutan
        (I->II dan II->III), tidak di atas seksi I yang pertama. */
-    .roman-block { width: 100%; margin-top: 10pt; padding-top: 0; }
+    .roman-block { width: 100%; margin-top: 5pt; padding-top: 0; }
     table.roman-block + table.roman-block {
-        border-top: 1.3pt solid #000;
-        padding-top: 6pt;
+        border-top: 1.2pt solid #000;
+        padding-top: 4pt;
     }
     table.roman-tbl { width: 100%; border-collapse: collapse; }
-    table.roman-tbl td { padding: 1pt 0; vertical-align: top; font-size: 9.3pt; }
+    table.roman-tbl td { padding: 0.5pt 0; vertical-align: top; font-size: 8.8pt; }
     td.roman-no { width: 16pt; font-weight: bold; }
     td.rlabel { width: 105pt; }
     td.rsep { width: 8pt; }
@@ -75,31 +76,24 @@
     /* Tabel isian per seksi: label dipersempit, nilai diberi sedikit
        padding-left saja supaya jarak setelah titik dua tidak terlalu jauh. */
     table.roman-sub { width: 100%; border-collapse: collapse; }
-    table.roman-sub td { padding: 1pt 0; vertical-align: top; font-size: 9.3pt; }
+    table.roman-sub td { padding: 0.5pt 0; vertical-align: top; font-size: 8.8pt; }
     table.roman-sub td.rlabel { width: 80pt; }
     table.roman-sub td.rsep { width: 8pt; }
     table.roman-sub td.rval { padding-left: 2pt; }
 
-    /* Baris nama penandatangan: PAKAI STRUKTUR YANG SAMA PERSIS dengan
-       roman-sub (rlabel/rsep/rval) supaya nama otomatis jatuh tepat
-       sejajar dengan posisi nilai field di atasnya (setelah titik dua),
-       bukan diatur pakai angka padding manual yang gampang meleset. */
-    table.signer-row { width: 100%; border-collapse: collapse; margin-top: 4pt; }
-    table.signer-row td { padding: 1pt 0; vertical-align: top; font-size: 9.3pt; }
+    /* Baris nama penandatangan */
+    table.signer-row { width: 100%; border-collapse: collapse; margin-top: 2pt; }
+    table.signer-row td { padding: 0.5pt 0; vertical-align: top; font-size: 8.8pt; }
     table.signer-row td.rlabel { width: 80pt; }
     table.signer-row td.rsep { width: 8pt; }
     table.signer-row td.rval { padding-left: 2pt; font-weight: bold; }
-    /* Jarak kosong SEBELUM nama (ruang untuk tanda tangan asli) diatur lewat
-       padding-top pada kolom rval. Section II lebih tinggi -> jaraknya lebih
-       besar dari Section I. Ubah angka ini untuk menambah/mengurangi jarak. */
-    table.signer-row.gap-sm td.rval { padding-top: 50pt; }
-    table.signer-row.gap-lg td.rval { padding-top: 50pt; }
+    table.signer-row.gap-sm td.rval { padding-top: 30pt; }
+    table.signer-row.gap-lg td.rval { padding-top: 30pt; }
 
-    p.verif { margin-top: 4pt; font-size: 9.3pt; }
+    p.verif { margin-top: 3pt; font-size: 8.8pt; }
 
     /* Surat ini sudah punya blok tanda tangan sendiri di Seksi I & II,
-       jadi blok tanda tangan umum dari layouts.base (di bagian paling
-       bawah halaman/lembar terakhir) tidak diperlukan dan disembunyikan. */
+       jadi blok tanda tangan umum dari layouts.base disembunyikan. */
     table.ttd { display: none !important; }
 @endsection
 

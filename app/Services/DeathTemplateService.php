@@ -111,29 +111,29 @@ class DeathTemplateService
         $death = $data['death'];
 
         $death['family'] = [
-            'kk_number' => $this->value($form, ['nomor_kk', 'kk_number']),
-            'head_name' => $this->value($form, ['nama_kepala_keluarga', 'head_name']),
+            'kk_number' => $this->value($form, ['nomor_kk', 'kk_number', 'family_card_number']),
+            'head_name' => $this->value($form, ['nama_kepala_keluarga', 'head_name', 'head_of_family_name']),
         ];
         $death['deceased'] = [
             // NIK jenazah harus memakai field khusus jenazah terlebih dahulu.
             // NIK pemohon hanya menjadi fallback apabila data jenazah belum diisi.
-            'nik' => $this->value($form, ['nik_jenazah', 'deceased_nik']) ?: $request->applicant_nik,
-            'name' => $this->value($form, ['nama_jenazah', 'deceased_name']) ?: $request->applicant_name,
-            'gender' => $this->value($form, ['jenis_kelamin_jenazah', 'deceased_gender']),
-            'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place']),
-            'birth_date' => $this->date($this->value($form, ['tanggal_lahir_jenazah', 'deceased_birth_date'])),
-            'birth_place_date' => $this->value($form, ['ttl_jenazah', 'deceased_birth_place_date']),
-            'age' => $this->value($form, ['umur_jenazah', 'deceased_age']),
-            'religion' => $this->value($form, ['agama_jenazah', 'deceased_religion']),
-            'occupation' => $this->value($form, ['pekerjaan_jenazah', 'deceased_occupation']),
-            'address' => $this->value($form, ['alamat_jenazah', 'deceased_address']),
-            'birth_order' => $this->value($form, ['anak_ke_jenazah', 'deceased_birth_order']),
-            'death_date' => $this->value($form, ['meninggal_hari_tanggal', 'deceased_death_date']),
-            'death_time' => $this->value($form, ['jam_meninggal', 'deceased_death_time']),
-            'death_place' => $this->value($form, ['lokasi_meninggal', 'tempat_kematian', 'deceased_death_place']),
-            'death_city' => $this->value($form, ['kota_tempat_meninggal', 'deceased_death_city']),
-            'cause' => $this->value($form, ['sebab_kematian', 'deceased_death_cause']),
-            'relation' => $this->value($form, ['yang_menerangkan', 'deceased_relation']),
+            'nik' => $this->value($form, ['nik_jenazah', 'deceased_nik', 'nik']) ?: $request->applicant_nik,
+            'name' => $this->value($form, ['nama_jenazah', 'deceased_name', 'name']) ?: $request->applicant_name,
+            'gender' => $this->value($form, ['jenis_kelamin_jenazah', 'deceased_gender', 'gender']),
+            'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place', 'birth_place']),
+            'birth_date' => $this->date($this->value($form, ['tanggal_lahir_jenazah', 'deceased_birth_date', 'birth_date'])),
+            'birth_place_date' => $this->value($form, ['ttl_jenazah', 'deceased_birth_place_date', 'birth_place_date']),
+            'age' => $this->value($form, ['umur_jenazah', 'deceased_age', 'age']),
+            'religion' => $this->value($form, ['agama_jenazah', 'deceased_religion', 'religion']),
+            'occupation' => $this->value($form, ['pekerjaan_jenazah', 'deceased_occupation', 'occupation']),
+            'address' => $this->value($form, ['alamat_jenazah', 'deceased_address', 'address']),
+            'birth_order' => $this->value($form, ['anak_ke_jenazah', 'deceased_birth_order', 'deceased_child_order', 'child_order']),
+            'death_date' => $this->value($form, ['meninggal_hari_tanggal', 'deceased_death_date', 'death_date']),
+            'death_time' => $this->value($form, ['jam_meninggal', 'deceased_death_time', 'death_time']),
+            'death_place' => $this->value($form, ['lokasi_meninggal', 'tempat_kematian', 'deceased_death_place', 'death_place']),
+            'death_city' => $this->value($form, ['kota_tempat_meninggal', 'deceased_death_city', 'death_city']),
+            'cause' => $this->value($form, ['sebab_kematian', 'deceased_death_cause', 'death_cause']),
+            'relation' => $this->value($form, ['yang_menerangkan', 'deceased_relation', 'death_informant']),
         ];
         $death['mother'] = $this->person($form, 'ibu', ['mother']);
         $death['father'] = $this->person($form, 'ayah', ['father']);
@@ -142,15 +142,26 @@ class DeathTemplateService
             'nik' => $request->applicant_nik,
             'name' => $request->applicant_name,
             'address' => $request->applicant_address,
+            'gender' => $form['gender'] ?? null,
+            'birth_place' => $form['birth_place'] ?? null,
+            'birth_date' => $form['birth_date'] ?? null,
+            'religion' => $form['religion'] ?? null,
+            'occupation' => $form['occupation'] ?? null,
+            'marital_status' => $form['marital_status'] ?? null,
+            'destination' => $form['destination'] ?? $form['pergi_ke'] ?? null,
+            'purpose' => $form['purpose'] ?? $form['keperluan'] ?? null,
         ] as $key => $fallback) {
-            if (blank($death['reporter'][$key] ?? null)) {
+            if (blank($death['reporter'][$key] ?? null) && filled($fallback)) {
                 $death['reporter'][$key] = $fallback;
             }
         }
+        if (blank($death['reporter']['birth_place_date'] ?? null)) {
+            $death['reporter']['birth_place_date'] = collect([$death['reporter']['birth_place'] ?? null, $death['reporter']['birth_date'] ?? null])->filter()->implode(', ');
+        }
         $death['reporter']['report_date'] = $this->value($form, ['tanggal_lapor', 'report_date']);
         $death['witnesses'] = [
-            $this->person($form, 'saksi_1', ['witness_1']),
-            $this->person($form, 'saksi_2', ['witness_2']),
+            $this->person($form, 'saksi_1', ['witness_1', 'witness1']),
+            $this->person($form, 'saksi_2', ['witness_2', 'witness2']),
         ];
         $death['attorney'] = [
             'grantor' => $this->person($form, 'pemberi_kuasa', ['grantor']),
@@ -179,7 +190,13 @@ class DeathTemplateService
         $data['signature']['date'] = $request->authorized_at?->format('d-m-Y') ?? '';
         $data['signature']['position'] = $signer?->position ?? '';
         $data['signature']['name'] = $signer?->name ?? '';
-        $data['signature']['image'] = $this->signatureImageBase64($signer?->signature_image);
+
+        $isAuthorized = filled($request->authorized_at)
+            || in_array($request->status, ['authorized', 'completed'], true);
+        $signatureImage = ($isAuthorized && $request->signature_type === 'digital')
+            ? $signer?->signature_image
+            : null;
+        $data['signature']['image'] = $this->signatureImageBase64($signatureImage);
 
         return $data;
     }
@@ -285,26 +302,37 @@ class DeathTemplateService
 
     private function person(array $form, string $prefix, array $aliases = []): array
     {
-        // Setiap kolom harus membaca key miliknya sendiri. Sebelumnya daftar
-        // alias seluruh kolom digabung sekaligus, sehingga semua kolom
-        // menemukan nilai pertama (nik_*) dan menampilkan NIK.
-        $get = function (string $field, array $extra = []) use ($form, $prefix): mixed {
-            $keys = [$field . '_' . $prefix, $prefix . '_' . $field];
-            foreach ($aliases as $alias) {
-                $keys[] = $field . '_' . $alias;
-                $keys[] = $alias . '_' . $field;
+        // Setiap kolom membaca key miliknya sendiri dalam format Indonesia maupun Inggris.
+        $get = function (string $indonesian, string $english) use ($form, $prefix, $aliases): mixed {
+            $keys = [];
+            foreach ([$indonesian, $english] as $f) {
+                $keys[] = $f . '_' . $prefix;
+                $keys[] = $prefix . '_' . $f;
+                foreach ($aliases as $alias) {
+                    $keys[] = $f . '_' . $alias;
+                    $keys[] = $alias . '_' . $f;
+                }
             }
-            return $this->value($form, array_merge($keys, $extra));
+            return $this->value($form, $keys);
         };
 
+        $birthPlace = $get('tempat_lahir', 'birth_place');
+        $birthDate = $get('tanggal_lahir', 'birth_date');
+        $birthPlaceDate = $get('ttl', 'birth_place_date');
+        if (blank($birthPlaceDate) && (filled($birthPlace) || filled($birthDate))) {
+            $birthPlaceDate = collect([$birthPlace, $birthDate])->filter()->implode(', ');
+        }
+
         return [
-            'nik' => $get('nik', ['nik_' . $prefix]),
-            'name' => $get('nama', ['name_' . $prefix]),
-            'gender' => $get('jenis_kelamin', ['gender_' . $prefix]),
-            'birth_place_date' => $get('ttl', ['birth_place_date_' . $prefix]),
-            'age' => $get('umur', ['age_' . $prefix]),
-            'occupation' => $get('pekerjaan', ['occupation_' . $prefix]),
-            'address' => $get('alamat', ['address_' . $prefix]),
+            'nik' => $get('nik', 'nik'),
+            'name' => $get('nama', 'name'),
+            'gender' => $get('jenis_kelamin', 'gender'),
+            'birth_place' => $birthPlace,
+            'birth_date' => $birthDate,
+            'birth_place_date' => $birthPlaceDate,
+            'age' => $get('umur', 'age'),
+            'occupation' => $get('pekerjaan', 'occupation'),
+            'address' => $get('alamat', 'address'),
         ] + ($aliases ? ['role' => $aliases[0]] : []);
     }
 

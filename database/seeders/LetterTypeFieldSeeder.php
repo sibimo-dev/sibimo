@@ -152,7 +152,6 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Pemohon', 'key' => 'nama_pemohon', 'type' => 'text', 'is_required' => false],
             ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Dukuh', 'key' => 'nama_dukuh', 'type' => 'text', 'is_required' => false],
             ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Camat', 'key' => 'nama_camat', 'type' => 'text', 'is_required' => false],
-            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Lurah', 'key' => 'nama_lurah', 'type' => 'text', 'is_required' => false],
         ]);
             
         $this->seedForCode('SPKIA', [ // Surat permohonan penerbitan KIA
@@ -176,8 +175,8 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Alamat', 'label' => 'Kecamatan', 'key' => 'kecamatan', 'type' => 'text'], 
             // Tanda Bukti Penerimaan
             ['section' => 'Tanda Bukti Penerimaan', 'label' => 'Tanggal Pengambilan', 'key' => 'tgl_pengambilan', 'type' => 'date', 'is_required' => false],
-            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Pemohon (orang tua/wali)', 'key' => 'nama_pemohon', 'type' => 'text', 'is_required' => false],
-            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Petugas', 'key' => 'nama_petugas', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'Nama Pemohon (penandatangan)', 'key' => 'nama_pemohon', 'type' => 'text', 'is_required' => false],
+            ['section' => 'Nama Penandatangan (Opsional)', 'label' => 'NIK Pemohon (penandatangan)', 'key' => 'nik_pemohon', 'type' => 'text', 'is_required' => false],
         ]);
 
         $this->seedForCode('SRBBM', [ // Surat Rekomendasi Pembelian Jenis BBM Tertentu
@@ -1470,6 +1469,16 @@ class LetterTypeFieldSeeder extends Seeder
                 ->delete();
         }
     
+        // Field nama Lurah (form KTP) dan nama Petugas (form KIA) sudah dihapus. updateOrInsert tidak
+        // menghapus baris lama, jadi bersihkan di sini agar tidak muncul lagi di admin.
+        $obsoleteSignerFields = ['SPKTP' => 'nama_lurah', 'SPKIA' => 'nama_petugas'];
+        if (isset($obsoleteSignerFields[$code])) {
+            DB::table('letter_type_fields')
+                ->where('letter_type_id', $letterTypeId)
+                ->where('field_key', $obsoleteSignerFields[$code])
+                ->delete();
+        }
+
         foreach ($fields as $i => $f) {
             DB::table('letter_type_fields')->updateOrInsert(
                 [

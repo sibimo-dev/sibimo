@@ -57,6 +57,7 @@ Route::prefix('public')->group(function () {
 
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/letter-types', [PublicLetterController::class, 'types']);
+        Route::get('/letter-stats', [PublicLetterController::class, 'stats']);
         Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
         Route::post('/letter-requests', [PublicLetterController::class, 'store']);
         Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);

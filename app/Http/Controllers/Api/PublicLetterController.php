@@ -55,6 +55,19 @@ class PublicLetterController extends Controller
         ]);
     }
 
+    public function stats(): JsonResponse
+    {
+        $total = LetterRequest::query()->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Statistik permohonan surat berhasil diambil.',
+            'data' => [
+                'total' => $total,
+            ],
+        ]);
+    }
+
     public function checkNik(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -101,6 +114,19 @@ class PublicLetterController extends Controller
         ]);
     }
 
+    /**
+     * Kode surat yang diizinkan untuk diajukan oleh pemohon dengan NIK yang
+     * belum terdaftar di database (Layanan Umum & Pendaftaran Calon Warga Baru).
+     *
+     * @var list<string>
+     */
+    private const UNREGISTERED_NIK_CODES = [
+        // Layanan Umum (Perizinan)
+        'SKU', 'SKP', 'SKK', 'SKJG',
+        // Pendaftaran Calon Warga Baru
+        'SPKTP', 'SPKIAF', 'FBWNI', 'PAK', 'SKDT', 'SKTS', 'SPTTS', 'SPPWNI', 'SPPWF', 'SPTJP',
+    ];
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -114,6 +140,8 @@ class PublicLetterController extends Controller
             'attachment_document_ids.*' => ['integer'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'service_flow' => ['nullable', 'string', 'in:general,permit'],
+            'is_new_resident' => ['nullable', 'boolean'],
         ]);
 
         $formData = $this->decodeFormData($validated['form_data']);
@@ -129,7 +157,15 @@ class PublicLetterController extends Controller
             ->where('status', 'Active')
             ->first();
 
-        if (! $citizen && ! $this->publicTestMode()) {
+        $isPermitFlow = ($validated['service_flow'] ?? null) === 'permit';
+        $isNewResident = (bool) ($validated['is_new_resident'] ?? false);
+
+        $allowsUnregisteredNik = in_array($letterType->code, self::UNREGISTERED_NIK_CODES, true)
+            || $isPermitFlow
+            || $isNewResident
+            || $this->publicTestMode();
+
+        if (! $citizen && ! $allowsUnregisteredNik) {
             throw ValidationException::withMessages([
                 'applicant_nik' => 'NIK tidak terdaftar sebagai warga aktif.',
             ]);

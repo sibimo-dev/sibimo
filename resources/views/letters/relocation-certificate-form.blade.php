@@ -45,6 +45,101 @@
 @endsection
 
 @section('content')
+    @php
+        // ---- Normalisasi isian Pindah WNI: kode angka kotak + tabel keluarga ----
+        $relFirst = function (array $keys) use ($form) {
+            foreach ($keys as $k) {
+                if (isset($form[$k]) && !is_array($form[$k]) && trim((string) $form[$k]) !== '') return trim((string) $form[$k]);
+            }
+            return '';
+        };
+        $relNorm = fn ($s) => preg_replace('/[^a-z0-9]/', '', strtolower(preg_replace('/^\s*\d+\s*[.)\-:]\s*/', '', (string) $s)));
+        // Nilai select bisa "2. Pendidikan", "2", atau "Pendidikan" -> selalu jadi angka pilihan (kosong bila belum dipilih)
+        $relCode = function ($value, array $labels) use ($relNorm) {
+            $value = trim((string) $value);
+            if ($value === '') return '';
+            if (preg_match('/^\s*(\d+)\s*(?:[.)\-:]|$)/', $value, $m)) return $m[1];
+            $n = $relNorm($value);
+            foreach ($labels as $i => $label) {
+                $ln = $relNorm($label);
+                if ($n === $ln || ($ln === 'lainnyasebutkan' && str_starts_with($n, 'lainnya'))) return (string) ($i + 1);
+            }
+            return '';
+        };
+        // Cari nilai di kunci mana pun yang namanya cocok pola (nama field backend bisa Indonesia/Inggris, snake/camel)
+        $relFind = function (string $include, string $exclude = '') use ($form) {
+            foreach ($form as $k => $v) {
+                if (is_array($v) || trim((string) $v) === '') continue;
+                $n = preg_replace('/[^a-z0-9]/', '', strtolower((string) $k));
+                if (preg_match($include, $n) && ($exclude === '' || !preg_match($exclude, $n))) return trim((string) $v);
+            }
+            return '';
+        };
+        // Alamat asal/tujuan: $form['origin']['x'] atau origin_x / originX
+        $relGroup = function (string $group, string $key) use ($form) {
+            $studly = str_replace(' ', '', ucwords(str_replace('_', ' ', $key)));
+            foreach ([$form[$group][$key] ?? null, $form[$group . '_' . $key] ?? null, $form[$group . $studly] ?? null] as $v) {
+                if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v);
+            }
+            return '';
+        };
+        $relReasonLabels = ['Pekerjaan', 'Pendidikan', 'Keamanan', 'Kesehatan', 'Perumahan', 'Keluarga', 'Lainnya (sebutkan)'];
+        $relTypeLabels = ['Kep. Keluarga', 'Kep. Keluarga dan seluruh Angg. Keluarga', 'Kep. Keluarga dan sbg Angg. Keluarga', 'Anggota Keluarga'];
+        $relKkLabels = ['Numpang KK', 'Membuat KK Baru', 'Nomor KK Tetap'];
+
+        // Tabel "Keluarga Yang Pindah": cari daftar baris di kunci mana pun, tahan format kunci (camelCase/snake_case/Indonesia)
+        $relRows = null;
+        foreach (['family_members', 'familyMembers', 'keluarga_yang_pindah', 'anggota_keluarga_yang_pindah', 'anggota_keluarga'] as $k) {
+            if (isset($form[$k])) { $relRows = $form[$k]; break; }
+        }
+        if ($relRows === null && isset($family_members)) $relRows = $family_members;
+        if ($relRows === null) {
+            foreach ($form as $v) {
+                if (is_string($v) && str_starts_with(ltrim($v), '[{')) $v = json_decode($v, true);
+                if (is_array($v) && $v !== [] && is_array(reset($v)) && (isset(reset($v)['nik']) || isset(reset($v)['name']) || isset(reset($v)['nama']))) { $relRows = $v; break; }
+            }
+        }
+        if (is_string($relRows)) $relRows = json_decode($relRows, true) ?: [];
+        $relDate = function ($v) {
+            $v = trim((string) $v);
+            return preg_match('/^\d{4}-\d{2}-\d{2}/', $v) ? date('d-m-Y', strtotime(substr($v, 0, 10))) : $v;
+        };
+        $relFamily = collect(is_array($relRows) ? $relRows : [])
+            ->filter(fn ($r) => is_array($r))
+            ->map(fn ($r) => [
+                'nik'         => $r['nik'] ?? $r['NIK'] ?? '',
+                'name'        => $r['name'] ?? $r['nama'] ?? '',
+                'valid_until' => $relDate($r['valid_until'] ?? $r['validUntil'] ?? $r['masa_berlaku'] ?? $r['masa_berlaku_ktp'] ?? ''),
+                'shdk'        => $r['shdk'] ?? $r['SHDK'] ?? '',
+            ])
+            ->filter(fn ($r) => trim(implode('', $r)) !== '')
+            ->values()->take(4)->all();
+        $relFamily = array_pad($relFamily, 4, ['nik' => '', 'name' => '', 'valid_until' => '', 'shdk' => '']);
+
+        $rel = [
+            'reason'      => $relCode($relFirst(['relocation_reason_code', 'relocation_reason', 'relocationReason', 'alasan_pindah']) ?: $relFind('/alasan|reason/', '/lain|other/'), $relReasonLabels),
+            'type'        => $relCode($relFirst(['relocation_type_code', 'relocation_type', 'relocationType', 'jenis_kepindahan']) ?: $relFind('/jenis(kepindahan|pindah)|relocationtype|movetype/', '/label/'), $relTypeLabels),
+            'origin_kk'   => $relCode($relFirst(['origin_kk_status_code', 'origin_kk_status', 'originKkStatus', 'status_kk_bagi_yang_tidak_pindah']) ?: $relFind('/originkkstatus|kk.*tidakpindah|tidakpindah.*kk/'), $relKkLabels),
+            'dest_kk'     => $relCode($relFirst(['destination_kk_status_code', 'destination_kk_status', 'destinationKkStatus', 'status_nomor_kk_bagi_yang_pindah']) ?: $relFind('/destinationkkstatus|statusnomorkk|kk.*(bagi|untuk)?yangpindah/', '/tidak/'), $relKkLabels),
+            'reason_other'=> $relFirst(['relocation_reason_other', 'relocationReasonOther', 'alasan_pindah_lainnya']),
+            'origin_phone'      => preg_replace('/\D/', '', $relGroup('origin', 'phone')),
+            'destination_phone' => preg_replace('/\D/', '', $relGroup('destination', 'phone')),
+            'family'      => $relFamily,
+        ];
+        $rel['reason_other'] = $rel['reason_other'] !== '' ? $rel['reason_other'] : '.....................';
+        // Data pemohon & KK asal: utamakan $applicant / $form['origin'], cadangannya isian form datar (kunci snake_case/camelCase)
+        $relPick = function (array $sources) {
+            foreach ($sources as $v) { if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v); }
+            return '';
+        };
+        $rel['kk_number']   = $relPick([$form['origin']['kk_number'] ?? null, $form['kk_number'] ?? null, $form['kkNumber'] ?? null, $form['origin_kk_number'] ?? null, $form['originKkNumber'] ?? null]);
+        $rel['head']        = $relPick([$form['origin']['head_of_family'] ?? null, $form['head_of_family'] ?? null, $form['headOfFamily'] ?? null, $form['origin_head_of_family'] ?? null, $form['originHeadOfFamily'] ?? null]);
+        $rel['nik']         = $relPick([$applicant['nik'] ?? null, $form['nik'] ?? null]);
+        $rel['name']        = $relPick([$applicant['name'] ?? null, $form['name'] ?? null, $form['full_name'] ?? null]);
+        $rel['birth_place'] = $relPick([$applicant['birth_place'] ?? null, $form['birth_place'] ?? null, $form['birthPlace'] ?? null]);
+        $rel['birth_date']  = $relDate($relPick([$applicant['birth_date'] ?? null, $form['birth_date'] ?? null, $form['birthDate'] ?? null]));
+        $rel['birth']       = $relPick([$rel['birth_place'] !== '' || $rel['birth_date'] !== '' ? trim($rel['birth_place'] . '   ' . $rel['birth_date']) : null, $applicant['birth'] ?? null]);
+    @endphp
     {{-- ===== KOP DUKCAPIL ===== --}}
     <table class="kop-dukcapil">
         <tr>
@@ -258,7 +353,7 @@
         </tr>
         @forelse (($form['family_members'] ?? []) as $i => $row)
             <tr>
-                <td style="border:1px solid #000; padding:1pt 2pt; height:11pt; line-height:1.1;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.05;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['nik'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['name'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['valid_until'] ?? '' }}</td>

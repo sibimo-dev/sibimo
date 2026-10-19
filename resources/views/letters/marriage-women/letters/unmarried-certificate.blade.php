@@ -35,15 +35,17 @@
 ]])
 
 <p style="margin-top:10pt">dengan ini menerangkan bahwa :</p>
-@include($pp.'rows', ['bold' => false, 'rows' => [
+@include($pp.'rows', ['bold' => false, 'rows' => array_filter([
     'Nama lengkap dan alias'   => $b['name'],
     'NIK'                      => $b['nik'],
     'Tempat dan tanggal lahir' => $b['birth'],
     'Jenis kelamin'            => $b['gender'],
+    'Kewarganegaraan'          => $b['citizenship'] ?? null,
     'Agama'                    => $b['religion'],
     'Pekerjaan'                => $b['occupation'],
+    'Pendidikan'               => $b['education'] ?? null,
     'Tempat tinggal'           => $b['address'],
-]])
+])])
 
 <p style="margin-top:10pt">pada saat Surat Keterangan Belum Pernah Menikah ini diterbitkan, yang bersangkutan benar-benar BELUM PERNAH MENIKAH.</p>
 <p style="margin-top:8pt">Demikianlah surat keterangan ini dibuat untuk dapat digunakan sebagaimana mestinya.</p>
