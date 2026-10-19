@@ -116,13 +116,22 @@ foreach ($letters as $item) {
 
         $missing = [];
         foreach ($trackedValues as $testVal => $fieldDesc) {
-            if (!str_contains($rendered, $testVal)) {
+            if (stripos($rendered, $testVal) === false) {
                 // If it's a date alternative, check if any of the formats were found
                 if (in_array($testVal, ['20 Mei 2026', '20-05-2026', '2026-05-20'])) {
-                    if (str_contains($rendered, '20 Mei 2026') || str_contains($rendered, '20-05-2026') || str_contains($rendered, '2026-05-20') || str_contains($rendered, '20 Mei') || str_contains($rendered, '20/05/2026')) {
+                    if (stripos($rendered, '20 Mei 2026') !== false || stripos($rendered, '20-05-2026') !== false || stripos($rendered, '2026-05-20') !== false || stripos($rendered, '20 Mei') !== false || stripos($rendered, '20/05/2026') !== false) {
                         continue;
                     }
                 }
+
+                // Check if string is split into individual char boxes (e.g., F-1.01, F-1.02, F-1.25, KTP)
+                if (strlen($testVal) <= 30) {
+                    $pattern = implode('.*?', array_map(fn($c) => preg_quote($c, '/'), str_split($testVal)));
+                    if (preg_match('/' . $pattern . '/is', $rendered)) {
+                        continue;
+                    }
+                }
+
                 $missing[$fieldDesc] = true;
             }
         }

@@ -4,16 +4,19 @@
 @section('date_long', '1')
 
 @section('extra_css')
-    body { font-family: Times, serif; font-size: 12pt; line-height: 1.15; }
+    @page { margin: 1cm 2cm; }
+    body { font-family: Times, serif; font-size: 10.5pt; line-height: 1.15; }
     .kop-1, .kop-2, .kop-info { font-family: Helvetica, Arial, sans-serif; }
     .kop-3, .judul { font-family: Times, serif; }
-    .kop-3 { font-size: 17.5pt; }
-    p.gap-top { margin-top: 7pt; }
+    .kop-3 { font-size: 16pt; }
+    p.gap-top { margin-top: 4pt; }
+    p.gap-top-lg { margin-top: 6pt; }
     table.data { margin-left: 74pt; width: 383pt; }
-    table.data td { padding: 0.6pt 0; }
+    table.data td { padding: 0.4pt 0; }
     td.lbl { width: 112pt; }
-    td.val { height: 13.8pt; }
-
+    td.val { height: 12.5pt; }
+    table.ttd td.ttd-content { padding-top: 8pt; line-height: 16pt; }
+    .ttd-space { height: 35pt; }
 @endsection
 
 @section('content')

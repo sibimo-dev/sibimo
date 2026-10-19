@@ -10,20 +10,21 @@
     yang tetap @extends('letters.layouts.base').
 --}}
 @section('extra_css')
+    @page { margin: 0.7cm 1.8cm 0.6cm 1.8cm; }
     body { font-family: "Times New Roman", Times, serif; }
-    .bf { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.15; }
-    .bf-title { text-align: center; font-weight: bold; font-size: 14pt; text-transform: uppercase; }
+    .bf { font-family: "Times New Roman", Times, serif; font-size: 9.5pt; line-height: 1.15; }
+    .bf-title { text-align: center; font-weight: bold; font-size: 11.5pt; text-transform: uppercase; }
 
     table.rows { width: 100%; border-collapse: collapse; }
-    table.rows td { padding-top: 2pt; padding-bottom: 2pt; vertical-align: top; }
-    table.rows td.r-no { width: 14pt; padding-left: 10pt; }
+    table.rows td { padding-top: 0.8pt; padding-bottom: 0.8pt; vertical-align: top; }
+    table.rows td.r-no { width: 14pt; padding-left: 8pt; }
     table.rows.flat td.r-no { padding-left: 0; }
-    table.rows td.r-sep { width: 10pt; }
-    table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
+    table.rows td.r-sep { width: 8pt; }
+    table.rows td.r-val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 10pt; }
 
     table.sign { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
-    table.sign td { width: 50%; vertical-align: top; padding: 0 14pt; line-height: 1.2; }
-    .sign-space { height: 30pt; }
+    table.sign td { width: 50%; vertical-align: top; padding: 0 10pt; line-height: 1.15; }
+    .sign-space { height: 26pt; }
 @endsection
 
 @section('content')
@@ -64,9 +65,9 @@
 
 <div class="bf">
 
-    <div class="bf-title" style="text-decoration: underline; margin-top: 6pt;">LAPORAN KELAHIRAN</div>
+    <div class="bf-title" style="text-decoration: underline; margin-top: 2pt;">LAPORAN KELAHIRAN</div>
 
-    <p style="margin-top: 25pt;">Yang bertanda tangan dibawah ini saya</p>
+    <p style="margin-top: 8pt; margin-bottom: 2pt;">Yang bertanda tangan dibawah ini saya</p>
 
     {!! $renderRows([
         ['label' => 'NIK', 'value' => $r['nik']],
@@ -79,14 +80,14 @@
 
     {{-- "Hubungan dengan si bayi": table 1 baris (label + garis titik-titik yang melebar),
          rata kiri sama seperti paragraf "Dengan ini melaporkan..." di bawahnya. --}}
-    <table style="width: 100%; border-collapse: collapse; margin-top: 10pt;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 3pt;">
         <tr>
             <td style="white-space: nowrap; padding: 0 4pt 0 0; vertical-align: top;">Hubungan dengan si bayi :</td>
             <td style="width: 100%; border-bottom: 1px dashed #000; padding: 0;">{{ $r['relationship'] }}</td>
         </tr>
     </table>
 
-    <p style="margin-top: 8pt;">Dengan ini melaporkan kelahiran seorang anak :</p>
+    <p style="margin-top: 4pt; margin-bottom: 2pt;">Dengan ini melaporkan kelahiran seorang anak :</p>
 
     {!! $renderRows([
         ['nonum' => true, 'label' => 'Dari Ibu', 'value' => $m['name']],
@@ -97,7 +98,7 @@
         ['cont' => true, 'label' => '', 'value' => $f['rt_rw'] . $villageTail],
     ], 70) !!}
 
-    <p style="margin-top: 10pt;">Dengan data kelahiran sebagai berikut</p>
+    <p style="margin-top: 4pt; margin-bottom: 2pt;">Dengan data kelahiran sebagai berikut</p>
 
     {!! $renderRows([
         ['label' => 'Nama Lengkap Anak', 'value' => $c['name']],
@@ -117,13 +118,13 @@
         ['label' => 'Biaya Kelahiran', 'value' => $c['delivery_cost']],
     ], 120) !!}
 
-    <p style="margin-top: 10pt; text-align: justify;">
+    <p style="margin-top: 4pt; margin-bottom: 2pt; text-align: justify;">
         Demikian laporan saya ini saya buat dengan sebenar-benarnya dan disertai bukti dan dokumen
         pendukung pelaporan kelahiran, apabila laporan saya ini dikemudian hari diketahui tidak benar
         maka saya siap dituntut sesuai peraturan perundang-undangan yang berlaku.
     </p>
 
-    <table class="sign" style="margin-top: 10pt;">
+    <table class="sign" style="margin-top: 6pt;">
         <tr>
             <td></td>
             <td>{{ $signature['city'] }}, {{ $r['report_date'] ?? '..........................' }}</td>

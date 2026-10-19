@@ -6,14 +6,20 @@
 @section('date_long', '1')
 
 @section('extra_css')
-    table.data td { padding: 1.4pt 0; }
+    @page { margin: 1cm 2cm; }
+    body { font-size: 10.5pt; line-height: 1.2; }
+    table.data td { padding: 1pt 0; }
     table.signer { margin-left: 26pt; width: 360pt; }
     table.signer td.lbl { width: 75pt; }
     table.company { margin-left: 26pt; width: 453pt; }
     table.company td.lbl { width: 200pt; }
     table.owner { margin-left: 26pt; width: 453pt; }
     table.owner td.lbl { width: 115pt; }
-    .kop-line { margin-top: 12pt; }
+    .kop-line { margin-top: 8pt; }
+    p.gap-top-lg { margin-top: 8pt; }
+    p.gap-top { margin-top: 4pt; }
+    table.ttd td.ttd-content { padding-top: 10pt; line-height: 16pt; }
+    .ttd-space { height: 35pt; }
 @endsection
 
 @section('content')

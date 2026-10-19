@@ -50,32 +50,32 @@
 
 @section('extra_css')
     /* Surat ini lebih padat isinya (2 tabel + 2 saksi) dibanding surat lain,
-       jadi margin atas/bawah halaman dikecilkan KHUSUS untuk letter ini
-       (tidak menyentuh base.blade.php, jadi surat lain tidak berubah).
-       Kiri/kanan tetap 2cm supaya lebar teks konsisten dengan surat lain. */
-    @page { margin: 1.2cm 2cm 1.2cm 2cm; }
+       jadi margin atas/bawah halaman dikecilkan KHUSUS untuk letter ini. */
+    @page { margin: 0.7cm 1.8cm 0.6cm 1.8cm; }
 
-    /* Konten surat sedikit lebih rapat dari surat lain supaya cukup 1 halaman */
-    .letter-body { font-size: 10.2pt; line-height: 1.16; }
-    .letter-body p.gap-top { margin-top: 4pt; }
-    .letter-body p.gap-top-lg { margin-top: 6pt; }
+    /* Konten surat lebih rapat supaya cukup 1 halaman */
+    .letter-body { font-size: 9.1pt; line-height: 1.12; }
+    .letter-body p.gap-top { margin-top: 2pt; margin-bottom: 1pt; }
+    .letter-body p.gap-top-lg { margin-top: 3pt; margin-bottom: 1pt; }
 
     /* Nomor / Hal / Kepada Yth — ditumpuk, rata kiri semua, di bawah kop */
-    .heading-block { margin-top: 8pt; }
-    .heading-block div { margin: 0; }
-    .heading-block .heading-gap { margin-top: 4pt; }
+    .heading-block { margin-top: 4pt; }
+    .heading-block div { margin: 0; line-height: 1.12; }
+    .heading-block .heading-gap { margin-top: 2pt; }
 
     /* Numbered "No. | Label | : | Value" data table (dashed underline like table.data) */
-    table.numbered { width: 388pt; margin-left: 20pt; margin-top: 2pt; border-collapse: collapse; page-break-inside: avoid; }
-    table.numbered td { padding: 1pt 0; vertical-align: top; }
-    table.numbered td.num { width: 16pt; }
-    table.numbered td.lbl { width: 95pt; }
-    table.numbered td.sep { width: 11pt; }
-    table.numbered td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 11pt; }
-
+    table.numbered { width: 420pt; margin-left: 12pt; margin-top: 1pt; border-collapse: collapse; page-break-inside: avoid; }
+    table.numbered td { padding: 0.5pt 0; vertical-align: top; }
+    table.numbered td.num { width: 15pt; }
+    table.numbered td.lbl { width: 88pt; }
+    table.numbered td.sep { width: 10pt; }
+    table.numbered td.val { border-bottom: 1px dashed #000; padding-left: 2pt; height: 9pt; }
 
     /* Bungkus tiap blok (paragraf + tabel) supaya tidak terpotong halaman */
     .keep-together { page-break-inside: avoid; }
+
+    .ttd { margin-top: 4pt !important; }
+    .ttd-space { height: 28pt !important; }
 @endsection
 
 @section('content')

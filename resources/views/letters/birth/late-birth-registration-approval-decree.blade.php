@@ -21,28 +21,29 @@
 @section('title', 'Keputusan Persetujuan Pencatatan Kelahiran Terlambat')
 
 @section('extra_css')
+    @page { margin: 0.8cm 1.8cm 0.6cm 1.8cm; }
     /* Font Times New Roman untuk seluruh surat ini (menimpa font default layout,
        ditulis di selector body milik section extra_css sendiri supaya berlaku). */
-    body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.25; }
-    .head-block { text-align: center; margin-top: 8pt; font-weight: bold; }
-    table.dec { width: 100%; border-collapse: collapse; margin-top: 6pt; }
-    table.dec td { vertical-align: top; padding: 1pt 0; text-align: justify; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 9.3pt; line-height: 1.18; }
+    .head-block { text-align: center; margin-top: 6pt; font-weight: bold; }
+    table.dec { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+    table.dec td { vertical-align: top; padding: 0.8pt 0; text-align: justify; }
     table.dec td.k { width: 62pt; font-weight: bold; }
     table.dec td.c { width: 8pt; }
     table.dec td.n { width: 16pt; }
     table.dec td.n2 { width: 14pt; }
     table.data-dec { width: 100%; border-collapse: collapse; }
-    table.data-dec td { padding: 1pt 0; vertical-align: top; }
+    table.data-dec td { padding: 0.8pt 0; vertical-align: top; }
     table.data-dec td.l { width: 140pt; }
     table.data-dec td.s { width: 10pt; }
     table.data-dec td.v { border-bottom: 1px dashed #000; font-weight: bold; }
-    table.sign-dec { width: 100%; border-collapse: collapse; margin-top: 10pt; page-break-inside: avoid; }
+    table.sign-dec { width: 100%; border-collapse: collapse; margin-top: 6pt; page-break-inside: avoid; }
     table.sign-dec td.sp { width: 60%; }
-    .sign-dec-space { height: 44pt; }
+    .sign-dec-space { height: 32pt; }
 @endsection
 
 @section('content')
-    <div style="margin-top: 10pt; font-weight: bold;">
+    <div style="margin-top: 6pt; font-weight: bold;">
         KEPUTUSAN KEPALA DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL KABUPATEN SLEMAN<br>
         Nomor:{{ $nb }}{{ $decree['number'] ?? '' }}{{ $nb }}/Ken.Ka.Disdukcapil/AL -TLB/
     </div>
@@ -53,7 +54,7 @@
         KEPALA DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL KABUPATEN SLEMAN
     </div>
 
-    <table class="dec" style="margin-top: 12pt;">
+    <table class="dec" style="margin-top: 6pt;">
         <tr>
             <td class="k">Membaca</td><td class="c">:</td>
             <td colspan="2">Surat Pelaporan Saudara <u>{{ $birth['reporter']['name'] ?: $dots }}</u>
@@ -94,7 +95,7 @@
                 Kependudukan.</td></tr>
     </table>
 
-    <table class="dec" style="margin-top: 10pt;">
+    <table class="dec" style="margin-top: 5pt;">
         <tr>
             <td class="k">Memperhatikan</td><td class="c">:</td>
             <td>Surat Edaran Menteri Dalam Negeri Nomor 472.11/2304/SJ tanggal 06 Mei 2013 perihal Tindaklanjut
@@ -102,7 +103,7 @@
         </tr>
     </table>
 
-    <div style="text-align: center; font-weight: bold; margin: 8pt 0 4pt;">MEMUTUSKAN</div>
+    <div style="text-align: center; font-weight: bold; margin: 5pt 0 3pt;">MEMUTUSKAN</div>
 
     <table class="dec">
         <tr>

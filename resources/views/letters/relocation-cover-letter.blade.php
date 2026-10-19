@@ -198,7 +198,7 @@
         </tr>
         @forelse (($form['family_members'] ?? []) as $i => $row)
             <tr>
-                <td style="border:1px solid #000; padding:1pt 2pt; height:14pt; line-height:1.1;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.1;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['nik'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['name'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['valid_until'] ?? '' }}</td>

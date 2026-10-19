@@ -43,18 +43,19 @@
 --}}
 
 @section('extra_css')
-    .tsa-header { font-size: 9.5pt; }
+    @page { margin: 0.8cm 1.8cm 0.6cm 1.8cm; }
+    .tsa-header { font-size: 9pt; }
     table.tsa-header-tbl { border-collapse: collapse; }
     table.tsa-header-tbl td { padding: 0 4pt 0 0; vertical-align: top; }
     td.tsa-h-label { width: 62pt; }
 
     .tsa-title {
         text-align: center; font-weight: bold; text-decoration: underline;
-        font-size: 11.5pt; margin-top: 6pt; margin-bottom: 6pt;
+        font-size: 10.5pt; margin-top: 3pt; margin-bottom: 3pt;
     }
 
-    table.tsa-item { width: 100%; border-collapse: separate; border-spacing: 2pt; margin-top: 2pt; }
-    table.tsa-item td { vertical-align: top; padding: 0.5pt 0; font-size: 9.5pt; }
+    table.tsa-item { width: 100%; border-collapse: separate; border-spacing: 2pt; margin-top: 1pt; }
+    table.tsa-item td { vertical-align: top; padding: 0.2pt 0; font-size: 8.8pt; }
     td.tsa-no { width: 16pt; }
     td.tsa-label { width: 175pt; }
     td.tsa-sep { width: 9pt; }

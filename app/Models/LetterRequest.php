@@ -83,8 +83,15 @@ class LetterRequest extends Model
         static::creating(function (LetterRequest $letterRequest) {
             if (empty($letterRequest->request_code)) {
                 $prefix = 'REQ-' . now()->format('Ymd');
-                $lastNumber = static::where('request_code', 'like', "{$prefix}-%")->count() + 1;
-                $letterRequest->request_code = $prefix . '-' . str_pad($lastNumber, 3, '0', STR_PAD_LEFT);
+                $codes = static::where('request_code', 'like', "{$prefix}-%")->pluck('request_code');
+                $maxNum = 0;
+                foreach ($codes as $c) {
+                    $num = (int) substr((string) $c, strlen($prefix) + 1);
+                    if ($num > $maxNum) {
+                        $maxNum = $num;
+                    }
+                }
+                $letterRequest->request_code = $prefix . '-' . str_pad((string) ($maxNum + 1), 3, '0', STR_PAD_LEFT);
             }
             if (empty($letterRequest->submitted_at)) {
                 $letterRequest->submitted_at = now();
