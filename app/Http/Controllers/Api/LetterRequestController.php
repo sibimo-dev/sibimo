@@ -9,6 +9,7 @@ use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
 use App\Models\LetterType;
+use App\Models\Staff;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use Illuminate\Http\JsonResponse;
@@ -132,6 +133,13 @@ class LetterRequestController extends Controller
             ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner'])
             ->findOrFail($letterRequest_id);
 
+        if ($request->filled('signer_id')) {
+            $signer = Staff::find($request->input('signer_id'));
+            if ($signer) {
+                $letterRequest->setRelation('authorizedSigner', $signer);
+            }
+        }
+
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $bladeView = (string) ($letterRequest->letterType?->blade_view ?? '');
 
@@ -159,7 +167,7 @@ class LetterRequestController extends Controller
                 : $pdf->stream($filename);
         }
 
-        $template = $pdfService->rootTemplateForType($letterRequest->letterType);
+        $template = $pdfService->resolveTemplate($letterRequest);
 
         if (! $template) {
             return response()->json([
@@ -343,13 +351,34 @@ class LetterRequestController extends Controller
      * Memakai DB::transaction + lockForUpdate() untuk mencegah race condition
      * saat dua permohonan diotorisasi bersamaan (nomor surat tidak akan duplikat).
      */
+    private function toRomanMonth(int $month): string
+    {
+        return match ($month) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            4 => 'IV',
+            5 => 'V',
+            6 => 'VI',
+            7 => 'VII',
+            8 => 'VIII',
+            9 => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+            default => (string) $month,
+        };
+    }
+
     private function generateLetterNumber(LetterType $letterType): string
     {
         return DB::transaction(function () use ($letterType) {
+            $now = now();
             $seq = LetterNumberSequence::lockForUpdate()->firstOrCreate(
                 [
                     'letter_type_id' => $letterType->letter_type_id,
-                    'year'           => now()->year,
+                    'year'           => $now->year,
+                    'month'          => $now->month,
                 ],
                 ['last_sequence' => 0],
             );
@@ -357,10 +386,12 @@ class LetterRequestController extends Controller
             $seq->increment('last_sequence');
             $seq->refresh();
 
-            $prefix   = $letterType->number_prefix ?? '';
-            $sequence = str_pad($seq->last_sequence, 3, '0', STR_PAD_LEFT);
+            $code       = rtrim($letterType->number_prefix ?: $letterType->code, '/');
+            $sequence   = str_pad($seq->last_sequence, 3, '0', STR_PAD_LEFT);
+            $monthRoman = $this->toRomanMonth($now->month);
+            $year       = $now->year;
 
-            return $prefix . $sequence;
+            return "{$code}/{$sequence}/{$monthRoman}/{$year}";
         });
     }
 

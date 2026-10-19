@@ -60,9 +60,18 @@ class VillagePotentialController extends Controller
     }
 
 
-    public function show(int $potential_id): JsonResponse
+    public function show(string $potential_id): JsonResponse
     {
-        $potential = VillagePotential::query()->findOrFail($potential_id);
+        $potential = is_numeric($potential_id)
+            ? VillagePotential::query()->find($potential_id)
+            : VillagePotential::query()->where('slug', $potential_id)->first();
+
+        if (!$potential) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Potensi desa tidak ditemukan.',
+            ], 404);
+        }
 
         return response()->json([
             'success' => true,

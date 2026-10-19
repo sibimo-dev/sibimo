@@ -299,7 +299,7 @@ class PublicLetterController extends Controller
                 : $pdf->stream($filename);
         }
 
-        $template = $pdfService->rootTemplateForType($letterRequest->letterType);
+        $template = $pdfService->resolveTemplate($letterRequest);
         if (! $template) {
             return response()->json([
                 'success' => false,

@@ -129,6 +129,7 @@
     <div>Sleman, {{ $kia['date'] }}</div>
     <div>Pemohon</div>
     <div class="s-space"></div>
+    <div>{{ $kia['applicant_name'] ?? '' }}</div>
     <div>NIK</div>
 </div>
 
@@ -166,7 +167,7 @@
                 <div>Sleman, {{ $kia['date'] }}</div>
                 <div>Petugas</div>
                 <div class="s-space"></div>
-                <div class="s-line">&nbsp;</div>
+                <div class="s-line">{{ $kia['officer_name'] ?? '' }}&nbsp;</div>
             </div>
         </td>
     </tr>
