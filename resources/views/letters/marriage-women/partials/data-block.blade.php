@@ -1,4 +1,4 @@
-@php $upper = $upper ?? true; @endphp
+@php $upper = $upper ?? false; @endphp
 <div class="section">
     <div class="section-title bold">{{ $title }}</div>
     <table class="dbrows">
@@ -6,7 +6,7 @@
             <tr>
                 <td class="lbl">{{ $label }}</td>
                 <td class="sep">:</td>
-                <td class="val">{{ filled($value) ? ($upper ? mb_strtoupper($value) : $value) : '' }}</td>
+                <td class="val">{{ filled($value) ? $value : '' }}</td>
             </tr>
         @endforeach
     </table>

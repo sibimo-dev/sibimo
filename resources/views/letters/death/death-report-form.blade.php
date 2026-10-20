@@ -39,7 +39,7 @@
         <tr><td>3.</td><td>Tempat/Tanggal Lahir</td><td>:</td><td class="write">{{ $death[$parent['key']]['birth_place_date'] ?? '' }}</td></tr>
         <tr><td>4.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death[$parent['key']]['occupation'] ?? '' }}</td></tr>
         <tr><td>5.</td><td>Alamat</td><td>:</td><td class="write">{{ $death[$parent['key']]['address'] ?? '' }}</td></tr>
-        <tr><td>6.</td><td>Kewarganegaraan</td><td>:</td><td class="write"></td></tr>
+        <tr><td>6.</td><td>Kewarganegaraan</td><td>:</td><td class="write">{{ $death[$parent['key']]['nationality'] ?? '' }}</td></tr>
     </table>
 </div>
 @endforeach

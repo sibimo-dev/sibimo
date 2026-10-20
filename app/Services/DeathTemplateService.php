@@ -120,24 +120,81 @@ class DeathTemplateService
             'nik' => $this->value($form, ['nik_jenazah', 'deceased_nik']) ?: $request->applicant_nik,
             'name' => $this->value($form, ['nama_jenazah', 'deceased_name']) ?: $request->applicant_name,
             'gender' => $this->value($form, ['jenis_kelamin_jenazah', 'deceased_gender']),
-            'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place']),
-            'birth_date' => $this->date($this->value($form, ['tanggal_lahir_jenazah', 'deceased_birth_date'])),
-            'birth_place_date' => $this->value($form, ['ttl_jenazah', 'deceased_birth_place_date']),
-            'age' => $this->value($form, ['umur_jenazah', 'deceased_age']),
+            'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place', 'birth_place_deceased']),
+            'birth_date' => $this->date($this->value($form, ['tanggal_lahir_jenazah', 'deceased_birth_date', 'birth_date_deceased'])),
+            'birth_place_date' => $this->birthPlaceDate($form, 'jenazah', ['deceased', 'deceased_']),
+            'age' => $this->value($form, ['umur_jenazah', 'deceased_age', 'age_jenazah']),
             'religion' => $this->value($form, ['agama_jenazah', 'deceased_religion']),
             'occupation' => $this->value($form, ['pekerjaan_jenazah', 'deceased_occupation']),
             'address' => $this->value($form, ['alamat_jenazah', 'deceased_address']),
             'birth_order' => $this->value($form, ['anak_ke_jenazah', 'deceased_birth_order']),
-            'death_date' => $this->value($form, ['meninggal_hari_tanggal', 'deceased_death_date']),
+            'death_date' => $this->date($this->value($form, ['meninggal_hari_tanggal', 'tanggal_meninggal', 'death_date', 'deceased_death_date'])),
+            'death_day' => $this->value($form, ['death_day', 'hari_meninggal']),
             'death_time' => $this->value($form, ['jam_meninggal', 'deceased_death_time']),
-            'death_place' => $this->value($form, ['lokasi_meninggal', 'tempat_kematian', 'deceased_death_place']),
-            'death_city' => $this->value($form, ['kota_tempat_meninggal', 'deceased_death_city']),
-            'cause' => $this->value($form, ['sebab_kematian', 'deceased_death_cause']),
-            'relation' => $this->value($form, ['yang_menerangkan', 'deceased_relation']),
+            'death_place' => $this->value($form, ['death_place', 'lokasi_meninggal', 'tempat_meninggal', 'tempat_kematian', 'deceased_death_place']),
+            'death_location' => $this->value($form, ['death_location', 'tempat_kematian', 'deceased_death_location'])
+                ?: $this->value($form, ['death_place', 'lokasi_meninggal', 'deceased_death_place']),
+            'death_city' => $this->value($form, ['death_city', 'death_regency', 'kota_tempat_meninggal', 'kab_kota_meninggal', 'deceased_death_city']),
+            'cause' => $this->value($form, ['death_cause', 'sebab_kematian', 'deceased_death_cause']),
+            'cause_detail' => $this->value($form, ['death_cause_detail', 'rincian_sebab', 'detail_sebab_kematian']),
+            'relation' => $this->value($form, ['death_informant', 'death_certified_by', 'yang_menerangkan', 'deceased_relation']),
         ];
         $death['mother'] = $this->person($form, 'ibu', ['mother']);
         $death['father'] = $this->person($form, 'ayah', ['father']);
+        foreach (['mother', 'father'] as $parent) {
+            $death[$parent]['birth_place_date'] = $this->birthPlaceDate(
+                $form,
+                $parent === 'mother' ? 'ibu' : 'ayah',
+                [$parent, $parent === 'mother' ? 'ibu' : 'ayah'],
+                $death[$parent],
+            );
+            $legacyParent = $parent === 'mother' ? 'ibu' : 'ayah';
+            $death[$parent]['rt'] = $death[$parent]['rt'] ?: $this->value($form, [$parent . '_rt', 'rt_' . $parent, 'rt_' . $legacyParent]);
+            $death[$parent]['rw'] = $death[$parent]['rw'] ?: $this->value($form, [$parent . '_rw', 'rw_' . $parent, 'rw_' . $legacyParent]);
+            $death[$parent]['address_with_rt_rw'] = $this->addressWithRtRw($death[$parent]['address'] ?? '', $death[$parent]['rt'], $death[$parent]['rw']);
+        }
+        $death['deceased']['birth_place_date'] = $this->birthPlaceDate($form, 'jenazah', ['deceased', 'deceased_'], $death['deceased']);
+        if (blank($death['deceased']['birth_place']) || blank($death['deceased']['birth_date'])) {
+            [$legacyBirthPlace, $legacyBirthDate] = $this->splitBirthPlaceDate($death['deceased']['birth_place_date']);
+            $death['deceased']['birth_place'] = $death['deceased']['birth_place'] ?: $legacyBirthPlace;
+            $death['deceased']['birth_date'] = $death['deceased']['birth_date'] ?: $legacyBirthDate;
+        }
+        $death['deceased']['nationality'] = $this->value($form, ['kewarganegaraan_jenazah', 'deceased_nationality']);
+        $death['deceased']['death_day'] = $death['deceased']['death_day'] ?: $this->weekday($death['deceased']['death_date']);
+        $death['hamlet_name'] = $this->value($form, ['hamlet_name', 'nama_padukuhan']);
+        $death['hamlet_head_name'] = $this->value($form, ['hamlet_head_name', 'dukuh_name', 'nama_dukuh', 'nama_kepala_dukuh']);
         $death['reporter'] = $this->person($form, 'pelapor', ['reporter']);
+        foreach ([
+            'name' => ['nama', 'name'],
+            'birth_place' => ['tempat_lahir', 'birth_place'],
+            'birth_date' => ['tanggal_lahir', 'birth_date'],
+            'gender' => ['jenis_kelamin', 'gender'],
+            'marital_status' => ['status_perkawinan', 'marital_status'],
+            'religion' => ['agama', 'religion'],
+            'occupation' => ['pekerjaan', 'occupation'],
+            'address' => ['alamat', 'address'],
+            'destination' => ['travel_to', 'pergi_ke', 'destination'],
+        ] as $field => $keys) {
+            if (blank($death['reporter'][$field] ?? null)) {
+                $death['reporter'][$field] = $this->value($form, $keys);
+            }
+        }
+        $death['reporter']['birth_date'] = $this->date($death['reporter']['birth_date'] ?? null);
+        $death['reporter']['birth_place_date'] = $this->birthPlaceDate(
+            $form,
+            'pelapor',
+            ['reporter', 'pelapor'],
+            $death['reporter'],
+        );
+        $death['reporter']['phone'] = $this->value($form, ['reporter_phone', 'applicant_phone', 'phone', 'phone_number', 'nomor_hp', 'kontak_pelapor'])
+            ?: $request->applicant_phone;
+        $death['reporter']['email'] = $this->value($form, ['reporter_email', 'applicant_email', 'email', 'email_pelapor']);
+        $death['reporter']['relationship'] = $this->value($form, ['reporter_relation', 'reporter_relationship', 'hubungan_pelapor', 'hubungan_dengan_yang_meninggal', 'deceased_relation']);
+        $death['reporter']['rt'] = $death['reporter']['rt'] ?: $this->value($form, ['rt_pelapor', 'reporter_rt', 'rt']);
+        $death['reporter']['rw'] = $death['reporter']['rw'] ?: $this->value($form, ['rw_pelapor', 'reporter_rw', 'rw']);
+        $death['reporter']['address_with_rt_rw'] = $this->addressWithRtRw($death['reporter']['address'] ?? '', $death['reporter']['rt'], $death['reporter']['rw']);
+        $death['reporter']['marital_status'] = $death['reporter']['marital_status'] ?: $this->value($form, ['status_perkawinan']);
+        $death['reporter']['destination'] = $death['reporter']['destination'] ?: $this->value($form, ['travel_to', 'pergi_ke', 'destination']);
         foreach ([
             'nik' => $request->applicant_nik,
             'name' => $request->applicant_name,
@@ -147,19 +204,55 @@ class DeathTemplateService
                 $death['reporter'][$key] = $fallback;
             }
         }
+        $death['reporter']['address_with_rt_rw'] = $this->addressWithRtRw(
+            $death['reporter']['address'] ?? '',
+            $death['reporter']['rt'] ?? '',
+            $death['reporter']['rw'] ?? '',
+        );
         $death['reporter']['report_date'] = $this->value($form, ['tanggal_lapor', 'report_date']);
         $death['witnesses'] = [
-            $this->person($form, 'saksi_1', ['witness_1']),
-            $this->person($form, 'saksi_2', ['witness_2']),
+            $this->person($form, 'saksi_1', ['witness_1', 'witness1']),
+            $this->person($form, 'saksi_2', ['witness_2', 'witness2']),
         ];
         $death['attorney'] = [
             'grantor' => $this->person($form, 'pemberi_kuasa', ['grantor']),
             'attorney' => $this->person($form, 'penerima_kuasa', ['attorney']),
         ];
+        foreach (['name' => ['name', 'nama'], 'occupation' => ['occupation', 'pekerjaan'], 'address' => ['address', 'alamat']] as $field => $keys) {
+            if (blank($death['attorney']['grantor'][$field] ?? null)) {
+                $death['attorney']['grantor'][$field] = $this->value($form, $keys);
+            }
+        }
+        $statementBirthPlaceDate = $this->value($form, [
+            'ttl_pemberi_pernyataan', 'pemberi_pernyataan_ttl', 'ttl_pelapor', 'pelapor_ttl',
+            'statement_birth_place_date', 'birth_place_date_statement',
+        ]) ?: ($death['reporter']['birth_place_date'] ?? '');
+        $statementAge = $this->value($form, [
+            'umur_pemberi_pernyataan', 'pemberi_pernyataan_umur', 'umur_pelapor', 'pelapor_umur',
+            'reporter_age', 'age',
+        ]) ?: ($death['reporter']['age'] ?? '');
+        if (blank($statementAge) && filled($death['reporter']['birth_date'] ?? null)) {
+            try {
+                $birthDate = Carbon::createFromFormat('!d-m-Y', (string) $death['reporter']['birth_date']);
+                $asOf = $request->authorized_at ?? now();
+                $statementAge = $birthDate->diff($asOf)->y;
+            } catch (\Throwable) {
+                $statementAge = '';
+            }
+        }
         $death['statement'] = [
-            'name' => $this->value($form, ['nama_pemberi_pernyataan', 'nama_pelapor']) ?: $request->applicant_name,
-            'nik' => $this->value($form, ['nik_pemberi_pernyataan', 'nik_pelapor']) ?: $request->applicant_nik,
-            'address' => $this->value($form, ['alamat_pemberi_pernyataan', 'alamat_pelapor']) ?: $request->applicant_address,
+            'name' => $this->value($form, ['nama_pemberi_pernyataan', 'nama_pelapor', 'statement_name'])
+                ?: ($death['reporter']['name'] ?? $request->applicant_name),
+            'nik' => $this->value($form, ['nik_pemberi_pernyataan', 'nik_pelapor', 'statement_nik'])
+                ?: ($death['reporter']['nik'] ?? $request->applicant_nik),
+            'birth_place_date' => $this->normalizeBirthPlaceDate($statementBirthPlaceDate),
+            'age' => $statementAge,
+            'occupation' => $this->value($form, [
+                'pekerjaan_pemberi_pernyataan', 'pemberi_pernyataan_pekerjaan', 'pekerjaan_pelapor',
+                'pelapor_pekerjaan', 'reporter_occupation', 'occupation',
+            ]) ?: ($death['reporter']['occupation'] ?? ''),
+            'address' => $this->value($form, ['alamat_pemberi_pernyataan', 'alamat_pelapor', 'statement_address'])
+                ?: ($death['reporter']['address'] ?? $request->applicant_address),
             'relationship' => $this->value($form, ['hubungan_pelapor']),
         ];
 
@@ -263,15 +356,17 @@ class DeathTemplateService
         $person = [
             'nik' => '', 'name' => '', 'gender' => '', 'birth_place' => '',
             'birth_date' => '', 'birth_place_date' => '', 'age' => '',
-            'religion' => '', 'occupation' => '', 'address' => '',
-            'birth_order' => '', 'report_date' => '',
+            'religion' => '', 'occupation' => '', 'nationality' => '', 'marital_status' => '',
+            'address' => '', 'address_with_rt_rw' => '', 'rt' => '', 'rw' => '',
+            'birth_order' => '', 'report_date' => '', 'phone' => '', 'email' => '',
+            'relationship' => '', 'destination' => '',
         ];
 
         return [
             'family' => ['kk_number' => '', 'head_name' => ''],
             'deceased' => array_merge($person, [
-                'death_date' => '', 'death_time' => '', 'death_place' => '',
-                'death_city' => '', 'cause' => '', 'relation' => '',
+                'death_date' => '', 'death_day' => '', 'death_time' => '', 'death_place' => '',
+                'death_location' => '', 'death_city' => '', 'cause' => '', 'cause_detail' => '', 'relation' => '',
             ]),
             'mother' => $person,
             'father' => $person,
@@ -279,33 +374,179 @@ class DeathTemplateService
             'witnesses' => [$person, $person],
             'attorney' => ['grantor' => $person, 'attorney' => $person],
             'selamatan' => array_fill_keys(['3', '7', '40', '100', '365', '730', '1000'], ''),
-            'statement' => ['name' => '', 'nik' => '', 'address' => '', 'relationship' => ''],
+            'statement' => [
+                'name' => '', 'nik' => '', 'birth_place_date' => '', 'age' => '',
+                'occupation' => '', 'address' => '', 'relationship' => '',
+            ],
+            'hamlet_name' => '',
+            'hamlet_head_name' => '',
         ];
     }
 
     private function person(array $form, string $prefix, array $aliases = []): array
     {
-        // Setiap kolom harus membaca key miliknya sendiri. Sebelumnya daftar
-        // alias seluruh kolom digabung sekaligus, sehingga semua kolom
-        // menemukan nilai pertama (nik_*) dan menampilkan NIK.
-        $get = function (string $field, array $extra = []) use ($form, $prefix): mixed {
-            $keys = [$field . '_' . $prefix, $prefix . '_' . $field];
-            foreach ($aliases as $alias) {
-                $keys[] = $field . '_' . $alias;
-                $keys[] = $alias . '_' . $field;
+        $prefixes = array_values(array_unique([$prefix, ...$aliases]));
+        $keysFor = static function (array $fieldNames) use ($prefixes): array {
+            $keys = [];
+            foreach ($prefixes as $candidatePrefix) {
+                foreach ($fieldNames as $fieldName) {
+                    $keys[] = $candidatePrefix . '_' . $fieldName;
+                    $keys[] = $fieldName . '_' . $candidatePrefix;
+                }
             }
-            return $this->value($form, array_merge($keys, $extra));
+
+            return $keys;
         };
+        $get = fn (array $fieldNames): mixed => $this->value($form, $keysFor($fieldNames));
+        $birthPlace = $get(['birth_place', 'birthplace', 'tempat_lahir', 'tempat_kelahiran']);
+        $birthDate = $this->date($get(['birth_date', 'tanggal_lahir']));
+        $address = $get(['address', 'alamat']);
+        $rt = $get(['rt']);
+        $rw = $get(['rw']);
 
         return [
-            'nik' => $get('nik', ['nik_' . $prefix]),
-            'name' => $get('nama', ['name_' . $prefix]),
-            'gender' => $get('jenis_kelamin', ['gender_' . $prefix]),
-            'birth_place_date' => $get('ttl', ['birth_place_date_' . $prefix]),
-            'age' => $get('umur', ['age_' . $prefix]),
-            'occupation' => $get('pekerjaan', ['occupation_' . $prefix]),
-            'address' => $get('alamat', ['address_' . $prefix]),
+            'nik' => $get(['nik', 'national_id']),
+            'name' => $get(['name', 'nama', 'full_name']),
+            'gender' => $get(['gender', 'jenis_kelamin']),
+            'birth_place' => $birthPlace,
+            'birth_date' => $birthDate,
+            'birth_place_date' => $get(['birth_place_date', 'birthplace_date', 'ttl', 'tempat_tanggal_lahir'])
+                ?: $this->joinBirthPlaceDate($birthPlace, $birthDate),
+            'age' => $get(['age', 'umur']),
+            'religion' => $get(['religion', 'agama']),
+            'occupation' => $get(['occupation', 'pekerjaan']),
+            'nationality' => $get(['nationality', 'citizenship', 'kewarganegaraan']),
+            'marital_status' => $get(['marital_status', 'status_perkawinan']),
+            'address' => $address,
+            'address_with_rt_rw' => $this->addressWithRtRw($address, $rt, $rw),
+            'rt' => $rt,
+            'rw' => $rw,
+            'phone' => $get(['phone', 'phone_number', 'nomor_hp', 'kontak']),
+            'email' => $get(['email']),
+            'relationship' => $get(['relationship', 'relation', 'hubungan']),
+            'destination' => $get(['destination', 'pergi_ke']),
+            'birth_order' => $get(['birth_order', 'anak_ke']),
+            'report_date' => $get(['report_date', 'tanggal_lapor']),
         ] + ($aliases ? ['role' => $aliases[0]] : []);
+    }
+
+    private function birthPlaceDate(array $form, string $legacyPrefix, array $prefixes, array $person = []): string
+    {
+        $keys = [];
+        $keys[] = 'ttl_' . $legacyPrefix;
+        $keys[] = $legacyPrefix . '_ttl';
+        $keys[] = 'birth_place_date_' . $legacyPrefix;
+        $keys[] = $legacyPrefix . '_birth_place_date';
+        foreach ($prefixes as $prefix) {
+            $keys[] = 'ttl_' . $prefix;
+            $keys[] = $prefix . '_ttl';
+            $keys[] = 'birth_place_date_' . $prefix;
+            $keys[] = $prefix . '_birth_place_date';
+            $keys[] = 'birthplace_date_' . $prefix;
+        }
+        $combined = $this->value($form, $keys);
+        if (filled($combined)) {
+            return $this->normalizeBirthPlaceDate($combined);
+        }
+
+        $place = $person['birth_place'] ?? $this->value($form, [
+            $legacyPrefix === 'jenazah' ? 'deceased_birth_place' : $legacyPrefix . '_birth_place',
+            $legacyPrefix === 'jenazah' ? 'tempat_kelahiran_jenazah' : 'tempat_lahir_' . $legacyPrefix,
+        ]);
+        $date = $person['birth_date'] ?? $this->date($this->value($form, [
+            $legacyPrefix === 'jenazah' ? 'deceased_birth_date' : $legacyPrefix . '_birth_date',
+            $legacyPrefix === 'jenazah' ? 'tanggal_lahir_jenazah' : 'tanggal_lahir_' . $legacyPrefix,
+        ]));
+
+        return $this->joinBirthPlaceDate($place, $date);
+    }
+
+    private function joinBirthPlaceDate(mixed $place, mixed $date): string
+    {
+        return implode(', ', array_values(array_filter([
+            trim((string) $place),
+            trim((string) $date),
+        ], static fn (string $value): bool => $value !== '')));
+    }
+
+    private function splitBirthPlaceDate(mixed $value): array
+    {
+        $value = trim((string) $value);
+        if (preg_match('/^(.*?)\s+((?:[[:alpha:]]{3}\s+)?[[:alpha:]]{3}\s+\d{1,2}\s+\d{4}\s+\d{2}:\d{2}:\d{2}(?:\s+GMT[+-]\d{4})?(?:\s*\([^)]*\))?)$/iu', $value, $matches)) {
+            $date = $this->date($matches[2]);
+            if ($date !== '' && preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
+                return [rtrim(trim($matches[1]), " ,，\t\n\r\0\x0B"), $date];
+            }
+        }
+        if (preg_match('/^(.*?)[,，]\s*(.+\b\d{4}(?:\s+\d{2}:\d{2}:\d{2})?(?:\s+GMT[+-]\d{4})?(?:\s*\([^)]*\))?)$/iu', $value, $matches)) {
+            $date = $this->date($matches[2]);
+            if ($date !== '' && preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
+                return [trim($matches[1]), $date];
+            }
+        }
+        $value = preg_replace('/\s*\([^)]*\)\s*$/u', '', $value) ?? $value;
+        $value = preg_replace('/\s+GMT[+-]\d{4}\s*$/i', '', $value) ?? $value;
+        if (preg_match('/^(.*?)[,，]\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})$/u', $value, $matches)) {
+            try {
+                $date = Carbon::createFromFormat('!d-m-Y', str_replace('/', '-', $matches[2]))->format('d-m-Y');
+            } catch (\Throwable) {
+                $date = $matches[2];
+            }
+
+            return [trim($matches[1]), $date];
+        }
+
+        if (preg_match('/^(.*?)[,，]\s*(\d{1,2}\s+[[:alpha:]\p{L}]+\s+\d{4})$/u', $value, $matches)) {
+            return [trim($matches[1]), $this->date($matches[2])];
+        }
+
+        return ['', ''];
+    }
+
+    private function normalizeBirthPlaceDate(mixed $value): string
+    {
+        $value = trim((string) $value);
+        [$place, $date] = $this->splitBirthPlaceDate($value);
+
+        return $place !== '' && $date !== '' ? $this->joinBirthPlaceDate($place, $date) : $value;
+    }
+
+    private function addressWithRtRw(mixed $address, mixed $rt, mixed $rw): string
+    {
+        $address = preg_replace('/\s+/u', ' ', trim((string) $address)) ?? trim((string) $address);
+        $rt = trim((string) $rt);
+        $rw = trim((string) $rw);
+        if ($rt === '' && $rw === '') {
+            return $address;
+        }
+
+        $rtRw = implode(' / ', array_values(array_filter([
+            $rt !== '' ? 'RT ' . $rt : '',
+            $rw !== '' ? 'RW ' . $rw : '',
+        ])));
+        if ($address === '') {
+            return $rtRw;
+        }
+
+        if (preg_match('/\bRT\s*[:.]?\s*' . preg_quote($rt, '/') . '/i', $address)
+            && ($rw === '' || preg_match('/\bRW\s*[:.]?\s*' . preg_quote($rw, '/') . '/i', $address))) {
+            return $address;
+        }
+
+        return $address . ', ' . $rtRw;
+    }
+
+    private function weekday(mixed $date): string
+    {
+        if (! filled($date)) {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($date)->locale('id')->translatedFormat('l');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     private function value(array $form, array $keys): mixed
@@ -348,9 +589,26 @@ class DeathTemplateService
         }
 
         try {
+            if ($value instanceof \DateTimeInterface) {
+                return Carbon::instance($value)->format('d-m-Y');
+            }
+
+            // Date.toString() browser payloads append both GMT offset and a
+            // human timezone label; remove the label before parsing.
+            $value = preg_replace('/\s*\([^)]*\)\s*$/u', '', trim((string) $value)) ?? trim((string) $value);
+
+            // Some older form records stored the browser's complete local
+            // date string. Parse its calendar components explicitly so PHP
+            // does not leave it unformatted or shift it across timezones.
+            if (preg_match('/^(?:[[:alpha:]]{3}\s+)?([[:alpha:]]{3})\s+(\d{1,2})\s+(\d{4})\s+\d{2}:\d{2}:\d{2}\s+GMT[+-]\d{4}$/i', $value, $matches)) {
+                return Carbon::createFromFormat('!M d Y', "{$matches[1]} {$matches[2]} {$matches[3]}")->format('d-m-Y');
+            }
+
             return Carbon::parse($value)->format('d-m-Y');
         } catch (\Throwable) {
-            return (string) $value;
+            $value = preg_replace('/\s*\([^)]*\)\s*$/u', '', trim((string) $value)) ?? trim((string) $value);
+
+            return (string) (preg_replace('/\s+GMT[+-]\d{4}\s*$/i', '', $value) ?? $value);
         }
     }
 

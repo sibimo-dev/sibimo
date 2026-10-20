@@ -25,7 +25,7 @@
     </tr>
     <tr><td colspan="2" class="sign-space" style="height:26pt">&nbsp;</td></tr>
     <tr>
-        <td class="sign-l bold">{{ mb_strtoupper($m['bride_father']['name'] ?? '') }}</td>
-        <td class="sign-r bold" style="text-align:left; padding-left:130pt">{{ mb_strtoupper($m['bride_mother']['name'] ?? '') }}</td>
+        <td class="sign-l bold">{{ $m['bride_father']['name'] ?? '' }}</td>
+        <td class="sign-r bold" style="text-align:left; padding-left:130pt">{{ $m['bride_mother']['name'] ?? '' }}</td>
     </tr>
 </table>

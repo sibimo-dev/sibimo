@@ -19,13 +19,37 @@ class LetterTypeDocumentSeeder extends Seeder
         $baseCodes = [
             'SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK',
             'SPKTP', 'SPKIA', 'SRBBM', 'SPPWNI', 'SGC', 'SPPD', 'SPBNI', 'SPTMDK',
-            'SKDPAK', 'SMLPI', 'SPSKG', 'SBP', 'SKDN', 'SPU', 'PNP', 'N1P', 'N2P',
+            'SKDPAK', 'SMLPI', 'SPSKG', 'SKDN', 'SPU', 'PNP', 'N1P', 'N2P',
             'N4P', 'N5P', 'N6P', 'SKWNP', 'SKWHP', 'SPTKP', 'SPBMLP', 'SKNNP', 'PNL',
             'N1L', 'N4L', 'PAK', 'FPK', 'LK', 'SKKL', 'SKAK', 'PPKT', 'LKLD',
             'SPTJMPSI', 'SKKM',
         ];
 
         $documentsByCode = array_fill_keys($baseCodes, $baseDocuments);
+
+        // Surat penawaran sewa gedung memakai dokumen dari pihak penyewa dan
+        // bukti kepemilikan aset, bukan persyaratan umum KK/KTP.
+        $documentsByCode['SPSKG'] = [
+            ['name' => 'Surat permintaan dari pihak penyewa'],
+            [
+                'name' => 'Dokumen kepemilikan aset (sertifikat / Letter C)',
+                'is_required' => false,
+            ],
+        ];
+
+        // Surat Balasan Penelitian menerima dokumen yang ditampilkan pada
+        // form admin, bukan persyaratan umum KK/KTP.
+        $documentsByCode['SBP'] = [
+            ['name' => 'Surat pengantar penelitian dari instansi / perguruan tinggi'],
+            [
+                'name' => 'Proposal / rencana penelitian',
+                'is_required' => false,
+            ],
+            [
+                'name' => 'Fotokopi/foto KTP pemohon',
+                'is_required' => false,
+            ],
+        ];
 
         $documentsByCode['SPKTP'] = array_merge($baseDocuments, [
             ['name' => 'Pass Photo (3x4)'],
@@ -103,6 +127,19 @@ class LetterTypeDocumentSeeder extends Seeder
 
         if (!$letterTypeId) {
             throw new RuntimeException("Letter type [{$code}] must exist before its documents are seeded.");
+        }
+
+        // Older SBP configurations created generic KK/KTP requirements.
+        // Keep those rows for historical attachment references, but stop
+        // treating them as required after switching to research documents.
+        if ($code === 'SBP') {
+            DB::table('letter_type_documents')
+                ->where('letter_type_id', $letterTypeId)
+                ->whereIn('document_name', [
+                    'Fotocopy Kartu Keluarga (KK)',
+                    'Fotocopy Kartu Tanda Penduduk (KTP)',
+                ])
+                ->update(['is_required' => false]);
         }
 
         foreach ($documents as $document) {

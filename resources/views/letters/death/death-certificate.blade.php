@@ -32,16 +32,16 @@
     <tr><td>7.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['deceased']['occupation'] ?? '' }}</td></tr>
     <tr><td>8.</td><td>Alamat</td><td>:</td><td class="write">{{ $death['deceased']['address'] ?? '' }}</td></tr>
     <tr><td>9.</td><td>Anak ke (dengan huruf)</td><td>:</td><td class="write">{{ $death['deceased']['birth_order'] ?? '' }}</td></tr>
-    <tr><td>10.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_date'] ?? '' }}</td></tr>
+    <tr><td>10.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_day'] ?? '' }} {{ $death['deceased']['death_date'] ?? '' }}</td></tr>
     <tr><td>11.</td><td>Tempat Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }} / {{ $death['deceased']['death_city'] ?? '' }}</td></tr>
     <tr><td>12.</td><td>Jam</td><td>:</td><td class="write">{{ $death['deceased']['death_time'] ?? '' }} WIB</td></tr>
     <tr><td>13.</td><td>Sebab</td><td>:</td><td class="write">{{ $death['deceased']['cause'] ?? '' }}</td></tr>
-    <tr><td>14.</td><td>Tempat Kematian</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }}</td></tr>
+    <tr><td>14.</td><td>Tempat Kematian</td><td>:</td><td class="write">{{ $death['deceased']['death_location'] ?? $death['deceased']['death_place'] ?? '' }}</td></tr>
     <tr><td>15.</td><td>Yang Menerangkan</td><td>:</td><td class="write">{{ $death['deceased']['relation'] ?? '' }}</td></tr>
 </table></div>
 @foreach ([['key' => 'mother', 'title' => 'IBU'], ['key' => 'father', 'title' => 'AYAH']] as $parent)
 <div class="legacy-section"><div class="legacy-section-title">{{ $parent['title'] }}</div><table class="legacy-table compact">
-    <tr><td style="width:18pt">1.</td><td class="label">NIK</td><td class="colon">:</td><td class="write">{{ $death[$parent['key']]['nik'] ?? '' }}</td></tr><tr><td>2.</td><td>Nama Lengkap</td><td>:</td><td class="write">{{ $death[$parent['key']]['name'] ?? '' }}</td></tr><tr><td>3.</td><td>Tempat/Tanggal Lahir</td><td>:</td><td class="write">{{ $death[$parent['key']]['birth_place_date'] ?? '' }}</td></tr><tr><td>4.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death[$parent['key']]['occupation'] ?? '' }}</td></tr><tr><td>5.</td><td>Alamat (Sesuai KTP)</td><td>:</td><td class="write">{{ $death[$parent['key']]['address'] ?? '' }}</td></tr><tr><td>6.</td><td>Kewarganegaraan</td><td>:</td><td class="write"></td></tr>
+    <tr><td style="width:18pt">1.</td><td class="label">NIK</td><td class="colon">:</td><td class="write">{{ $death[$parent['key']]['nik'] ?? '' }}</td></tr><tr><td>2.</td><td>Nama Lengkap</td><td>:</td><td class="write">{{ $death[$parent['key']]['name'] ?? '' }}</td></tr><tr><td>3.</td><td>Tempat/Tanggal Lahir</td><td>:</td><td class="write">{{ $death[$parent['key']]['birth_place_date'] ?? '' }}</td></tr><tr><td>4.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death[$parent['key']]['occupation'] ?? '' }}</td></tr><tr><td>5.</td><td>Alamat (Sesuai KTP)</td><td>:</td><td class="write">{{ $death[$parent['key']]['address'] ?? '' }}</td></tr><tr><td>6.</td><td>Kewarganegaraan</td><td>:</td><td class="write">{{ $death[$parent['key']]['nationality'] ?? '' }}</td></tr>
 </table></div>
 @endforeach
 <div class="legacy-section"><div class="legacy-section-title">PELAPOR</div><table class="legacy-table compact">

@@ -28,8 +28,8 @@
     </tr>
     <tr><td colspan="2" class="sign-space">&nbsp;</td></tr>
     <tr>
-        <td class="sign-l bold">{{ mb_strtoupper($m['groom']['name'] ?? '') }}</td>
-        <td class="sign-r bold" style="text-align:left; padding-left:130pt; padding-right:0">{{ mb_strtoupper($m['bride']['name'] ?? '') }}</td>
+        <td class="sign-l bold">{{ $m['groom']['name'] ?? '' }}</td>
+        <td class="sign-r bold" style="text-align:left; padding-left:130pt; padding-right:0">{{ $m['bride']['name'] ?? '' }}</td>
     </tr>
 </table>
 </div>

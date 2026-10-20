@@ -7,9 +7,9 @@
 <table class="legacy-table compact">
     <tr><td class="label">NIK</td><td class="colon">:</td><td class="write">{{ $death['statement']['nik'] ?? '' }}</td></tr>
     <tr><td>Nama Lengkap</td><td>:</td><td class="write">{{ $death['statement']['name'] ?? '' }}</td></tr>
-    <tr><td>Tempat/Tanggal Lahir</td><td>:</td><td class="write"></td></tr>
-    <tr><td>Umur</td><td>:</td><td class="write"></td></tr>
-    <tr><td>Pekerjaan</td><td>:</td><td class="write"></td></tr>
+    <tr><td>Tempat/Tanggal Lahir</td><td>:</td><td class="write">{{ $death['statement']['birth_place_date'] ?? '' }}</td></tr>
+    <tr><td>Umur</td><td>:</td><td class="write">{{ $death['statement']['age'] ?? '' }}</td></tr>
+    <tr><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['statement']['occupation'] ?? '' }}</td></tr>
     <tr><td>Alamat</td><td>:</td><td class="write">{{ $death['statement']['address'] ?? '' }}</td></tr>
 </table>
 <p style="margin-top:9pt">Dengan ini Menyatakan dan melaporkan dengan sebenar-benarnya bahwa</p>

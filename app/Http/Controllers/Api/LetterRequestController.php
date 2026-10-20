@@ -31,6 +31,9 @@ class LetterRequestController extends Controller
             'applicant_nik',
             'applicant_phone',
             'applicant_address',
+            // Read form_data only to derive the list-safe PNP identity below;
+            // it is hidden again before the collection is serialized.
+            'form_data',
             'letter_type_id',
             'status',
             'signature_type',
@@ -44,13 +47,41 @@ class LetterRequestController extends Controller
             'authorized_at',
         ])
         ->with([
-            'letterType:letter_type_id,letter_name,category,blade_view,signer_id',
+            'letterType:letter_type_id,code,letter_name,category,blade_view,signer_id',
             'letterType.signer:staff_id,name,position',
             'verifier:user_id,full_name',
             'authorizedSigner:staff_id,name,position',
         ])
         ->latest('submitted_at')
-        ->get();
+        ->get()
+        ->map(function (LetterRequest $letterRequest): LetterRequest {
+            if (strtoupper((string) $letterRequest->letterType?->code) === 'PNP') {
+                $form = (array) ($letterRequest->form_data ?? []);
+                $pick = static function (array $keys) use ($form): ?string {
+                    foreach ($keys as $key) {
+                        $value = $form[$key] ?? null;
+                        if (is_scalar($value) && trim((string) $value) !== '') {
+                            return (string) $value;
+                        }
+                    }
+
+                    return null;
+                };
+
+                // List API does not expose complete form_data. Return only the
+                // bride identity needed by admin tables, preserving stored
+                // applicant_* values and keeping the rest of the form private.
+                $letterRequest->setAttribute('applicant_display', [
+                    'name' => $pick(['bride_name', 'brideName', 'nama_catin_putri', 'nama_mempelai_wanita']),
+                    'nik' => $pick(['bride_nik', 'brideNik', 'nik_catin_putri', 'nik_mempelai_wanita']),
+                    'address' => $pick(['bride_address', 'brideAddress', 'alamat_catin_putri', 'alamat_mempelai_wanita']),
+                ]);
+            }
+
+            $letterRequest->makeHidden('form_data');
+
+            return $letterRequest;
+        });
 
         return response()->json([
             'success' => true,
@@ -62,19 +93,36 @@ class LetterRequestController extends Controller
     // Dipanggil dari LetterCreateView.vue -- step 3 "Cetak Surat"
     public function store(Request $request): JsonResponse
     {
+        $request->validate([
+            'letter_type_id' => ['required', 'exists:letter_types,letter_type_id'],
+        ]);
+        $letterType = LetterType::findOrFail($request->input('letter_type_id'));
+        $isResearchResponse = strtoupper((string) $letterType->code) === 'SBP';
+
         $validated = $request->validate([
             'letter_type_id' => ['required', 'exists:letter_types,letter_type_id'],
             'citizen_id' => ['nullable', 'exists:citizens,citizen_id'],
             'applicant_name' => ['required', 'string', 'max:100'],
-            'applicant_nik' => ['required', 'string', 'size:16'],
+            'applicant_nik' => $isResearchResponse
+                ? ['nullable', 'string', 'size:16']
+                : ['required', 'string', 'size:16'],
             'applicant_phone' => ['nullable', 'string', 'max:15'],
-            'applicant_address' => ['required', 'string'],
+            'applicant_address' => $isResearchResponse
+                ? ['nullable', 'string']
+                : ['required', 'string'],
             'notes' => ['nullable', 'string'],
             'source' => ['nullable', Rule::in(['Online', 'Manual (Kelurahan)'])],
             'form_data' => ['nullable', 'array'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*.label' => ['nullable', 'string', 'max:225'],
+            'attachments.*.file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
 
-        $letterType = LetterType::findOrFail($validated['letter_type_id']);
+        // applicant_nik is non-nullable in the existing table. SBP is an
+        // institutional research reply and does not require resident identity.
+        if ($isResearchResponse && ($validated['applicant_nik'] ?? null) === null) {
+            $validated['applicant_nik'] = '';
+        }
         $this->validateFormData(
             $letterType,
             $validated['form_data'] ?? [],
@@ -85,8 +133,53 @@ class LetterRequestController extends Controller
         $validated['signature_type'] = $letterType->signature_method === 'digital' ? 'digital' : 'manual';
         $validated['source'] = $validated['source'] ?? 'Manual (Kelurahan)';
 
-        $letterRequest = LetterRequest::create($validated);
-        $letterRequest->load(['citizen', 'letterType.signer']);
+        $uploadedPaths = [];
+        try {
+            $letterRequest = DB::transaction(function () use ($validated, $request, $letterType, &$uploadedPaths): LetterRequest {
+                $letterRequest = LetterRequest::create($validated);
+                $documents = $letterType->documents()->get();
+
+                $attachmentLabels = $request->input('attachments', []);
+                foreach ($request->file('attachments', []) as $index => $attachment) {
+                    $file = $attachment['file'] ?? null;
+                    if (! $file) {
+                        continue;
+                    }
+
+                    $document = $this->matchAttachmentDocument(
+                        (string) data_get($attachmentLabels, "{$index}.label", ''),
+                        $documents,
+                    );
+
+                    if (! $document) {
+                        throw ValidationException::withMessages([
+                            'attachments' => 'Jenis dokumen lampiran tidak dapat dicocokkan dengan tipe surat.',
+                        ]);
+                    }
+
+                    $path = $file->store("letter-requests/{$letterRequest->letter_request_id}", 'public');
+                    $uploadedPaths[] = $path;
+
+                    LetterRequestAttachment::create([
+                        'letter_request_id' => $letterRequest->letter_request_id,
+                        'letter_type_document_id' => $document->letter_type_document_id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => Storage::disk('public')->url($path),
+                        'uploaded_at' => now(),
+                    ]);
+                }
+
+                return $letterRequest;
+            });
+        } catch (\Throwable $exception) {
+            foreach ($uploadedPaths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $exception;
+        }
+
+        $letterRequest->load(['citizen', 'letterType.signer', 'attachments.letterTypeDocument']);
 
         if ($letterRequest->source === 'Online') {
             event(new NotificationAvailable(
@@ -102,6 +195,40 @@ class LetterRequestController extends Controller
             'message' => 'Permohonan surat berhasil dibuat.',
             'data' => $letterRequest,
         ], 201);
+    }
+
+    /** Match admin upload labels to this letter type's configured document rows. */
+    private function matchAttachmentDocument(string $label, $documents)
+    {
+        $normalize = static fn (string $value): string => preg_replace('/[^a-z0-9]/', '', mb_strtolower($value)) ?? '';
+        $needle = $normalize($label);
+
+        foreach ($documents as $document) {
+            if ($needle !== '' && $normalize((string) $document->document_name) === $needle) {
+                return $document;
+            }
+        }
+
+        $ignoredWords = ['fotokopi', 'fotocopy', 'foto', 'surat', 'dokumen', 'orang', 'orangtua', 'dan', 'yang', 'untuk', 'dari', 'bagi', 'dua', 'el'];
+        $words = static fn (string $value): array => preg_split('/[^a-z0-9]+/', mb_strtolower($value), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $labelWords = array_values(array_diff(array_filter($words($label), fn (string $word): bool => strlen($word) > 2), $ignoredWords));
+        $bestDocument = null;
+        $bestScore = 0;
+
+        foreach ($documents as $document) {
+            $documentWords = array_values(array_diff(array_filter($words((string) $document->document_name), fn (string $word): bool => strlen($word) > 2), $ignoredWords));
+            $score = count(array_intersect($labelWords, $documentWords));
+            if ($score > $bestScore) {
+                $bestDocument = $document;
+                $bestScore = $score;
+            }
+        }
+        if ($bestScore > 0) {
+            return $bestDocument;
+        }
+
+        return $documents->first(fn ($document) => ! $document->is_required
+            && preg_match('/lain|pendukung|tambahan/i', (string) $document->document_name));
     }
 
     public function show(int $letterRequest_id): JsonResponse

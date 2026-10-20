@@ -10,9 +10,9 @@
       $lease['building_address']  alamat gedung (form: lease_building_address)
       $lease['duration_years']    lama sewa dalam tahun (form: lease_duration_years)
 
-    Bagian yang di sumber contoh disensor (nama/jabatan/alamat penandatangan,
-    tanggal berakhir sewa, nominal & terbilang sewa) sengaja TIDAK diambil dari
-    $form — ditulis sebagai dot placeholder langsung sesuai arahan.
+    Data penyewa, objek, dan nilai penawaran berasal dari normalisasi SPSKG di
+    LetterPdfService. Titik hanya menjadi fallback bila pengajuan lama belum
+    memiliki nilai pada field tersebut.
 --}}
 @extends('letters.layouts.base')
 
@@ -59,38 +59,40 @@
 
     <p class="gap-top-lg">Kepada</p>
     <p>Yth. {{ $recipient }}</p>
+    @if (filled($lease['tenant_name'] ?? null))
+        <p>{{ $lease['tenant_name'] }}</p>
+    @endif
     <p>Di {{ $recipient_address }}</p>
 
     <p class="gap-top-lg">Dengan hormat,</p>
     <p class="gap-top" style="text-align: justify">
-        Yang bertanda tangan di bawah ini Kalurahan Bimomartani, Kapanewon Ngemplak,
-        Kabupaten Sleman,
+        Pihak penyewa dalam surat ini diwakili oleh:
     </p>
 
     <table class="data signer-data" style="margin-top: 9pt">
         <tr>
             <td class="lbl">Nama</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $lease['tenant_representative'] ?? '' }}</td>
         </tr>
         <tr>
             <td class="lbl">Jabatan</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $lease['tenant_position'] ?? '' }}</td>
         </tr>
         <tr>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $lease['tenant_address'] ?? '' }}</td>
         </tr>
     </table>
 
     <p class="gap-top-lg" style="text-align: justify">
         Sesuai dengan surat perjanjian sewa gedung, bahwa berakhirnya masa sewa
         {{ $lease['building_name'] }} yang beralamat di {{ $lease['building_address'] }}
-        adalah tanggal ........................., dengan ini kami tawarkan sewa
-        bangunan per tahun Rp ......................... (.........................)
-        dengan lama sewa {{ $lease['duration_years'] }} tahun.
+        adalah tanggal {{ $lease['previous_end_date'] ?: '.........................' }}, dengan ini kami tawarkan sewa
+        bangunan per tahun {{ $lease['price_per_year'] ?: 'Rp .........................' }}
+        dengan lama sewa {{ $lease['duration_years'] ?: '.........................' }} tahun.
     </p>
 
     <p class="gap-top">

@@ -13,7 +13,7 @@
 
 <p>Dilangsungkan secara <b>WALI HAKIM</b>.<br>
 Adapun sebab dilangsungkannya dengan Wali Hakim karena:<br>
-<b>{{ mb_strtoupper($m['judge_guardian_reason'] ?? '') }}</b></p>
+<b>{{ $m['judge_guardian_reason'] ?? '' }}</b></p>
 
 <p>Demikian surat keterangan ini dibuat untuk digunakan seperlunya.</p>
 @include($pp.'signature')

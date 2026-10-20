@@ -44,12 +44,12 @@
         <td class="sign-r" style="text-align:left; padding-left:50pt; padding-right:0; white-space:nowrap">{{ $signature['city'] }}, {{ $signature['date_long'] }}</td>
     </tr>
     <tr>
-        <td class="sign-l">{{ mb_strtoupper($signer['position'] ?? '') }}</td>
+        <td class="sign-l">{{ $signer['position'] ?? '' }}</td>
         <td class="sign-r" style="text-align:left; padding-left:50pt; padding-right:0">Yang Menyatakan</td>
     </tr>
     <tr><td colspan="2" class="sign-space">&nbsp;</td></tr>
     <tr>
         <td class="sign-l bold">{{ $signer['name'] }}</td>
-        <td class="sign-r bold" style="text-align:left; padding-left:50pt; padding-right:0">{{ mb_strtoupper($b['name'] ?? '') }}</td>
+        <td class="sign-r bold" style="text-align:left; padding-left:50pt; padding-right:0">{{ $b['name'] ?? '' }}</td>
     </tr>
 </table>

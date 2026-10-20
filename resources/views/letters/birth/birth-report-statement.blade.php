@@ -34,7 +34,7 @@
     $r = $birth['reporter'];
     $nb = "\u{00A0}";
     $withUnit = fn ($v, string $unit) => filled($v) ? $v . ' ' . $unit : '';
-    $villageTail = str_repeat($nb, 3) . $village;
+    $villageTail = '';
 
     // ===== Pengganti partial 'rows': render tabel "No. Label : Nilai" dari array baris.
     //   nonum : baris tanpa nomor (tetap ada titik dua)
@@ -105,7 +105,7 @@
         ['label' => 'Tempat Dilahirkan', 'value' => $c['delivery_place']],
         ['label' => 'Alamat RS/RB', 'value' => $c['delivery_address']],
         ['label' => 'Tempat Kelahiran', 'value' => $c['birth_place']],
-        ['label' => 'Hari/Tgl,Bln,Th', 'value' => trim(($c['birth_day_name'] ?? '') . ' / ' . ($c['birth_date'] ?? ''))],
+        ['label' => 'Hari/Tgl,Bln,Th', 'value' => implode(', ', array_filter([$c['birth_day_name'] ?? null, $c['birth_date'] ?? null]))],
         ['label' => 'Waktu /Jam Kelahiran', 'value' => filled($c['birth_time']) ? $c['birth_time'] . ' WIB' : ''],
         ['label' => 'Jenis Kelahiran', 'value' => $c['plurality']],
         ['label' => 'Kelahiran Ke', 'value' => $c['birth_order']],

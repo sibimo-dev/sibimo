@@ -13,8 +13,8 @@
 <p style="margin-top:12pt">Assalamu'alaikum wr. wb<br>
 Dengan hormat kami mengajukan permohonan kehendak nikah untuk atas nama :</p>
 <table class="rows" style="margin-left:0; margin-top:4pt">
-    <tr><td class="lbl" style="width:110pt">Calon suami</td><td class="sep">:</td><td>{{ mb_strtoupper($m['groom']['name'] ?? '') }}</td></tr>
-    <tr><td class="lbl" style="width:110pt">Calon istri</td><td class="sep">:</td><td>{{ mb_strtoupper($m['bride']['name'] ?? '') }}</td></tr>
+    <tr><td class="lbl" style="width:110pt">Calon suami</td><td class="sep">:</td><td>{{ $m['groom']['name'] ?? '' }}</td></tr>
+    <tr><td class="lbl" style="width:110pt">Calon istri</td><td class="sep">:</td><td>{{ $m['bride']['name'] ?? '' }}</td></tr>
     <tr>
         <td class="lbl" style="width:110pt">Hari/tanggal/jam</td>
         <td class="sep">:</td>
@@ -48,7 +48,7 @@ Dengan hormat kami mengajukan permohonan kehendak nikah untuk atas nama :</p>
     <tr><td colspan="2" class="sign-space">&nbsp;</td></tr>
     <tr>
         <td class="sign-l"><span class="blank">&nbsp;</span></td>
-        <td class="sign-r">{{ mb_strtoupper($m['bride']['name'] ?? '') }}</td>
+        <td class="sign-r">{{ $m['bride']['name'] ?? '' }}</td>
     </tr>
 </table>
 </div>

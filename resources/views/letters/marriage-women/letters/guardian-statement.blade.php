@@ -15,7 +15,7 @@
 @include($pp.'rows', ['rows' => PersonRows::make($m['groom'], 'Bin')])
 
 <p>Adapun hubungan <i>wali nasab</i> tersebut dengan calon mempelai wanita adalah sebagai:</p>
-<p class="bold">{{ filled($g['relation']) ? mb_strtoupper($g['relation']) : '.' }}</p>
+<p class="bold">{{ filled($g['relation']) ? $g['relation'] : '.' }}</p>
 @if (strtoupper((string) $g['relation']) !== 'AYAH KANDUNG')
     <p>Karena {{ filled($g['reason']) ? $g['reason'] : '.' }}</p>
 @endif

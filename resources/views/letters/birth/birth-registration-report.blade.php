@@ -16,7 +16,7 @@
     $w = $birth['witnesses'];
 
     $withUnit = fn ($v, string $unit) => filled($v) ? $v . ' ' . $unit : '';
-    $placeDate = fn (array $p) => ($p['birth_place'] ?? '') . $gap(10) . ($p['birth_date'] ?? '');
+    $placeDate = fn (array $p) => implode(', ', array_filter([$p['birth_place'] ?? null, $p['birth_date'] ?? null]));
     $ageText = fn (array $p) => 'Umur : ' . $withUnit($p['age'] ?? null, 'Tahun');
     $reportDate = $r['report_date'] ?: '..........................';
 
@@ -91,7 +91,7 @@
         ['label' => 'Jenis Kelamin', 'value' => $c['gender'] . $gap(30) . 'Anak Ke : ' . $c['birth_order']],
         ['label' => 'Tempat Dilahirkan', 'value' => $c['delivery_place']],
         ['label' => 'Tempat Kelahiran', 'value' => 'Kabupaten/Kota' . $gap(6) . $c['birth_place']],
-        ['label' => 'Hari/Tanggal Lahir', 'value' => trim(($c['birth_day_name'] ?? '') . $gap(20) . ($c['birth_date'] ?? ''))],
+        ['label' => 'Hari/Tanggal Lahir', 'value' => implode(', ', array_filter([$c['birth_day_name'] ?? null, $c['birth_date'] ?? null]))],
         ['label' => 'Pukul', 'value' => $gap(14) . (filled($c['birth_time']) ? $c['birth_time'] . $gap(4) . 'WIB' : '')],
         ['label' => 'Jenis Kelahiran', 'value' => $c['plurality']],
         ['label' => 'Penolong Kelahiran', 'value' => $c['birth_attendant']],
@@ -105,7 +105,7 @@
         ['label' => 'Tempat/Tanggal Lahir', 'value' => $placeDate($m) . $gap(6) . $ageText($m)],
         ['label' => 'Pekerjaan', 'value' => $m['occupation']],
         ['label' => 'Alamat', 'value' => $m['address']],
-        ['cont' => true, 'label' => '', 'value' => $m['rt_rw'] . $gap(4) . $village],
+        ['cont' => true, 'label' => '', 'value' => $m['rt_rw']],
         ['label' => 'Kewarganegaraan', 'value' => $m['nationality'] . $gap(20) . 'Kebangsaan : ' . ($m['ethnicity'] ?? '')],
         ['label' => 'Kawin Sah di', 'value' => 'KUA/Gereja' . $gap(6) . ':' . $gap(4) . ($mar['record_place'] ?? '')],
         ['nonum' => true, 'label' => 'Nomor Akta Nikah/Akta Perkawinan', 'value' => $mar['certificate_number']],
@@ -119,7 +119,7 @@
         ['label' => 'Tempat/Tanggal Lahir', 'value' => $placeDate($f) . $gap(6) . $ageText($f)],
         ['label' => 'Pekerjaan', 'value' => $f['occupation']],
         ['label' => 'Alamat', 'value' => $f['address']],
-        ['cont' => true, 'label' => '', 'value' => $f['rt_rw'] . $gap(4) . $village],
+        ['cont' => true, 'label' => '', 'value' => $f['rt_rw']],
         ['label' => 'Kewarganegaraan', 'value' => $f['nationality'] . $gap(20) . 'Kebangsaan : ' . ($f['ethnicity'] ?? '')],
     ], 110) !!}
 
@@ -129,7 +129,7 @@
         ['label' => 'Nama Lengkap', 'value' => $r['name']],
         ['label' => 'Tempat/Tanggal Lahir', 'value' => $placeDate($r) . $gap(6) . $ageText($r)],
         ['label' => 'Pekerjaan', 'value' => $r['occupation']],
-        ['label' => 'Alamat', 'value' => $r['address'] . $gap(6) . $village],
+        ['label' => 'Alamat', 'value' => $r['address']],
     ], 110) !!}
 
     <table class="split" style="margin-top: 2pt; page-break-inside: avoid;">

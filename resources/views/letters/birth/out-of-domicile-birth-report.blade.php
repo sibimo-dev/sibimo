@@ -13,10 +13,10 @@
     $w = $birth['witnesses'];
 
     $nb = "\u{00A0}";
-    $placeDate = fn (array $p) => ($p['birth_place'] ?? '') . ' / ' . ($p['birth_date'] ?? '');
+    $placeDate = fn (array $p) => implode(', ', array_filter([$p['birth_place'] ?? null, $p['birth_date'] ?? null]));
     // satuan (Tahun/Kg/Cm) selalu tercetak; kalau nilai kosong, satuan digeser sedikit ke kanan
     $withUnit = fn ($v, string $unit) => (filled($v) ? $v . $nb : str_repeat($nb, 12)) . $unit;
-    $villageTail = str_repeat($nb, 3) . $village;
+    $villageTail = '';
 
     // ===== Pengganti partial 'rows': render tabel "No. Label : Nilai" dari array baris.
     //   $rows  : array of ['label' => ..., 'value' => ..., 'nonum' => bool, 'cont' => bool]
@@ -95,7 +95,7 @@
             ['label' => 'Jenis Kelamin', 'value' => $c['gender']],
             ['label' => 'Tempat Dilahirkan', 'value' => $c['delivery_place']],
             ['label' => 'Tempat Kelahiran', 'value' => $c['birth_place']],
-            ['label' => 'Hari/Tgl,Bln,Th', 'value' => trim(($c['birth_day_name'] ?? '') . ' / ' . ($c['birth_date'] ?? ''))],
+            ['label' => 'Hari/Tgl,Bln,Th', 'value' => implode(', ', array_filter([$c['birth_day_name'] ?? null, $c['birth_date'] ?? null]))],
             ['label' => 'Waktu /Jam Kelahiran', 'value' => filled($c['birth_time']) ? $c['birth_time'] . ' WIB' : ''],
             ['label' => 'Jenis Kelahiran', 'value' => $c['plurality']],
             ['label' => 'Anak ke ( dng huruf )', 'value' => $c['birth_order']],

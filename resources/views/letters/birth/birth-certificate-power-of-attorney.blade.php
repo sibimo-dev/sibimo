@@ -53,9 +53,6 @@
                 <td class="lbl">{{ $label }}</td><td class="sep">:</td>
                 <td class="val">{{ $value }}</td>
             </tr>
-            @if ($label === 'Alamat')
-                <tr><td></td><td></td><td class="val">{{ $village }}</td></tr>
-            @endif
         @endforeach
     </table>
 
@@ -66,9 +63,6 @@
                 <td class="lbl">{{ $label }}</td><td class="sep">:</td>
                 <td class="val">{{ $value }}</td>
             </tr>
-            @if ($label === 'Alamat')
-                <tr><td></td><td></td><td class="val">{{ $village }}</td></tr>
-            @endif
         @endforeach
     </table>
 

@@ -39,8 +39,7 @@
         <tr>
             <td class="s-label">Jabatan</td>
             <td class="s-sep">:</td>
-            {{-- Jabatan sengaja dikosongkan (diisi tulis tangan / nanti dari SIBIMO). --}}
-            <td>&nbsp;</td>
+            <td>{{ $signature['position'] }}&nbsp;</td>
         </tr>
     </table>
 

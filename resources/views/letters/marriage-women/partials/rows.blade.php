@@ -10,7 +10,7 @@
             <td class="no">@if ($marker === 'number'){{ $start + $loop->index }}.@elseif ($marker === 'bullet')&bull;@endif</td>
             <td class="lbl {{ $bold && $loop->first ? 'bold' : '' }}">{{ $label }}</td>
             <td class="sep">:</td>
-            <td class="val {{ $bold && $loop->first ? 'bold' : '' }}">{{ filled($value) ? mb_strtoupper($value) : '' }}</td>
+            <td class="val {{ $bold && $loop->first ? 'bold' : '' }}">{{ filled($value) ? $value : '' }}</td>
         </tr>
     @endforeach
 </table>

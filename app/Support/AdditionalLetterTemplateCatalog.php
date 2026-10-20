@@ -190,6 +190,7 @@ final class AdditionalLetterTemplateCatalog
             self::field('Nama Anggota Keluarga', 'member_name', 'text', 'Data Keluarga'),
             self::field('NIK Anggota Keluarga', 'member_nik', 'text', 'Data Keluarga'),
             self::field('Nomor KK', 'kk_number', 'text', 'Data Keluarga'),
+            self::field('Daftar Anggota Keluarga', 'members', 'textarea', 'Data Keluarga'),            
             self::field('Tanggal Pengisian', 'submission_date', 'date'),
         ];
     }

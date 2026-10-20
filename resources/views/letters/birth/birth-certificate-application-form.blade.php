@@ -23,8 +23,7 @@
     .no-box { border: 1px solid #000; height: 34pt; padding: 3pt 5pt; font-weight: bold; font-size: 8pt; }
     table.doc-list { width: 100%; border-collapse: collapse; margin-top: 3pt; }
     table.doc-list td { vertical-align: middle; height: 15pt; }
-    table.doc-list td.doc-box { width: 22pt; border: 1px solid #000; text-align: center; font-weight: bold; }
-    table.doc-list td.doc-label { padding-left: 8pt; }
+    table.doc-list td.doc-box { width: 22pt; border: 1px solid #000; text-align: center; font-weight: bold; font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; }    table.doc-list td.doc-label { padding-left: 8pt; }
     .dash-line { display: inline-block; border-bottom: 1px dashed #000; }
 @endsection
 
@@ -63,7 +62,7 @@
             $no = $numbered ? ($n++) . '.' : '';
             $sep = $bare ? '' : ':';
             $label = e($row['label'] ?? '');
-            $value = e($row['value'] ?? '');
+            $value = ! empty($row['raw']) ? ($row['value'] ?? '') : e($row['value'] ?? '');
             $html .= '<tr>'
                 . '<td class="r-no">' . $no . '</td>'
                 . '<td class="r-lbl" style="width: ' . $lw . 'pt;">' . $label . '</td>'
@@ -127,7 +126,7 @@
         ['label' => 'Nama Lengkap', 'value' => $r['name']],
         ['label' => 'Alamat', 'value' => $r['address']],
         ['label' => 'NoHP/Telepon/Email Aktif', 'value' => $r['phone']],
-        ['label' => 'Tanggal Permohonan', 'value' => $r['application_date']],
+        ['label' => 'Tanggal Permohonan', 'value' => $r['application_date'] ?: now()->locale('id')->translatedFormat('d F Y')],
         ['label' => 'Tanda Tangan Pemohon', 'value' => ''],
     ], 160) !!}
 
@@ -135,7 +134,7 @@
     <table class="doc-list">
         @foreach ($documents as $key => $label)
             <tr>
-                <td class="doc-box">{{ in_array($key, $birth['documents'], true) ? 'X' : '' }}</td>
+                <td class="doc-box">{!! in_array($key, $birth['documents'], true) ? '&#10004;' : '' !!}</td>
                 <td class="doc-label">{{ $label }}</td>
             </tr>
         @endforeach

@@ -12,11 +12,11 @@
     <tr><td>Tempat/Tgl. Lahir</td><td>:</td><td class="write">{{ $death['reporter']['birth_place_date'] ?? '' }}</td></tr>
     <tr><td>NIK</td><td>:</td><td class="write">{{ $death['reporter']['nik'] ?? '' }}</td></tr>
     <tr><td>Jenis Kelamin</td><td>:</td><td class="write">{{ $death['reporter']['gender'] ?? '' }}</td></tr>
-    <tr><td>Status Perkawinan</td><td>:</td><td class="write"></td></tr>
+    <tr><td>Status Perkawinan</td><td>:</td><td class="write">{{ $death['reporter']['marital_status'] ?? '' }}</td></tr>
     <tr><td>Agama</td><td>:</td><td class="write">{{ $death['reporter']['religion'] ?? '' }}</td></tr>
     <tr><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['reporter']['occupation'] ?? '' }}</td></tr>
     <tr><td>Alamat</td><td>:</td><td class="write">{{ $death['reporter']['address'] ?? '' }}</td></tr>
-    <tr><td>Pergi ke</td><td>:</td><td class="write"></td></tr>
+    <tr><td>Pergi ke</td><td>:</td><td class="write">{{ $death['reporter']['destination'] ?? '' }}</td></tr>
     <tr><td>Keperluan</td><td>:</td><td class="write">Mohon Akta Kematian Untuk {{ $death['deceased']['name'] ?? '' }}</td></tr>
 </table>
 <p style="margin-top:4pt;text-align:justify">berhubung maksud yang bersangkutan, mohon yang berwenang memberikan bantuan serta fasilitas seperlunya</p>
