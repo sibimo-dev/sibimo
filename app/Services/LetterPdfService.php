@@ -369,6 +369,17 @@ class LetterPdfService
             $signerPosition = 'KAMITUWA';
         }
 
+        // F-1.01 menuliskan jabatan "Kepala Desa", sedangkan data signer
+        // aplikasi memakai jabatan "Lurah". Keduanya adalah penandatangan
+        // yang sama pada konteks formulir ini.
+        if (
+            $templateSlug === 'family-biodata-form'
+            && $this->signedByLurah($signerPosition)
+            && blank($form['village_head_name'] ?? null)
+        ) {
+            $form['village_head_name'] = $signer?->name;
+        }
+
         $isLurah = $this->signedByLurah($signerPosition);
         $ktpMedia = $code === 'SPKTP' ? $this->ktpMedia($letterRequest) : [];
 
@@ -2001,14 +2012,12 @@ class LetterPdfService
 
         if ($code === 'SPKIAF') {
             // F-1.02 memakai data pemohon dan pilihan checkbox, bukan data
-            // biodata KIA. Default ini juga menjaga request lama tetap terisi
-            // setelah kode SPKIAF dipindahkan ke template F-1.02.
+            // biodata KIA. Jangan memberi default pilihan di sini: pilihan
+            // harus mengikuti checkbox yang dikirim oleh frontend.
             $set($form, 'applicant_name', ['nama_pemohon', 'name']);
             $set($form, 'applicant_nik', ['nik_pemohon', 'nik']);
             $set($form, 'kk_number', ['nomor_kk']);
             $set($form, 'application_date', ['tanggal_pengajuan', 'submission_date']);
-            $form['application_types'] ??= ['child_card_new'];
-            $form['attached_documents'] ??= ['old_family_card', 'occurrence_evidence'];
         }
 
         if ($code === 'SRBBM') {
@@ -2106,7 +2115,7 @@ class LetterPdfService
 
             // Fallback camelCase → snake (sudah dikonversi normalizeKeys, tapi tambahkan fallback eksplisit)
             $form['origin'] ??= [
-                'kk_number'     => $form['kk_number'] ?? $form['kk_number'] ?? $form['nomor_kk'] ?? null,
+                'kk_number'     => $form['origin_kk_number'] ?? $form['originKkNumber'] ?? $form['kk_number'] ?? $form['nomor_kk'] ?? null,
                 'head_of_family'=> $form['origin_head_of_family'] ?? $form['head_of_family'] ?? $form['nama_kepala_keluarga'] ?? null,
                 'address'       => $form['origin_address'] ?? $form['alamat_asal'] ?? null,
                 'rt'            => $form['origin_rt'] ?? $form['rt_asal'] ?? null,
@@ -2119,6 +2128,9 @@ class LetterPdfService
                 'postal_code'   => $form['origin_postal_code'] ?? $form['kode_pos_asal'] ?? null,
                 'phone'         => $form['origin_phone'] ?? $form['telepon_asal'] ?? null,
             ];
+            if (blank($form['origin']['kk_number'] ?? null)) {
+                $form['origin']['kk_number'] = $form['origin_kk_number'] ?? $form['originKkNumber'] ?? null;
+            }
             $form['destination'] ??= [
                 'kk_number'     => $form['destination_kk_number'] ?? null,
                 'head_of_family'=> $form['destination_head_of_family'] ?? null,
@@ -2133,6 +2145,14 @@ class LetterPdfService
                 'postal_code'   => $form['destination_postal_code'] ?? $form['kode_pos_tujuan'] ?? null,
                 'phone'         => $form['destination_phone'] ?? $form['telepon_tujuan'] ?? null,
             ];
+
+            // F.1-31 menampilkan dusun/dukuh/kampung pada header formulir,
+            // bukan di blok alamat tujuan. Field frontend baru memakai key
+            // `hamlet`; fallback ini tetap mendukung payload lama.
+            $form['hamlet'] ??= $form['destination']['hamlet']
+                ?? $form['destination_hamlet']
+                ?? $form['dusun_tujuan']
+                ?? null;
 
             // Ambil alasan pindah dari camelCase Vue atau fallback Indonesia
             $set($form, 'relocation_reason', ['alasan_pindah', 'relocationReason']);
@@ -2186,12 +2206,24 @@ class LetterPdfService
         }
 
         if ($code === 'SPKIAF') {
-            $form['application_types'] ??= array_values(array_filter(array_merge(
-                (array) ($form['kk_types'] ?? []),
-                (array) ($form['ktp_el_types'] ?? []),
-                (array) ($form['kia_types'] ?? []),
-                (array) ($form['data_change_types'] ?? []),
-            )));
+            // Frontend publik/admin lama mengirim pilihan dalam empat field
+            // kelompok. Pertahankan dukungan itu, tetapi jangan pernah
+            // mengisi pilihan contoh/default karena akan membuat checkbox PDF
+            // terlihat tercentang padahal tidak dipilih user.
+            if (empty($form['application_types'])) {
+                $form['application_types'] = array_values(array_filter(array_merge(
+                    (array) ($form['kk_types'] ?? $form['kkTypes'] ?? []),
+                    (array) ($form['ktp_el_types'] ?? $form['ktpElTypes'] ?? []),
+                    (array) ($form['kia_types'] ?? $form['kiaTypes'] ?? []),
+                    (array) ($form['data_change_types'] ?? $form['dataChangeTypes'] ?? []),
+                )));
+            }
+
+            if (empty($form['attached_documents'])) {
+                $form['attached_documents'] = array_values(array_filter(
+                    (array) ($form['requirements'] ?? []),
+                ));
+            }
         }
 
         if (in_array($code, ['SGC'], true)) {
