@@ -240,9 +240,29 @@
                         <td style="width:51.2%;">Spesimen Tanda Tangan</td>
                     </tr>
                     <tr>
-                        <td><div style="height:46pt;"></div></td>
+                        <td style="text-align:center; vertical-align:middle;">
+                            @if (!empty($ktp_media['photo']))
+                                <img
+                                    src="{{ $ktp_media['photo'] }}"
+                                    alt="Pas foto pemohon"
+                                    style="display:block; width:auto; max-width:72pt; max-height:44pt; margin:0 auto; object-fit:contain;"
+                                >
+                            @else
+                                <div style="height:46pt;"></div>
+                            @endif
+                        </td>
                         <td colspan="3"></td>
-                        <td><div style="height:46pt;"></div></td>
+                        <td style="text-align:center; vertical-align:middle;">
+                            @if (!empty($ktp_media['signature_specimen']))
+                                <img
+                                    src="{{ $ktp_media['signature_specimen'] }}"
+                                    alt="Spesimen tanda tangan pemohon"
+                                    style="display:block; width:auto; max-width:120pt; max-height:44pt; margin:0 auto; object-fit:contain;"
+                                >
+                            @else
+                                <div style="height:46pt;"></div>
+                            @endif
+                        </td>
                     </tr>
                 </table>
                 <table style="width:100%; border-collapse:collapse;">
@@ -282,13 +302,17 @@
             <td style="width:42%; padding-left:10pt;">
                 <table class="signature-inner">
                     <tr>
-                        <td style="text-align:left;">
+                        <td style="text-align:left; vertical-align:top; line-height:1.2;">
+                            Camat
                             <div style="height:40pt;"></div>
-                            Camat<br>{{ $signers['district_head_name'] ?? '' }}
+                            <div style="margin-top:3pt;">{{ $signers['district_head_name'] ?? '' }}</div>
                         </td>
-                        <td style="text-align:right;">
-                            <div style="height:40pt;"></div>
-                            Mengetahui Lurah<br>{{ $signers['village_officer_name'] ?? '' }}
+                        <td style="text-align:right; vertical-align:top; line-height:1.2;">
+                            Mengetahui Lurah
+                            <div style="height:40pt; text-align:center;">
+                                @include('letters.partials.signature-image')
+                            </div>
+                            <div style="margin-top:3pt;">{{ $signers['village_officer_name'] ?? '' }}</div>
                         </td>
                     </tr>
                 </table>

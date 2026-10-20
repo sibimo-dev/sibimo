@@ -334,7 +334,12 @@ class LetterPdfService
 
     public function viewData(LetterRequest $letterRequest, ?string $template = null): array
     {
-        $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
+        $letterRequest->loadMissing([
+            'citizen',
+            'letterType.signer',
+            'authorizedSigner',
+            'attachments.letterTypeDocument',
+        ]);
 
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $form = $letterRequest->form_data ?? [];
@@ -365,6 +370,7 @@ class LetterPdfService
         }
 
         $isLurah = $this->signedByLurah($signerPosition);
+        $ktpMedia = $code === 'SPKTP' ? $this->ktpMedia($letterRequest) : [];
 
         // Pengkondisian Kop:
         // - Kalau yang ttd lurah: otomatis pakai kop lurah ($kalurahanKop = false)
@@ -691,6 +697,8 @@ class LetterPdfService
                 'type' => $this->normalizeApplicationType($form['application_type'] ?? null),
                 'dukuh_name' => $form['dukuh_name'] ?? null,
             ],
+
+            'ktp_media' => $ktpMedia,
 
             // ktp-application-form.blade.php menggunakan $signers['hamlet_head_name'], dsb.
             'signers' => [
@@ -2703,6 +2711,44 @@ class LetterPdfService
     }
 
     /**
+     * Ambil gambar yang diunggah untuk formulir SPKTP berdasarkan nama tipe
+     * dokumennya, bukan berdasarkan ID database yang bisa berbeda antar data.
+     */
+    private function ktpMedia(LetterRequest $letterRequest): array
+    {
+        $media = [
+            'photo' => null,
+            'signature_specimen' => null,
+        ];
+
+        foreach ($letterRequest->attachments ?? [] as $attachment) {
+            $documentName = strtolower((string) ($attachment->letterTypeDocument?->document_name ?? ''));
+            $image = $this->imageBase64($attachment->file_path);
+
+            if (!$image) {
+                continue;
+            }
+
+            if (
+                !$media['photo']
+                && preg_match('/pas\s*foto|pass\s*photo|pasphoto|foto|photo/i', $documentName)
+            ) {
+                $media['photo'] = $image;
+                continue;
+            }
+
+            if (
+                !$media['signature_specimen']
+                && preg_match('/spesimen|tanda\s*tangan|cap\s*jempol/i', $documentName)
+            ) {
+                $media['signature_specimen'] = $image;
+            }
+        }
+
+        return $media;
+    }
+
+    /**
      * Konversi path / URL gambar tanda tangan ke data-URI base64 agar bisa
      * dirender DomPDF tanpa request HTTP tambahan.
      * Mendukung:
@@ -2712,6 +2758,11 @@ class LetterPdfService
      * Return null jika file tidak ditemukan / tidak bisa dibaca.
      */
     private function signatureImageBase64(?string $pathOrUrl): ?string
+    {
+        return $this->imageBase64($pathOrUrl);
+    }
+
+    private function imageBase64(?string $pathOrUrl): ?string
     {
         if (blank($pathOrUrl)) {
             return null;
@@ -2742,6 +2793,10 @@ class LetterPdfService
         }
 
         $mime = mime_content_type($absPath) ?: 'image/png';
+
+        if (! str_starts_with($mime, 'image/')) {
+            return null;
+        }
 
         return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
     }
