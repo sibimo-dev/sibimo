@@ -387,7 +387,9 @@
                     <div>Dikeluarkan Oleh</div>
                     <div>a.n Kepala Dinas Kependudukan Dan Pencatatan Sipil Kabupaten Sleman</div>
                     <div>Lurah</div>
-                    <div class="ttd-space"></div>
+                    <div class="ttd-space">
+                        @include('letters.partials.signature-image')
+                    </div>
                     <div>{{ $signature['name'] }}</div>
                 </td>
             </tr>
