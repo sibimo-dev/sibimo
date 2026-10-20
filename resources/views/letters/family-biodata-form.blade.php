@@ -423,7 +423,11 @@
             </td>
             <td style="width:19%;">
                 <div class="ttd-title">Mengetahui,<br>Kepala Desa</div>
-                <div class="ttd-space"></div>
+                <div class="ttd-space">
+                    {{-- Lurah = Kepala Desa pada formulir F-1.01. TTD hanya
+                         diisi setelah otorisasi dengan metode digital. --}}
+                    @include('letters.partials.signature-image')
+                </div>
                 {{ $f('village_head_name') }}
             </td>
             <td style="width:19%;">

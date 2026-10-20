@@ -13,8 +13,10 @@
     table.frow td { font-size: 8.6pt; padding: 0.5pt 0; }
     .judul-form { margin-top: 1.5pt; font-size: 10pt; }
     .subjudul-form { font-size: 8.6pt; }
-    table.ttd-multi .ttd-space { height: 22pt; }
-    table.ttd-multi td { font-size: 8.6pt; }
+    table.ttd-multi td { font-size: 8.6pt; vertical-align: top; text-align: center; }
+    table.ttd-multi .ttd-space { height: 40pt; }
+    table.ttd-multi .ttd-space .signature-image { max-width: 100pt; max-height: 36pt; }
+    table.ttd-multi .ttd-name { display: block; margin-top: 3pt; white-space: nowrap; font-size: 7.6pt; }
 @endsection
 
 @section('content')
@@ -171,16 +173,14 @@
             <td width="33%">Pemohon</td>
         </tr>
         <tr>
-            <td><div class="ttd-space"></div>{{ $form['registration_officer'] ?? '' }}</td>
+            <td><div class="ttd-space"></div><span class="ttd-name">{{ $form['registration_officer'] ?? '' }}</span></td>
             <td>
-                @if (!empty($signature['image']))
-                    <img class="ttd-image" src="{{ $signature['image'] }}" alt="Tanda Tangan" style="max-height: 40pt; max-width: 110pt; display: block; margin: 0 auto;">
-                @else
-                    <div class="ttd-space"></div>
-                @endif
-                {{ $signature['name'] }}
+                <div class="ttd-space">
+                    @include('letters.partials.signature-image')
+                </div>
+                <span class="ttd-name">{{ $signature['name'] }}</span>
             </td>
-            <td><div class="ttd-space"></div>{{ $applicant['name'] ?? '' }}</td>
+            <td><div class="ttd-space"></div><span class="ttd-name">{{ $applicant['name'] ?? '' }}</span></td>
         </tr>
     </table>
 

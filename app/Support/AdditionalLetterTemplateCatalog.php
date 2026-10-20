@@ -433,6 +433,7 @@ final class AdditionalLetterTemplateCatalog
             self::field('Kabupaten Asal', 'origin_regency'),
             self::field('Provinsi Asal', 'origin_province'),
             self::field('Alamat Tujuan', 'destination_address', 'textarea'),
+            self::field('Dusun/Dukuh/Kampung Tujuan', 'hamlet'),
             self::field('Desa/Kalurahan Tujuan', 'destination_village'),
             self::field('Kapanewon Tujuan', 'destination_district'),
             self::field('Kabupaten Tujuan', 'destination_regency'),
