@@ -104,7 +104,9 @@
                         {{ $prefix }}<br>
                     @endforeach
                     {{ $signature['position'] ?? '' }}
-                    <div class="signature-space"></div>
+                    <div class="signature-space">
+                        @include('letters.partials.signature-image')
+                    </div>
                     <strong><u>{{ $signature['name'] ?? '' }}</u></strong>
                 </td>
             </tr>
