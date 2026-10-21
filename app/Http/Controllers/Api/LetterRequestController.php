@@ -62,13 +62,15 @@ class LetterRequestController extends Controller
     // Dipanggil dari LetterCreateView.vue -- step 3 "Cetak Surat"
     public function store(Request $request): JsonResponse
     {
+        $isOnline = $request->input('source', 'Manual (Kelurahan)') === 'Online';
+
         $validated = $request->validate([
             'letter_type_id' => ['required', 'exists:letter_types,letter_type_id'],
             'citizen_id' => ['nullable', 'exists:citizens,citizen_id'],
-            'applicant_name' => ['required', 'string', 'max:100'],
-            'applicant_nik' => ['required', 'string', 'size:16'],
+            'applicant_name' => [$isOnline ? 'required' : 'nullable', 'string', 'max:100'],
+            'applicant_nik' => [$isOnline ? 'required' : 'nullable', 'string', 'size:16'],
             'applicant_phone' => ['nullable', 'string', 'max:15'],
-            'applicant_address' => ['required', 'string'],
+            'applicant_address' => [$isOnline ? 'required' : 'nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'source' => ['nullable', Rule::in(['Online', 'Manual (Kelurahan)'])],
             'form_data' => ['nullable', 'array'],
@@ -230,7 +232,11 @@ class LetterRequestController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        if ($letterRequest->status !== 'submitted') {
+        // Data lama bisa memakai label status "Pending"/"Menunggu".
+        // Perlakukan semuanya sebagai status submitted agar tetap bisa
+        // diverifikasi, tetapi jangan membuka status yang sudah diproses.
+        $pendingStatuses = ['submitted', 'pending', 'menunggu', 'diajukan'];
+        if (! in_array(strtolower(trim((string) $letterRequest->status)), $pendingStatuses, true)) {
             throw ValidationException::withMessages([
                 'status' => 'Permohonan hanya dapat diverifikasi saat berstatus submitted.',
             ]);

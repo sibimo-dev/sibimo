@@ -395,7 +395,9 @@
 
         <tr>
             <td>
-                <div class="signature-space">&nbsp;</div>
+                <div class="signature-space">
+                    @include('letters.partials.signature-image')
+                </div>
             </td>
 
             <td>

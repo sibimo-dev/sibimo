@@ -32,6 +32,16 @@ class PublicLetterController extends Controller
         'SKWNP', 'SPTKP', 'SKWHP', 'SKNNP', 'N1P', 'N2P', 'N4P', 'N5P', 'N6P', 'PNP', 'SKBK2', 'SPBMLP',
     ];
 
+    /**
+     * Surat yang boleh dipakai dalam alur pendaftaran warga baru sebelum
+     * NIK-nya tersimpan sebagai citizen aktif.
+     *
+     * @var list<string>
+     */
+    private const NEW_RESIDENT_CODES = [
+        'SPKTP', 'SPKIAF', 'FBWNI', 'PAK', 'SKDT', 'SKTS', 'SPTTS', 'SPPWNI', 'SPPWF', 'SPTJP',
+    ];
+
     public function types(): JsonResponse
     {
         $types = LetterType::query()
@@ -80,20 +90,6 @@ class PublicLetterController extends Controller
             ->first();
 
         if (! $citizen) {
-            if ($this->publicTestMode()) {
-                $resident = $this->testResidentPayload($validated['nik']);
-
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'registered' => true,
-                        'test_mode' => true,
-                        'masked_name' => $this->maskedName($resident['fullName']),
-                        'resident' => $resident,
-                    ],
-                ]);
-            }
-
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -113,19 +109,6 @@ class PublicLetterController extends Controller
             ],
         ]);
     }
-
-    /**
-     * Kode surat yang diizinkan untuk diajukan oleh pemohon dengan NIK yang
-     * belum terdaftar di database (Layanan Umum & Pendaftaran Calon Warga Baru).
-     *
-     * @var list<string>
-     */
-    private const UNREGISTERED_NIK_CODES = [
-        // Layanan Umum (Perizinan)
-        'SKU', 'SKP', 'SKK', 'SKJG',
-        // Pendaftaran Calon Warga Baru
-        'SPKTP', 'SPKIAF', 'FBWNI', 'PAK', 'SKDT', 'SKTS', 'SPTTS', 'SPPWNI', 'SPPWF', 'SPTJP',
-    ];
 
     public function store(Request $request): JsonResponse
     {
@@ -157,15 +140,11 @@ class PublicLetterController extends Controller
             ->where('status', 'Active')
             ->first();
 
-        $isPermitFlow = ($validated['service_flow'] ?? null) === 'permit';
         $isNewResident = (bool) ($validated['is_new_resident'] ?? false);
+        $isAllowedNewResidentRegistration = $isNewResident
+            && in_array($letterType->code, self::NEW_RESIDENT_CODES, true);
 
-        $allowsUnregisteredNik = in_array($letterType->code, self::UNREGISTERED_NIK_CODES, true)
-            || $isPermitFlow
-            || $isNewResident
-            || $this->publicTestMode();
-
-        if (! $citizen && ! $allowsUnregisteredNik) {
+        if (! $citizen && ! $isAllowedNewResidentRegistration) {
             throw ValidationException::withMessages([
                 'applicant_nik' => 'NIK tidak terdaftar sebagai warga aktif.',
             ]);
@@ -407,31 +386,6 @@ class PublicLetterController extends Controller
         if ($name === '') return null;
 
         return mb_substr($name, 0, 1) . str_repeat('*', max(2, mb_strlen($name) - 1));
-    }
-
-    private function publicTestMode(): bool
-    {
-        return app()->environment(['local', 'testing'])
-            && (bool) config('services.public_letters.test_mode', false);
-    }
-
-    private function testResidentPayload(string $nik): array
-    {
-        return [
-            'nik' => $nik,
-            'familyCardNumber' => null,
-            'fullName' => 'Warga Uji',
-            'gender' => null,
-            'birthPlace' => null,
-            'birthDate' => null,
-            'address' => 'Bimomartani, Ngemplak, Sleman',
-            'ktpAddress' => 'Bimomartani, Ngemplak, Sleman',
-            'phoneNumber' => null,
-            'occupation' => null,
-            'education' => null,
-            'maritalStatus' => null,
-            'religion' => null,
-        ];
     }
 
     private function decodeFormData(mixed $value): array

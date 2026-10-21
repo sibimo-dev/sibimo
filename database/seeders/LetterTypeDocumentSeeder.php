@@ -29,6 +29,7 @@ class LetterTypeDocumentSeeder extends Seeder
 
         $documentsByCode['SPKTP'] = array_merge($baseDocuments, [
             ['name' => 'Pass Photo (3x4)'],
+            ['name' => 'Spesimen tanda tangan atau cap jempol'],
         ]);
 
         $documentsByCode['SPKIA'] = array_merge($baseDocuments, [

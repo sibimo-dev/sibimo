@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LetterRequest;
 use App\Models\LetterType;
+use App\Models\Staff;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
@@ -334,7 +335,12 @@ class LetterPdfService
 
     public function viewData(LetterRequest $letterRequest, ?string $template = null): array
     {
-        $letterRequest->loadMissing(['citizen', 'letterType.signer', 'authorizedSigner']);
+        $letterRequest->loadMissing([
+            'citizen',
+            'letterType.signer',
+            'authorizedSigner',
+            'attachments.letterTypeDocument',
+        ]);
 
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $form = $letterRequest->form_data ?? [];
@@ -364,7 +370,22 @@ class LetterPdfService
             $signerPosition = 'KAMITUWA';
         }
 
+        // F-1.01 menuliskan jabatan "Kepala Desa", sedangkan data struktur
+        // organisasi memakai jabatan "Lurah". Nama di bawah area TTD harus
+        // tetap nama Lurah, meskipun yang mengotorisasi surat adalah pejabat
+        // lain (mis. Kaur).
+        if ($templateSlug === 'family-biodata-form') {
+            $organizationLurahName = $this->organizationLurahName();
+
+            if (filled($organizationLurahName)) {
+                $form['village_head_name'] = $organizationLurahName;
+            } elseif (blank($form['village_head_name'] ?? null) && $this->signedByLurah($signerPosition)) {
+                $form['village_head_name'] = $signer?->name;
+            }
+        }
+
         $isLurah = $this->signedByLurah($signerPosition);
+        $ktpMedia = $code === 'SPKTP' ? $this->ktpMedia($letterRequest) : [];
 
         // Pengkondisian Kop:
         // - Kalau yang ttd lurah: otomatis pakai kop lurah ($kalurahanKop = false)
@@ -606,9 +627,17 @@ class LetterPdfService
             'ref_number' => $form['nomor_surat_asal'] ?? $form['ref_letter_number'] ?? $form['request_number'] ?? $form['nomor_surat_permohonan'] ?? null,
 
             // surat penawaran sewa kontrak gedung
+            'representative' => [
+                'name' => $form['representative_name'] ?? $form['representativeName'] ?? $form['nama_penawar'] ?? null,
+                'position' => $form['representative_position'] ?? $form['representativePosition'] ?? $form['jabatan_penawar'] ?? null,
+                'address' => $form['representative_address'] ?? $form['representativeAddress'] ?? $form['alamat_penawar'] ?? null,
+            ],
             'lease' => [
                 'building_name' => $form['nama_gedung'] ?? $form['lease_building_name'] ?? $form['property_name'] ?? null,
                 'building_address' => $form['alamat_gedung'] ?? $form['lease_building_address'] ?? $form['property_address'] ?? null,
+                'end_date' => $form['tanggal_berakhir_sewa_lama'] ?? $form['lease_end_date'] ?? $form['leaseEndDate'] ?? null,
+                'annual_rent' => $form['harga_sewa_per_tahun'] ?? $form['lease_annual_rent'] ?? $form['leaseAnnualRent'] ?? null,
+                'annual_rent_words' => $form['lease_annual_rent_words'] ?? $form['leaseAnnualRentWords'] ?? $form['annual_rent_words'] ?? null,
                 'duration_years' => $form['lama_sewa_tahun'] ?? $form['lease_duration_years'] ?? $form['rent_period'] ?? null,
             ],
 
@@ -691,6 +720,8 @@ class LetterPdfService
                 'type' => $this->normalizeApplicationType($form['application_type'] ?? null),
                 'dukuh_name' => $form['dukuh_name'] ?? null,
             ],
+
+            'ktp_media' => $ktpMedia,
 
             // ktp-application-form.blade.php menggunakan $signers['hamlet_head_name'], dsb.
             'signers' => [
@@ -1952,8 +1983,14 @@ class LetterPdfService
         if ($code === 'SPSKG') {
             $set($form, 'recipient_name', ['tenant_name', 'tenant_representative', 'ditujukan_kepada']);
             $set($form, 'recipient_address', ['tenant_address', 'lokasi_tujuan_surat']);
+            $set($form, 'representative_name', ['representativeName', 'nama_penawar']);
+            $set($form, 'representative_position', ['representativePosition', 'jabatan_penawar']);
+            $set($form, 'representative_address', ['representativeAddress', 'alamat_penawar']);
             $set($form, 'lease_building_name', ['property_name', 'nama_gedung']);
             $set($form, 'lease_building_address', ['property_address', 'alamat_gedung']);
+            $set($form, 'lease_end_date', ['leaseEndDate', 'tanggal_berakhir_sewa_lama']);
+            $set($form, 'lease_annual_rent', ['leaseAnnualRent', 'harga_sewa_per_tahun']);
+            $set($form, 'lease_annual_rent_words', ['leaseAnnualRentWords', 'annual_rent_words']);
             $set($form, 'lease_duration_years', ['rent_period', 'lama_sewa_tahun']);
         }
 
@@ -1993,14 +2030,12 @@ class LetterPdfService
 
         if ($code === 'SPKIAF') {
             // F-1.02 memakai data pemohon dan pilihan checkbox, bukan data
-            // biodata KIA. Default ini juga menjaga request lama tetap terisi
-            // setelah kode SPKIAF dipindahkan ke template F-1.02.
+            // biodata KIA. Jangan memberi default pilihan di sini: pilihan
+            // harus mengikuti checkbox yang dikirim oleh frontend.
             $set($form, 'applicant_name', ['nama_pemohon', 'name']);
             $set($form, 'applicant_nik', ['nik_pemohon', 'nik']);
             $set($form, 'kk_number', ['nomor_kk']);
             $set($form, 'application_date', ['tanggal_pengajuan', 'submission_date']);
-            $form['application_types'] ??= ['child_card_new'];
-            $form['attached_documents'] ??= ['old_family_card', 'occurrence_evidence'];
         }
 
         if ($code === 'SRBBM') {
@@ -2098,7 +2133,7 @@ class LetterPdfService
 
             // Fallback camelCase → snake (sudah dikonversi normalizeKeys, tapi tambahkan fallback eksplisit)
             $form['origin'] ??= [
-                'kk_number'     => $form['kk_number'] ?? $form['kk_number'] ?? $form['nomor_kk'] ?? null,
+                'kk_number'     => $form['origin_kk_number'] ?? $form['originKkNumber'] ?? $form['kk_number'] ?? $form['nomor_kk'] ?? null,
                 'head_of_family'=> $form['origin_head_of_family'] ?? $form['head_of_family'] ?? $form['nama_kepala_keluarga'] ?? null,
                 'address'       => $form['origin_address'] ?? $form['alamat_asal'] ?? null,
                 'rt'            => $form['origin_rt'] ?? $form['rt_asal'] ?? null,
@@ -2111,6 +2146,9 @@ class LetterPdfService
                 'postal_code'   => $form['origin_postal_code'] ?? $form['kode_pos_asal'] ?? null,
                 'phone'         => $form['origin_phone'] ?? $form['telepon_asal'] ?? null,
             ];
+            if (blank($form['origin']['kk_number'] ?? null)) {
+                $form['origin']['kk_number'] = $form['origin_kk_number'] ?? $form['originKkNumber'] ?? null;
+            }
             $form['destination'] ??= [
                 'kk_number'     => $form['destination_kk_number'] ?? null,
                 'head_of_family'=> $form['destination_head_of_family'] ?? null,
@@ -2125,6 +2163,14 @@ class LetterPdfService
                 'postal_code'   => $form['destination_postal_code'] ?? $form['kode_pos_tujuan'] ?? null,
                 'phone'         => $form['destination_phone'] ?? $form['telepon_tujuan'] ?? null,
             ];
+
+            // F.1-31 menampilkan dusun/dukuh/kampung pada header formulir,
+            // bukan di blok alamat tujuan. Field frontend baru memakai key
+            // `hamlet`; fallback ini tetap mendukung payload lama.
+            $form['hamlet'] ??= $form['destination']['hamlet']
+                ?? $form['destination_hamlet']
+                ?? $form['dusun_tujuan']
+                ?? null;
 
             // Ambil alasan pindah dari camelCase Vue atau fallback Indonesia
             $set($form, 'relocation_reason', ['alasan_pindah', 'relocationReason']);
@@ -2178,12 +2224,24 @@ class LetterPdfService
         }
 
         if ($code === 'SPKIAF') {
-            $form['application_types'] ??= array_values(array_filter(array_merge(
-                (array) ($form['kk_types'] ?? []),
-                (array) ($form['ktp_el_types'] ?? []),
-                (array) ($form['kia_types'] ?? []),
-                (array) ($form['data_change_types'] ?? []),
-            )));
+            // Frontend publik/admin lama mengirim pilihan dalam empat field
+            // kelompok. Pertahankan dukungan itu, tetapi jangan pernah
+            // mengisi pilihan contoh/default karena akan membuat checkbox PDF
+            // terlihat tercentang padahal tidak dipilih user.
+            if (empty($form['application_types'])) {
+                $form['application_types'] = array_values(array_filter(array_merge(
+                    (array) ($form['kk_types'] ?? $form['kkTypes'] ?? []),
+                    (array) ($form['ktp_el_types'] ?? $form['ktpElTypes'] ?? []),
+                    (array) ($form['kia_types'] ?? $form['kiaTypes'] ?? []),
+                    (array) ($form['data_change_types'] ?? $form['dataChangeTypes'] ?? []),
+                )));
+            }
+
+            if (empty($form['attached_documents'])) {
+                $form['attached_documents'] = array_values(array_filter(
+                    (array) ($form['requirements'] ?? []),
+                ));
+            }
         }
 
         if (in_array($code, ['SGC'], true)) {
@@ -2703,6 +2761,44 @@ class LetterPdfService
     }
 
     /**
+     * Ambil gambar yang diunggah untuk formulir SPKTP berdasarkan nama tipe
+     * dokumennya, bukan berdasarkan ID database yang bisa berbeda antar data.
+     */
+    private function ktpMedia(LetterRequest $letterRequest): array
+    {
+        $media = [
+            'photo' => null,
+            'signature_specimen' => null,
+        ];
+
+        foreach ($letterRequest->attachments ?? [] as $attachment) {
+            $documentName = strtolower((string) ($attachment->letterTypeDocument?->document_name ?? ''));
+            $image = $this->imageBase64($attachment->file_path);
+
+            if (!$image) {
+                continue;
+            }
+
+            if (
+                !$media['photo']
+                && preg_match('/pas\s*foto|pass\s*photo|pasphoto|foto|photo/i', $documentName)
+            ) {
+                $media['photo'] = $image;
+                continue;
+            }
+
+            if (
+                !$media['signature_specimen']
+                && preg_match('/spesimen|tanda\s*tangan|cap\s*jempol/i', $documentName)
+            ) {
+                $media['signature_specimen'] = $image;
+            }
+        }
+
+        return $media;
+    }
+
+    /**
      * Konversi path / URL gambar tanda tangan ke data-URI base64 agar bisa
      * dirender DomPDF tanpa request HTTP tambahan.
      * Mendukung:
@@ -2712,6 +2808,11 @@ class LetterPdfService
      * Return null jika file tidak ditemukan / tidak bisa dibaca.
      */
     private function signatureImageBase64(?string $pathOrUrl): ?string
+    {
+        return $this->imageBase64($pathOrUrl);
+    }
+
+    private function imageBase64(?string $pathOrUrl): ?string
     {
         if (blank($pathOrUrl)) {
             return null;
@@ -2743,6 +2844,10 @@ class LetterPdfService
 
         $mime = mime_content_type($absPath) ?: 'image/png';
 
+        if (! str_starts_with($mime, 'image/')) {
+            return null;
+        }
+
         return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
     }
 
@@ -2769,7 +2874,25 @@ class LetterPdfService
             return false;
         }
 
-        return str_contains($p, 'lurah') || str_contains($p, 'kepala desa');
+        return str_starts_with($p, 'lurah') || str_contains($p, 'kepala desa');
+    }
+
+    /**
+     * Ambil nama Lurah dari data struktur organisasi yang dikelola admin.
+     * Staff struktur disimpan sebagai is_signer=false, sedangkan akun pejabat
+     * penandatangan dapat tersimpan sebagai baris signer terpisah.
+     */
+    private function organizationLurahName(): ?string
+    {
+        return Staff::query()
+            ->where('is_signer', false)
+            ->get(['name', 'position'])
+            ->first(function (Staff $staff): bool {
+                $position = mb_strtolower(trim((string) $staff->position));
+
+                return str_starts_with($position, 'lurah') || str_contains($position, 'kepala desa');
+            })
+            ?->name;
     }
 
     private function signaturePrefix(?string $position, bool $direct = false): array
@@ -3550,6 +3673,9 @@ class LetterPdfService
             'researcher' => [
                 'name' => null, 'nim' => null, 'study_program' => null, 'faculty' => null,
             ],
+            'representative' => [
+                'name' => null, 'position' => null, 'address' => null,
+            ],
             'recipient' => null,
             'recipient_address' => null,
             'ref_number' => null,
@@ -3565,7 +3691,9 @@ class LetterPdfService
             'tembusan_9' => null,
             'tembusan_10' => null,
             'lease' => [
-                'building_name' => null, 'building_address' => null, 'duration_years' => null,
+                'building_name' => null, 'building_address' => null,
+                'end_date' => null, 'annual_rent' => null, 'annual_rent_words' => null,
+                'duration_years' => null,
             ],
 
             // F-1.06 (population-document-statement-letter)

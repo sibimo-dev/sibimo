@@ -233,7 +233,12 @@
             </tr>
             <tr style="page-break-inside: avoid;">
                 <td><div class="ttd-space"></div>{{ $form['registration_officer'] ?? '' }}</td>
-                <td><div class="ttd-space"></div>{{ $signature['name'] }}</td>
+                <td>
+                    <div class="ttd-space">
+                        @include('letters.partials.signature-image')
+                    </div>
+                    {{ $signature['name'] }}
+                </td>
                 <td><div class="ttd-space"></div>{{ $applicant['name'] ?? '' }}</td>
             </tr>
         </table>

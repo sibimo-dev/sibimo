@@ -120,14 +120,11 @@ it('accepts an online letter request and rejects non-online types', function () 
         'form_data' => '{}',
     ])->assertUnprocessable();
 
-    config(['services.public_letters.test_mode' => true]);
-
     $this->postJson('/api/public/citizens/check-nik', [
         'nik' => '1234567890123456',
     ])->assertOk()
-        ->assertJsonPath('data.registered', true)
-        ->assertJsonPath('data.test_mode', true)
-        ->assertJsonPath('data.resident.fullName', 'Warga Uji');
+        ->assertJsonPath('data.registered', false)
+        ->assertJsonPath('data.resident', null);
 
     $this->postJson('/api/public/letter-requests', [
         'letter_type_code' => 'SGC',
@@ -135,7 +132,8 @@ it('accepts an online letter request and rejects non-online types', function () 
         'applicant_name' => 'Warga Uji',
         'applicant_address' => 'Bimomartani',
         'form_data' => ['nama_penggugat' => 'Warga Uji'],
-    ])->assertCreated();
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['applicant_nik']);
 });
 
 it('renders a PDF for every seeded letter type', function () {
