@@ -21,6 +21,7 @@
         table.sig-cols { width: 100%; border-collapse: collapse; margin-top: 4pt;}
         table.sig-cols td { width: 50%; vertical-align: top;}
         table.sig-cols tr:first-child td:nth-child(2) { text-indent: 90pt;}
+        table.sig-cols tr:last-child td:nth-child(2) { text-indent: 90pt;}
         .sig-space { height: 40pt;}
     </style>
 </head>

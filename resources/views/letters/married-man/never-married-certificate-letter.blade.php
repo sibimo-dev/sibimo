@@ -20,7 +20,6 @@
         td.val { padding-left: 3pt; height: 13pt; }
         p.gap-top { margin-top: 10pt; }
         .signature-block { margin-top: 18pt; text-align: right; padding-right: 25pt; }
-        .signature-block div:nth-child(2) {position: relative;left: -100pt;}
         .center-signer { width:71%; vertical-align:top; }
     </style>
 </head>
