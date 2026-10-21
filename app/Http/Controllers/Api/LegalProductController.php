@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LegalProductController extends Controller
 {
@@ -51,7 +52,7 @@ class LegalProductController extends Controller
         return response()->json(['success' => true, 'message' => 'Produk hukum berhasil dihapus.']);
     }
 
-    public function download(int $legal_product_id): Response
+    public function download(int $legal_product_id): StreamedResponse
     {
         $item = LegalProduct::query()->findOrFail($legal_product_id);
         $path = $this->storagePath($item->getRawOriginal('document'));

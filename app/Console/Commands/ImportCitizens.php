@@ -12,7 +12,7 @@ class ImportCitizens extends Command
 {
     protected $signature = 'citizens:import
         {file : File CSV UTF-8 hasil export Sheet2}
-        {--limit=50 : Jumlah maksimum baris data yang diproses}
+        {--limit=0 : Jumlah maksimum baris data (0 = semua)}
         {--offset=0 : Jumlah baris data yang dilewati setelah header}
         {--write : Menulis data ke database; tanpa opsi ini hanya dry-run}
         {--update-existing : Memperbarui NIK yang sudah ada; hanya berlaku bersama --write}';
@@ -67,8 +67,8 @@ class ImportCitizens extends Command
         $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT);
         $offset = filter_var($this->option('offset'), FILTER_VALIDATE_INT);
 
-        if ($limit === false || $limit < 1) {
-            $this->error('Opsi --limit harus berupa angka minimal 1.');
+        if ($limit === false || $limit < 0) {
+            $this->error('Opsi --limit harus berupa angka minimal 0.');
 
             return self::FAILURE;
         }
@@ -257,7 +257,7 @@ class ImportCitizens extends Command
                 $values = array_pad($values, count($headers), null);
                 $rows[] = ['line' => $line, 'values' => array_combine($headers, $values)];
 
-                if (count($rows) >= $limit) {
+                if ($limit > 0 && count($rows) >= $limit) {
                     break;
                 }
             }
