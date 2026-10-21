@@ -193,7 +193,7 @@
             </td>
         </tr>
         <tr>
-            <td><div class="sign-space"></div>{{ $signature['name'] }}</td>
+            <td><div class="sign-space">@include('letters.partials.signature-image')</div>{{ $signature['name'] }}</td>
             <td><div class="sign-space"></div>{{ $birth['reporter']['name'] }}</td>
         </tr>
     </table>

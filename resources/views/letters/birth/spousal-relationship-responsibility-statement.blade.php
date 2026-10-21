@@ -125,7 +125,7 @@
                         <tr><td>{{ $line }}</td></tr>
                     @endforeach
                     <tr><td>{{ $signature['position'] }}</td></tr>
-                    <tr><td class="know-space"></td></tr>
+                    <tr><td class="know-space">@include('letters.partials.signature-image')</td></tr>
                     <tr><td>{{ $signature['name'] }}</td></tr>
                 </table>
             </td>

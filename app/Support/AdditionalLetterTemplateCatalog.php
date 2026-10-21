@@ -22,6 +22,11 @@ final class AdditionalLetterTemplateCatalog
         return [
             self::type('SPAKL', 'Surat Pengantar Akta Kelahiran', 'Pengantar', 'digital', 'letters.birth.birth-certificate-referral-letter', 'kamituwa', self::identityFields(), $baseDocuments),
             self::type('LPKL', 'Laporan Pendaftaran Peristiwa Kelahiran', 'Permohonan', 'digital', 'letters.birth.birth-registration-report', 'kamituwa', self::birthFields(), $baseDocuments),
+            self::type('SPTJMDK', 'Surat Pernyataan Tanggung Jawab Mutlak Kebenaran Data Kelahiran', 'Pernyataan', 'digital', 'letters.birth.birth-data-responsibility-statement', 'kaur tata laksana', self::birthDataFields(), array_merge($baseDocuments, [
+                ['name' => 'Fotokopi KTP ayah dan ibu'],
+                ['name' => 'Fotokopi KTP 2 (dua) Orang Saksi'],
+                ['name' => 'Fotokopi Surat Keterangan Kelahiran', 'is_required' => false],
+            ])),
 
             self::type('DKF', 'Formulir Pelaporan Kematian', 'Permohonan', 'digital', 'letters.death.death-report-form', 'kaur tata laksana', self::deathFields(), $baseDocuments),
             self::type('DKA', 'Permohonan Akta Kematian', 'Permohonan', 'digital', 'letters.death.death-certificate-application', 'kaur tata laksana', self::deathFields(), $baseDocuments),
@@ -121,6 +126,46 @@ final class AdditionalLetterTemplateCatalog
             self::field('Nama Ibu', 'nama_ibu'),
             self::field('Tanggal Lapor', 'tanggal_lapor', 'date'),
         ]);
+    }
+
+    private static function birthDataFields(): array
+    {
+        return [
+            self::field('NIK Pemohon', 'nik', 'text', 'Data Pemohon'),
+            self::field('Nama Lengkap Pemohon', 'nama_pemohon', 'text', 'Data Pemohon'),
+            self::field('Tempat Lahir Pemohon', 'tempat_lahir_pemohon', 'text', 'Data Pemohon'),
+            self::field('Tanggal Lahir Pemohon', 'tanggal_lahir_pemohon', 'date', 'Data Pemohon'),
+            self::field('Pekerjaan Pemohon', 'pekerjaan_pemohon', 'text', 'Data Pemohon'),
+            self::field('Alamat Pemohon', 'alamat_pemohon', 'textarea', 'Data Pemohon'),
+            self::field('NIK Anak', 'nik_anak', 'text', 'Data Anak', false),
+            self::field('Nama Anak', 'nama_anak', 'text', 'Data Anak'),
+            self::field('Tempat Lahir Anak', 'tempat_lahir_anak', 'text', 'Data Anak'),
+            self::field('Tanggal Lahir Anak', 'tanggal_lahir_anak', 'date', 'Data Anak'),
+            self::field('Pekerjaan Anak', 'pekerjaan_anak', 'text', 'Data Anak'),
+            self::field('Alamat Anak', 'alamat_anak', 'textarea', 'Data Anak'),
+            self::field('Nama Ibu', 'nama_ibu', 'text', 'Data Ibu'),
+            self::field('NIK Ibu', 'nik_ibu', 'text', 'Data Ibu'),
+            self::field('Tempat Lahir Ibu', 'tempat_lahir_ibu', 'text', 'Data Ibu'),
+            self::field('Tanggal Lahir Ibu', 'tanggal_lahir_ibu', 'date', 'Data Ibu'),
+            self::field('Pekerjaan Ibu', 'pekerjaan_ibu', 'text', 'Data Ibu'),
+            self::field('Alamat Ibu', 'alamat_ibu', 'textarea', 'Data Ibu'),
+            self::field('Nama Ayah', 'nama_ayah', 'text', 'Data Ayah'),
+            self::field('NIK Ayah', 'nik_ayah', 'text', 'Data Ayah'),
+            self::field('Tempat Lahir Ayah', 'tempat_lahir_ayah', 'text', 'Data Ayah'),
+            self::field('Tanggal Lahir Ayah', 'tanggal_lahir_ayah', 'date', 'Data Ayah'),
+            self::field('Pekerjaan Ayah', 'pekerjaan_ayah', 'text', 'Data Ayah'),
+            self::field('Alamat Ayah', 'alamat_ayah', 'textarea', 'Data Ayah'),
+            self::field('Nama Penolong Kelahiran', 'nama_penolong_kelahiran', 'text', 'Data Penolong Kelahiran'),
+            self::field('NIK Penolong Kelahiran', 'nik_penolong_kelahiran', 'text', 'Data Penolong Kelahiran'),
+            self::field('Tempat Lahir Penolong Kelahiran', 'tempat_lahir_penolong_kelahiran', 'text', 'Data Penolong Kelahiran'),
+            self::field('Tanggal Lahir Penolong Kelahiran', 'tanggal_lahir_penolong_kelahiran', 'date', 'Data Penolong Kelahiran'),
+            self::field('Pekerjaan Penolong Kelahiran', 'pekerjaan_penolong_kelahiran', 'text', 'Data Penolong Kelahiran'),
+            self::field('Alamat Penolong Kelahiran', 'alamat_penolong_kelahiran', 'textarea', 'Data Penolong Kelahiran'),
+            self::field('Nama Saksi I', 'nama_saksi_1', 'text', 'Saksi I'),
+            self::field('NIK Saksi I', 'nik_saksi_1', 'text', 'Saksi I'),
+            self::field('Nama Saksi II', 'nama_saksi_2', 'text', 'Saksi II'),
+            self::field('NIK Saksi II', 'nik_saksi_2', 'text', 'Saksi II'),
+        ];
     }
 
     private static function deathFields(): array
