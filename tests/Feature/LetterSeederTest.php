@@ -182,6 +182,264 @@ it('renders a PDF for every seeded letter type', function () {
     }
 });
 
+it('fills village date and head name for the marriage registration data sheet preview', function () {
+    seedLetterFixtures();
+
+    DB::table('staff')->insert([
+        'name' => 'Nama Lurah Uji',
+        'position' => 'Lurah Kalurahan Bimomartani',
+        'level' => 'Lurah',
+        'is_signer' => false,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $letterType = LetterType::with('signer')->where('code', 'FPDN')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-FPDN-PREVIEW',
+        'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001',
+        'applicant_address' => 'Bimomartani',
+        'created_at' => '2026-10-01 08:00:00',
+        'authorized_at' => '2026-10-17 08:00:00',
+        'form_data' => [
+            'groomPrevName' => 'Istri Terdahulu',
+            'groomPrevBin' => 'Nama Ayah Terdahulu',
+            'groomPrevDeathDate' => '2020-01-02',
+            'bridePrevName' => 'Suami Terdahulu',
+            'bridePrevBin' => 'Nama Ayah Suami',
+        ],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+
+    $data = app(LetterPdfService::class)->viewData($request, 'marriage-registration-data-sheet');
+
+    expect($data['village']['letter_date'])->toBe('17 Oktober 2026')
+        ->and($data['village']['head_name'])->toBe('Nama Lurah Uji')
+        ->and($data['groom']['previous_spouse_name'])->toBe('Istri Terdahulu')
+        ->and($data['groom']['previous_spouse_bin'])->toBe('Nama Ayah Terdahulu')
+        ->and($data['bride']['previous_spouse_name'])->toBe('Suami Terdahulu')
+        ->and($data['bride']['previous_spouse_bin'])->toBe('Nama Ayah Suami');
+});
+
+it('passes groom and bride Bin/Binti independently to the marriage registration preview', function () {
+    seedLetterFixtures();
+    $letterType = LetterType::with('signer')->where('code', 'PNL')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-PNL-BIN-BINTI', 'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001', 'applicant_address' => 'Bimomartani',
+        'form_data' => ['bin_catin_putra' => 'Ayah Suami', 'bin_catin_putri' => 'Ayah Istri'],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+    $data = app(LetterPdfService::class)->viewData($request, 'marriage-registration-data-sheet');
+
+    expect($data['groom']['bin'])->toBe('Ayah Suami')
+        ->and($data['bride']['binti'])->toBe('Ayah Istri');
+});
+
+it('maps surviving spouse identity into section B of the marriage death preview', function () {
+    seedLetterFixtures();
+    $letterType = LetterType::with('signer')->where('code', 'SKKMP')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-SKKMP-SPOUSE', 'applicant_name' => 'Pasangan Hidup',
+        'applicant_nik' => '3400000000000001', 'applicant_address' => 'Alamat Pasangan',
+        'form_data' => [
+            'applicantBin' => 'Nama Ayah Pasangan', 'birth_place' => 'Sleman', 'birth_date' => '1980-01-02',
+            'nationality' => 'WNI', 'religion' => 'Islam', 'occupation' => 'Petani', 'address' => 'Alamat Pasangan',
+            'deceased_name' => 'Almarhum',
+        ],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+    $data = app(LetterPdfService::class)->viewData($request, 'death-certificate-for-marriage-letter');
+
+    expect($data['spouse']['full_name_alias'])->toBe('Pasangan Hidup')
+        ->and($data['spouse']['bin'])->toBe('Nama Ayah Pasangan')
+        ->and($data['spouse']['nik'])->toBe('3400000000000001')
+        ->and($data['spouse']['birth_place_date'])->toContain('Sleman')
+        ->and($data['spouse']['religion'])->toBe('Islam')
+        ->and($data['spouse']['occupation'])->toBe('Petani')
+        ->and($data['spouse']['address'])->toBe('Alamat Pasangan')
+        ->and($data['spouse']['nationality'])->toBe('WNI');
+});
+
+it('keeps N1L and N1P status options and renders their separate values', function () {
+    seedLetterFixtures();
+
+    $optionsFor = function (string $code, string $key) {
+        $json = DB::table('letter_type_fields as fields')
+            ->join('letter_types as types', 'types.letter_type_id', '=', 'fields.letter_type_id')
+            ->where('types.code', $code)
+            ->where('fields.field_key', $key)
+            ->value('fields.options');
+
+        return json_decode($json, true);
+    };
+
+    expect($optionsFor('N1L', 'status_perkawinan'))->toBe(['Jejaka', 'Duda', 'Beristri'])
+        ->and($optionsFor('N1P', 'status_pernikahan'))->toBe(['Perawan', 'Janda']);
+
+    $pdfService = app(LetterPdfService::class);
+    foreach ([
+        ['N1L', 'marriage-introduction-letter', ['status_perkawinan' => 'Beristri'], 'applicant', 'marital_status'],
+        ['N1L', 'marriage-introduction-letter', ['status_perkawinan' => 'Cerai Hidup'], 'applicant', 'marital_status'],
+        ['N1P', 'n1', ['status_pernikahan' => 'Janda'], 'marriage.bride', 'status'],
+    ] as [$code, $template, $form, $block, $key]) {
+        $letterType = LetterType::with('signer')->where('code', $code)->firstOrFail();
+        $request = LetterRequest::make([
+            'request_code' => 'TEST-' . $code . '-STATUS',
+            'applicant_name' => 'Pemohon Uji',
+            'applicant_nik' => '3400000000000001',
+            'applicant_address' => 'Bimomartani',
+            'form_data' => $form,
+        ]);
+        $request->setRelation('citizen', null);
+        $request->setRelation('letterType', $letterType);
+        $request->setRelation('authorizedSigner', null);
+
+        $data = $pdfService->viewData($request, $template);
+        $value = data_get($data, $block . '.' . $key);
+        expect($value)->toBe($form[array_key_first($form)]);
+    }
+});
+
+it('maps general marriage certificate fields into the applicant preview block', function () {
+    seedLetterFixtures();
+
+    $letterType = LetterType::with('signer')->where('code', 'SKUMN')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-SKUMN-PREVIEW',
+        'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => [
+            'behavior' => 'Baik',
+            'destination' => 'KUA Kecamatan Ngemplak',
+            'purpose' => 'Tes kesehatan sebelum menikah',
+            'validUntil' => '2026-12-31',
+        ],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+
+    $data = app(LetterPdfService::class)->viewData($request, 'general-certificate-letter');
+
+    expect($data['applicant']['behavior'])->toBe('Baik')
+        ->and($data['applicant']['purpose'])->toBe('KUA Kecamatan Ngemplak')
+        ->and($data['applicant']['purpose_detail'])->toBe('Tes kesehatan sebelum menikah')
+        ->and($data['applicant']['valid_until'])->toBe('31 Desember 2026');
+});
+
+it('maps Bin/Binti fields for marriage lodging and parental consent previews', function () {
+    seedLetterFixtures();
+
+    $pdfService = app(LetterPdfService::class);
+    $makeRequest = function (string $code, array $form) {
+        $letterType = LetterType::with('signer')->where('code', $code)->firstOrFail();
+        $request = LetterRequest::make([
+            'request_code' => 'TEST-' . $code . '-BIN',
+            'applicant_name' => 'Pemohon Uji',
+            'applicant_nik' => '3400000000000001',
+            'applicant_address' => 'Bimomartani',
+            'form_data' => $form,
+        ]);
+        $request->setRelation('citizen', null);
+        $request->setRelation('letterType', $letterType);
+        $request->setRelation('authorizedSigner', null);
+
+        return $request;
+    };
+
+    $lodging = $pdfService->viewData($makeRequest('SKTNB', [
+        'applicantBin' => 'Ayah Catin Pria',
+        'spouseBin' => 'Ayah Catin Wanita',
+    ]), 'marriage-lodging-certificate-letter');
+
+    $consent = $pdfService->viewData($makeRequest('SPOT', [
+        'childBin' => 'Ayah Catin Pria',
+        'childSpouseBin' => 'Ayah Catin Wanita',
+    ]), 'parental-consent-letter');
+
+    expect($lodging['applicant']['bin_or_binti'])->toBe('Ayah Catin Pria')
+        ->and($lodging['spouse']['binti'])->toBe('Ayah Catin Wanita')
+        ->and($consent['child']['bin_or_binti'])->toBe('Ayah Catin Pria')
+        ->and($consent['child_spouse']['bin_or_binti'])->toBe('Ayah Catin Wanita');
+});
+
+it('maps the second party combined birth details on the Letter C power of attorney', function () {
+    seedLetterFixtures();
+
+    $letterType = LetterType::with('signer')->where('code', 'SKC')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-SKC-BIRTH',
+        'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => ['attorneyBirthPlaceDate' => 'Sleman, 17 Agustus 1990'],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+
+    $data = app(LetterPdfService::class)->viewData($request, 'power-of-attorney-letter');
+
+    expect($data['attorney']['birth'])->toBe('Sleman, 17 Agustus 1990');
+});
+
+it('uses the applicant nationality for section B of the marriage death certificate', function () {
+    seedLetterFixtures();
+
+    $letterType = LetterType::with('signer')->where('code', 'SKKMP')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-SKKMP-NATIONALITY',
+        'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => ['nationality' => 'WNA'],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+
+    $data = app(LetterPdfService::class)->viewData($request, 'death-certificate-for-marriage-letter');
+
+    expect($data['spouse']['nationality'])->toBe('WNA');
+});
+
+it('renders the signer position in both Letter C land certificates', function () {
+    seedLetterFixtures();
+
+    $pdfService = app(LetterPdfService::class);
+    foreach ([
+        ['SKTH', 'land-price-certificate-letter'],
+        ['SKTA', 'land-origin-certificate-letter'],
+    ] as [$code, $template]) {
+        $letterType = LetterType::with('signer')->where('code', $code)->firstOrFail();
+        $request = LetterRequest::make([
+            'request_code' => 'TEST-' . $code . '-POSITION',
+            'applicant_name' => 'Pemohon Uji',
+            'applicant_nik' => '3400000000000001',
+            'applicant_address' => 'Bimomartani',
+            'form_data' => [],
+        ]);
+        $request->setRelation('citizen', null);
+        $request->setRelation('letterType', $letterType);
+        $request->setRelation('authorizedSigner', null);
+
+        $data = $pdfService->viewData($request, $template);
+        $html = view($pdfService->viewName($template), $data)->render();
+
+        expect($data['signature']['position'])->not->toBeEmpty()
+            ->and($html)->toContain($data['signature']['position']);
+    }
+});
+
 it('renders seeded request data without dropping template-specific fields', function () {
     seedLetterFixtures();
 

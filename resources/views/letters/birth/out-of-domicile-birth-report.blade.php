@@ -189,7 +189,7 @@
             <td></td>
         </tr>
         <tr>
-            <td class="foot-space"></td>
+            <td class="foot-space">@include('letters.partials.signature-image')</td>
             <td class="foot-space"></td>
         </tr>
         <tr>

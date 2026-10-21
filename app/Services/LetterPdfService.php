@@ -133,6 +133,7 @@ class LetterPdfService
         'SBP' => 'research-response-letter',
         'SKKL' => 'birth-attestation-letter',
         'SKBK2' => 'unmarried-certificate',
+        'SPTJMDK' => 'birth-data-responsibility-statement',
     ];
 
     /**
@@ -171,6 +172,7 @@ class LetterPdfService
         'birth-certificate-application-form' => 'birth',
         'birth-certificate-power-of-attorney' => 'birth',
         'birth-certificate-referral-letter' => 'birth',
+        'birth-data-responsibility-statement' => 'birth',
         'birth-registration-report' => 'birth',
         'birth-report-form' => 'birth',
         'birth-report-statement' => 'birth',
@@ -368,6 +370,20 @@ class LetterPdfService
             )
         ) {
             $signerPosition = 'KAMITUWA';
+        }
+
+        // Formulir Data Isian Nikah tidak meminta tanggal surat atau nama
+        // Kepala Kalurahan sebagai input. Isi keduanya dari data request dan
+        // struktur organisasi agar bagian DATA DESA pada preview tidak kosong.
+        if ($templateSlug === 'marriage-registration-data-sheet') {
+            if (blank($form['village_letter_date'] ?? null)) {
+                $form['village_letter_date'] = $letterRequest->authorized_at ?? $letterRequest->created_at;
+            }
+
+            if (blank($form['village_head_name'] ?? null)) {
+                $form['village_head_name'] = $this->organizationLurahName()
+                    ?? ($this->signedByLurah($signerPosition) ? $signer?->name : null);
+            }
         }
 
         // F-1.01 menuliskan jabatan "Kepala Desa", sedangkan data struktur
@@ -658,7 +674,8 @@ class LetterPdfService
             'attorney' => [
                 'name' => $form['attorney_name'] ?? null,
                 'nik' => $form['attorney_nik'] ?? null,
-                'birth' => $this->birth($form['attorney_birth_place'] ?? null, $form['attorney_birth_date'] ?? null),
+                'birth' => $form['attorney_birth_place_date']
+                    ?? $this->birth($form['attorney_birth_place'] ?? null, $form['attorney_birth_date'] ?? null),
                 'gender' => $form['attorney_gender'] ?? null,
                 'occupation' => $form['attorney_occupation'] ?? null,
                 'address' => $form['attorney_address'] ?? null,            
@@ -773,6 +790,97 @@ class LetterPdfService
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
         ];
 
+        // SPTJM kebenaran data kelahiran memakai beberapa blok orang yang
+        // tidak dipakai oleh template umum. Bentuk data form publik/admin
+        // sengaja dipetakan di sini agar preview admin dan PDF final membaca
+        // field yang sama, baik key camelCase maupun alias backend lama.
+        if ($code === 'SPTJMDK' || $templateSlug === 'birth-data-responsibility-statement') {
+            $value = static function (array $keys, $fallback = null) use ($form) {
+                foreach ($keys as $key) {
+                    if (array_key_exists($key, $form) && filled($form[$key])) {
+                        return $form[$key];
+                    }
+                }
+
+                return $fallback;
+            };
+
+            $person = function (array $keys) use ($value): array {
+                $birthPlace = $value($keys['birth_place'] ?? []);
+                $birthDate = $value($keys['birth_date'] ?? []);
+
+                return [
+                    'name' => $value($keys['name'] ?? []),
+                    'nik' => $value($keys['nik'] ?? []),
+                    'birth' => $this->birth($birthPlace, $birthDate)
+                        ?: $value($keys['birth'] ?? []),
+                    'occupation' => $value($keys['occupation'] ?? []),
+                    'address' => $this->fullAddress($value($keys['address'] ?? [])),
+                ];
+            };
+
+            $data['applicant'] = array_merge($data['applicant'], $person([
+                'name' => ['name', 'nama_pemohon'],
+                'nik' => ['nik', 'applicant_nik'],
+                'birth_place' => ['birth_place', 'tempat_lahir_pemohon'],
+                'birth_date' => ['birth_date', 'tanggal_lahir_pemohon'],
+                'birth' => ['birth', 'birth_place_date'],
+                'occupation' => ['occupation', 'pekerjaan_pemohon'],
+                'address' => ['address', 'alamat_pemohon', 'applicant_address'],
+            ]));
+
+            $data['child'] = $person([
+                'name' => ['child_name', 'childName', 'nama_anak'],
+                'nik' => ['child_nik', 'childNik'],
+                'birth_place' => ['child_birth_place', 'childBirthPlace', 'tempat_lahir_anak'],
+                'birth_date' => ['child_birth_date', 'childBirthDate', 'tanggal_lahir_anak'],
+                'birth' => ['child_birth'],
+                'occupation' => ['child_occupation', 'childOccupation', 'pekerjaan_anak'],
+                'address' => ['child_address', 'childAddress', 'alamat_anak'],
+            ]);
+
+            $data['mother'] = $person([
+                'name' => ['mother_name', 'motherName', 'nama_ibu'],
+                'nik' => ['mother_nik', 'motherNik', 'nik_ibu'],
+                'birth_place' => ['mother_birth_place', 'motherBirthPlace', 'tempat_lahir_ibu'],
+                'birth_date' => ['mother_birth_date', 'motherBirthDate', 'tanggal_lahir_ibu'],
+                'birth' => ['mother_birth'],
+                'occupation' => ['mother_occupation', 'motherOccupation', 'pekerjaan_ibu'],
+                'address' => ['mother_address', 'motherAddress', 'alamat_ibu'],
+            ]);
+
+            $data['father'] = $person([
+                'name' => ['father_name', 'fatherName', 'nama_ayah'],
+                'nik' => ['father_nik', 'fatherNik', 'nik_ayah'],
+                'birth_place' => ['father_birth_place', 'fatherBirthPlace', 'tempat_lahir_ayah'],
+                'birth_date' => ['father_birth_date', 'fatherBirthDate', 'tanggal_lahir_ayah'],
+                'birth' => ['father_birth'],
+                'occupation' => ['father_occupation', 'fatherOccupation', 'pekerjaan_ayah'],
+                'address' => ['father_address', 'fatherAddress', 'alamat_ayah'],
+            ]);
+
+            $data['birth_attendant'] = $person([
+                'name' => ['birth_attendant_name', 'birthAttendantName'],
+                'nik' => ['birth_attendant_nik', 'birthAttendantNik'],
+                'birth_place' => ['birth_attendant_birth_place', 'birthAttendantBirthPlace'],
+                'birth_date' => ['birth_attendant_birth_date', 'birthAttendantBirthDate'],
+                'birth' => ['birth_attendant_birth'],
+                'occupation' => ['birth_attendant_occupation', 'birthAttendantOccupation'],
+                'address' => ['birth_attendant_address', 'birthAttendantAddress'],
+            ]);
+
+            $data['witnesses'] = [
+                [
+                    'name' => $value(['witness1_name', 'witness1Name', 'nama_saksi_1']),
+                    'nik' => $value(['witness1_nik', 'witness1Nik', 'nik_saksi_1']),
+                ],
+                [
+                    'name' => $value(['witness2_name', 'witness2Name', 'nama_saksi_2']),
+                    'nik' => $value(['witness2_nik', 'witness2Nik', 'nik_saksi_2']),
+                ],
+            ];
+        }
+
         if (in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)) {
             $data = array_merge($data, $this->marriedLetterData($form));
 
@@ -800,15 +908,47 @@ class LetterPdfService
                 'additional_note' => $form['additional_note'] ?? null,
             ]);
 
+            if ($templateSlug === 'marriage-lodging-certificate-letter') {
+                $data['applicant']['bin_or_binti'] = $form['bin_or_binti'] ?? $form['applicant_bin'] ?? null;
+            }
+
+            if ($templateSlug === 'general-certificate-letter') {
+                $data['applicant'] = array_merge($data['applicant'], [
+                    'behavior' => $form['behavior'] ?? null,
+                    'purpose' => $form['destination'] ?? $form['destination_agency'] ?? null,
+                    'purpose_detail' => $form['purpose'] ?? $form['keperluan'] ?? null,
+                    'valid_until' => $this->longDate($form['valid_until'] ?? null),
+                ]);
+            }
+
             $data['spouse'] = array_merge($data['spouse'], [
                 'full_name_alias' => $form['spouse_name'] ?? $data['spouse']['name'],
                 'bin' => $form['spouse_bin'] ?? null,
                 'binti' => $form['spouse_binti'] ?? null,
                 'nik' => $form['spouse_nik'] ?? null,
-                'nationality' => $form['spouse_nationality'] ?? 'WNI',
+                'nationality' => $form['spouse_nationality']
+                    ?? ($templateSlug === 'death-certificate-for-marriage-letter' ? ($form['nationality'] ?? 'WNI') : 'WNI'),
                 'religion' => $form['spouse_religion'] ?? null,
                 'birth_place_date' => $data['spouse']['birth'],
             ]);
+
+            if ($templateSlug === 'marriage-lodging-certificate-letter') {
+                $data['spouse']['binti'] = $form['spouse_binti'] ?? $form['spouse_bin'] ?? null;
+            }
+
+            // Pada Model N6, bagian B adalah pasangan yang masih hidup dan pemohon.
+            if ($templateSlug === 'death-certificate-for-marriage-letter') {
+                $data['spouse'] = array_merge($data['spouse'], [
+                    'full_name_alias' => $form['spouse_name'] ?? $data['applicant']['name'],
+                    'bin' => $form['spouse_bin'] ?? $form['applicant_bin'] ?? $form['bin_or_binti'] ?? null,
+                    'nik' => $form['spouse_nik'] ?? $data['applicant']['nik'],
+                    'birth_place_date' => $form['spouse_birth'] ?? $data['applicant']['birth'],
+                    'nationality' => $form['spouse_nationality'] ?? $data['applicant']['nationality'] ?? null,
+                    'religion' => $form['spouse_religion'] ?? $data['applicant']['religion'],
+                    'occupation' => $form['spouse_occupation'] ?? $data['applicant']['occupation'],
+                    'address' => $form['spouse_address'] ?? $data['applicant']['address'],
+                ]);
+            }
 
             $data['deceased'] = array_merge($data['deceased'], [
                 'full_name_alias' => $form['deceased_full_name_alias'] ?? $form['deceased_name'] ?? $data['deceased']['name'],
@@ -1527,7 +1667,7 @@ class LetterPdfService
             $people = [
                 'bride' => [
                     'name' => ['nama_mempelai_wanita', 'nama_catin_putri', 'nama_calon_istri'],
-                    'bin' => ['binti_mempelai_wanita', 'binti_catin_putri', 'binti_calon_istri'],
+                    'bin' => ['binti_mempelai_wanita', 'binti_catin_putri', 'binti_calon_istri', 'bin_catin_putri'],
                     'nik' => ['nik_mempelai_wanita', 'nik_catin_putri', 'nik_calon_istri'],
                     'birth_place' => ['tempat_lahir_mempelai_wanita', 'tempat_lahir_catin_putri', 'tempat_lahir_calon_istri', 'ttl_mempelai_wanita', 'ttl_catin_putri', 'ttl_calon_istri'],
                     'birth_date' => ['tanggal_lahir_mempelai_wanita', 'tanggal_lahir_catin_putri', 'tanggal_lahir_calon_istri'],
@@ -1606,6 +1746,38 @@ class LetterPdfService
             foreach ($people as $person => $fields) {
                 foreach ($fields as $field => $sources) {
                     $set($form, "{$person}_{$field}", $sources);
+                }
+            }
+
+            // FPDN form admin memakai prefix groomPrev/bridePrev, sementara
+            // marriedLetterData() membaca previous_spouse_*.
+            if (in_array($code, ['PNL', 'FPDN'], true)) {
+                foreach ([
+                    'groom_previous_spouse_name' => ['groom_prev_name'],
+                    'groom_previous_spouse_nik' => ['groom_prev_nik'],
+                    'groom_previous_spouse_birth_place' => ['groom_prev_birth_place'],
+                    'groom_previous_spouse_birth_date' => ['groom_prev_birth_date'],
+                    'groom_previous_spouse_nationality' => ['groom_prev_nationality'],
+                    'groom_previous_spouse_religion' => ['groom_prev_religion'],
+                    'groom_previous_spouse_occupation' => ['groom_prev_occupation'],
+                    'groom_previous_spouse_address' => ['groom_prev_address'],
+                    'groom_previous_spouse_bin' => ['groom_prev_bin'],
+                    'groom_previous_spouse_parent_name' => ['groom_prev_parent_name'],
+                    'groom_previous_spouse_death_date' => ['groom_prev_death_date'],
+                    'groom_previous_spouse_death_place' => ['groom_prev_death_place'],
+                    'bride_previous_spouse_name' => ['bride_prev_name'],
+                    'bride_previous_spouse_nik' => ['bride_prev_nik'],
+                    'bride_previous_spouse_birth_place' => ['bride_prev_birth_place'],
+                    'bride_previous_spouse_birth_date' => ['bride_prev_birth_date'],
+                    'bride_previous_spouse_nationality' => ['bride_prev_nationality'],
+                    'bride_previous_spouse_religion' => ['bride_prev_religion'],
+                    'bride_previous_spouse_occupation' => ['bride_prev_occupation'],
+                    'bride_previous_spouse_address' => ['bride_prev_address'],
+                    'bride_previous_spouse_bin' => ['bride_prev_bin'],
+                    'bride_previous_spouse_death_date' => ['bride_prev_death_date'],
+                    'bride_previous_spouse_death_place' => ['bride_prev_death_place'],
+                ] as $canonical => $sources) {
+                    $set($form, $canonical, $sources);
                 }
             }
 
@@ -2503,8 +2675,8 @@ class LetterPdfService
                 'perawan' => 'Perawan',
                 'duda' => 'Janda',
                 'janda' => 'Janda',
-                'cerai hidup' => 'Janda',
-                'cerai mati' => 'Janda',
+                'cerai hidup' => 'Cerai Hidup',
+                'cerai mati' => 'Cerai Mati',
             ]
             : [
                 'belum kawin' => 'Jejaka',
@@ -2512,8 +2684,11 @@ class LetterPdfService
                 'jejaka' => 'Jejaka',
                 'duda' => 'Duda',
                 'janda' => 'Duda',
-                'cerai hidup' => 'Duda',
-                'cerai mati' => 'Duda',
+                'cerai hidup' => 'Cerai Hidup',
+                'cerai mati' => 'Cerai Mati',
+                'beristri' => 'Beristri',
+                'beristri lagi' => 'Beristri',
+                'kawin' => 'Beristri',
             ];
 
         return $statusMap[strtolower($status)] ?? $status;
@@ -3185,8 +3360,12 @@ class LetterPdfService
 
             'father' => $this->personBlock($form, 'father', 'bin'),
             'mother' => $this->personBlock($form, 'mother', 'binti'),
-            'child' => $this->personBlock($form, 'child', 'bin_or_binti'),
-            'child_spouse' => $this->personBlock($form, 'child_spouse', 'bin_or_binti'),
+            'child' => $this->personBlock($form, 'child', 'bin_or_binti', [
+                'bin_or_binti' => $form['child_bin_or_binti'] ?? $form['child_bin'] ?? $form['child_binti'] ?? null,
+            ]),
+            'child_spouse' => $this->personBlock($form, 'child_spouse', 'bin_or_binti', [
+                'bin_or_binti' => $form['child_spouse_bin_or_binti'] ?? $form['child_spouse_bin'] ?? $form['child_spouse_binti'] ?? null,
+            ]),
         ];
     }
 
