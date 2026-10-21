@@ -627,9 +627,17 @@ class LetterPdfService
             'ref_number' => $form['nomor_surat_asal'] ?? $form['ref_letter_number'] ?? $form['request_number'] ?? $form['nomor_surat_permohonan'] ?? null,
 
             // surat penawaran sewa kontrak gedung
+            'representative' => [
+                'name' => $form['representative_name'] ?? $form['representativeName'] ?? $form['nama_penawar'] ?? null,
+                'position' => $form['representative_position'] ?? $form['representativePosition'] ?? $form['jabatan_penawar'] ?? null,
+                'address' => $form['representative_address'] ?? $form['representativeAddress'] ?? $form['alamat_penawar'] ?? null,
+            ],
             'lease' => [
                 'building_name' => $form['nama_gedung'] ?? $form['lease_building_name'] ?? $form['property_name'] ?? null,
                 'building_address' => $form['alamat_gedung'] ?? $form['lease_building_address'] ?? $form['property_address'] ?? null,
+                'end_date' => $form['tanggal_berakhir_sewa_lama'] ?? $form['lease_end_date'] ?? $form['leaseEndDate'] ?? null,
+                'annual_rent' => $form['harga_sewa_per_tahun'] ?? $form['lease_annual_rent'] ?? $form['leaseAnnualRent'] ?? null,
+                'annual_rent_words' => $form['lease_annual_rent_words'] ?? $form['leaseAnnualRentWords'] ?? $form['annual_rent_words'] ?? null,
                 'duration_years' => $form['lama_sewa_tahun'] ?? $form['lease_duration_years'] ?? $form['rent_period'] ?? null,
             ],
 
@@ -1975,8 +1983,14 @@ class LetterPdfService
         if ($code === 'SPSKG') {
             $set($form, 'recipient_name', ['tenant_name', 'tenant_representative', 'ditujukan_kepada']);
             $set($form, 'recipient_address', ['tenant_address', 'lokasi_tujuan_surat']);
+            $set($form, 'representative_name', ['representativeName', 'nama_penawar']);
+            $set($form, 'representative_position', ['representativePosition', 'jabatan_penawar']);
+            $set($form, 'representative_address', ['representativeAddress', 'alamat_penawar']);
             $set($form, 'lease_building_name', ['property_name', 'nama_gedung']);
             $set($form, 'lease_building_address', ['property_address', 'alamat_gedung']);
+            $set($form, 'lease_end_date', ['leaseEndDate', 'tanggal_berakhir_sewa_lama']);
+            $set($form, 'lease_annual_rent', ['leaseAnnualRent', 'harga_sewa_per_tahun']);
+            $set($form, 'lease_annual_rent_words', ['leaseAnnualRentWords', 'annual_rent_words']);
             $set($form, 'lease_duration_years', ['rent_period', 'lama_sewa_tahun']);
         }
 
@@ -3659,6 +3673,9 @@ class LetterPdfService
             'researcher' => [
                 'name' => null, 'nim' => null, 'study_program' => null, 'faculty' => null,
             ],
+            'representative' => [
+                'name' => null, 'position' => null, 'address' => null,
+            ],
             'recipient' => null,
             'recipient_address' => null,
             'ref_number' => null,
@@ -3674,7 +3691,9 @@ class LetterPdfService
             'tembusan_9' => null,
             'tembusan_10' => null,
             'lease' => [
-                'building_name' => null, 'building_address' => null, 'duration_years' => null,
+                'building_name' => null, 'building_address' => null,
+                'end_date' => null, 'annual_rent' => null, 'annual_rent_words' => null,
+                'duration_years' => null,
             ],
 
             // F-1.06 (population-document-statement-letter)
