@@ -482,7 +482,7 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Data Catin', 'label' => 'Pekerjaan', 'key' => 'pekerjaan', 'type' => 'text'],
             ['section' => 'Data Catin', 'label' => 'Pendidikan Terakhir', 'key' => 'pendidikan_terakhir', 'type' => 'text'],
             // Status Pernikahan
-            ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_pernikahan', 'type' => 'select', 'options' => ['Jejaka', 'Duda', 'Beristri Lagi', 'Perawan', 'Janda']],
+            ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_pernikahan', 'type' => 'select', 'options' => ['Perawan', 'Janda']],
             ['section' => 'Status Pernikahan', 'label' => 'Nama Suami Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
             // Data Ayah
             ['section' => 'Data Ayah', 'label' => 'Nama Lengkap dan Alias', 'key' => 'nama_ayah', 'type' => 'text'],
@@ -779,7 +779,7 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Data Catin', 'label' => 'Pekerjaan', 'key' => 'pekerjaan', 'type' => 'text'],
             ['section' => 'Data Catin', 'label' => 'Pendidikan Terakhir', 'key' => 'pendidikan_terakhir', 'type' => 'text'],
             // Status Pernikahan
-            ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_perkawinan', 'type' => 'select', 'options' => ['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati']],
+            ['section' => 'Status Pernikahan', 'label' => 'Status', 'key' => 'status_perkawinan', 'type' => 'select', 'options' => ['Jejaka', 'Duda', 'Beristri']],
             ['section' => 'Status Pernikahan', 'label' => 'Nama Istri Terdahulu', 'key' => 'nama_pasangan_terdahulu', 'type' => 'text', 'is_required' => false],
             // Data Ayah
             ['section' => 'Data Ayah', 'label' => 'Nama Lengkap dan Alias', 'key' => 'nama_ayah', 'type' => 'text'],
@@ -1452,6 +1452,15 @@ class LetterTypeFieldSeeder extends Seeder
 
         if (!$letterTypeId) {
             throw new \RuntimeException("Letter type [{$code}] must exist before its fields are seeded.");
+        }
+
+        // Hapus field lama N1L yang sudah tidak digunakan.
+        // N1P tetap menggunakan status_pernikahan.
+        if ($code === 'N1L') {
+            DB::table('letter_type_fields')
+                ->where('letter_type_id', $letterTypeId)
+                ->where('field_key', 'status_pernikahan')
+                ->delete();
         }
 
         // SPKIAF sebelumnya memakai field formulir KIA. Bersihkan field lama
