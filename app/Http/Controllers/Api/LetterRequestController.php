@@ -232,7 +232,11 @@ class LetterRequestController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        if ($letterRequest->status !== 'submitted') {
+        // Data lama bisa memakai label status "Pending"/"Menunggu".
+        // Perlakukan semuanya sebagai status submitted agar tetap bisa
+        // diverifikasi, tetapi jangan membuka status yang sudah diproses.
+        $pendingStatuses = ['submitted', 'pending', 'menunggu', 'diajukan'];
+        if (! in_array(strtolower(trim((string) $letterRequest->status)), $pendingStatuses, true)) {
             throw ValidationException::withMessages([
                 'status' => 'Permohonan hanya dapat diverifikasi saat berstatus submitted.',
             ]);

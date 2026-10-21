@@ -10,9 +10,7 @@
       $lease['building_address']  alamat gedung (form: lease_building_address)
       $lease['duration_years']    lama sewa dalam tahun (form: lease_duration_years)
 
-    Bagian yang di sumber contoh disensor (nama/jabatan/alamat penandatangan,
-    tanggal berakhir sewa, nominal & terbilang sewa) sengaja TIDAK diambil dari
-    $form — ditulis sebagai dot placeholder langsung sesuai arahan.
+    Data penawar dan rincian sewa diambil dari isian form melalui viewData().
 --}}
 @extends('letters.layouts.base')
 
@@ -71,25 +69,25 @@
         <tr>
             <td class="lbl">Nama</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $representative['name'] ?? '' }}</td>
         </tr>
         <tr>
             <td class="lbl">Jabatan</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $representative['position'] ?? '' }}</td>
         </tr>
         <tr>
             <td class="lbl">Alamat</td>
             <td class="sep">:</td>
-            <td class="val"></td>
+            <td class="val">{{ $representative['address'] ?? '' }}</td>
         </tr>
     </table>
 
     <p class="gap-top-lg" style="text-align: justify">
         Sesuai dengan surat perjanjian sewa gedung, bahwa berakhirnya masa sewa
         {{ $lease['building_name'] }} yang beralamat di {{ $lease['building_address'] }}
-        adalah tanggal ........................., dengan ini kami tawarkan sewa
-        bangunan per tahun Rp ......................... (.........................)
+        adalah tanggal {{ $lease['end_date'] ?? '.........................' }}, dengan ini kami tawarkan sewa
+        bangunan per tahun Rp {{ $lease['annual_rent'] ?? '.........................' }} ({{ $lease['annual_rent_words'] ?? '.........................' }})
         dengan lama sewa {{ $lease['duration_years'] }} tahun.
     </p>
 
