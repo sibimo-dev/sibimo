@@ -144,7 +144,9 @@
         table.foot td { vertical-align: top; font-size: 6pt; padding: 0 4pt; }
         table.foot td.pernyataan { border: 1px solid #000; padding: 2pt 4pt; }
         .pernyataan-title { font-weight: bold; text-decoration: underline; }
-        .ttd-space { height: 0.9cm; }
+        .ttd-space { height: 1.15cm; }
+        table.foot .signature-space { text-align: left; }
+        table.foot .signature-space .signature-image { width: auto !important; max-width: 90pt !important; max-height: 0.85cm !important; margin: 0 !important; position: relative; left: -0.65cm; }
         .ttd-title { font-weight: bold; }
     </style>
 </head>
@@ -423,7 +425,7 @@
             </td>
             <td style="width:19%;">
                 <div class="ttd-title">Mengetahui,<br>Kepala Desa</div>
-                <div class="ttd-space">
+                <div class="ttd-space signature-space">
                     {{-- Lurah = Kepala Desa pada formulir F-1.01. TTD hanya
                          diisi setelah otorisasi dengan metode digital. --}}
                     @include('letters.partials.signature-image')

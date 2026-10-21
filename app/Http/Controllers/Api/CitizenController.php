@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Citizen;
-use App\Models\Region;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,7 +31,7 @@ class CitizenController extends Controller
     {
         $citizens = Citizen::query()
             ->where('status', 'Active')
-            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion']);
+            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion', 'dusun']);
 
         $ageGroups = [
             '0–4', '5–9', '10–14', '15–19', '20–24', '25–29', '30–34', '35–39',
@@ -88,16 +87,9 @@ class CitizenController extends Controller
                     'gender' => $aggregate(fn (Citizen $citizen) => $citizen->gender, $genderRows),
                     'religion' => $aggregate(fn (Citizen $citizen) => $citizen->religion),
                 ],
-                'regions' => Region::query()
-                    ->latest()
-                    ->get(['name', 'population', 'male_count', 'female_count'])
-                    ->map(fn (Region $region) => [
-                        'group' => $region->name,
-                        'total' => (int) $region->population,
-                        'male' => (int) $region->male_count,
-                        'female' => (int) $region->female_count,
-                    ])
-                    ->values(),
+                // Statistik wilayah dihitung dari dusun pada data warga aktif,
+                // sehingga hasil import citizens langsung tercermin di public.
+                'regions' => $aggregate(fn (Citizen $citizen) => $citizen->dusun),
             ],
         ]);
     }
