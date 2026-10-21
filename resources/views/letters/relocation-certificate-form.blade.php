@@ -2,7 +2,9 @@
 
 @section('title', 'Formulir Keterangan Pindah WNI')
 
-@php($kodeForm = 'F.1-26')
+@php
+    $kodeForm = 'F.1-26';
+@endphp
 
 @section('extra_css')
     @page { margin: 0.6cm 1.5cm 0.4cm 1.5cm; }

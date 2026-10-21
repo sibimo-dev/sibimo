@@ -21,5 +21,5 @@
 </table>
 <p style="margin-top:4pt;text-align:justify">berhubung maksud yang bersangkutan, mohon yang berwenang memberikan bantuan serta fasilitas seperlunya</p>
 <p style="margin-top:10pt">Demikian surat keterangan ini dibuat untuk dipergunakan seperlunya.</p>
-<table class="signature-lines"><tr><td></td><td>{{ $signature['city'] ?? 'Bimomartani' }} &nbsp;&nbsp; {{ $signature['date'] ?? '' }}<br>{{ $signature['prefix'][0] ?? '' }}<br>{{ $signature['position'] ?? '' }}<div class="long-space"></div><strong><u>{{ $signature['name'] ?? '' }}</u></strong></td></tr></table>
+<table class="signature-lines"><tr><td></td><td>{{ $signature['city'] ?? 'Bimomartani' }} &nbsp;&nbsp; {{ $signature['date'] ?? '' }}<br>{{ $signature['prefix'][0] ?? '' }}<br>{{ $signature['position'] ?? '' }}<div class="long-space">@include('letters.partials.signature-image')</div><strong><u>{{ $signature['name'] ?? '' }}</u></strong></td></tr></table>
 @endsection

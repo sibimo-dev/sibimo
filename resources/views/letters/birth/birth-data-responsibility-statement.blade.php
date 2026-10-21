@@ -169,7 +169,7 @@
                     <tr><td class="know-head">Mengetahui</td></tr>
                     <tr><td>a.n LURAH BIMOMARTANI</td></tr>
                     <tr><td>Ulu-Ulu</td></tr>
-                    <tr><td class="know-space"></td></tr>
+                    <tr><td class="know-space">@include('letters.partials.signature-image')</td></tr>
                     <tr><td>{{ $signature['name'] ?? '' }}</td></tr>
                 </table>
             </td>

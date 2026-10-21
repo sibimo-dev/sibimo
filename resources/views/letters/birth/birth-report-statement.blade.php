@@ -134,7 +134,7 @@
             <td>Pelapor</td>
         </tr>
         <tr>
-            <td><div class="sign-space"></div>{{ $birth['hamlet']['head_name'] }}</td>
+            <td><div class="sign-space">@include('letters.partials.signature-image')</div>{{ $birth['hamlet']['head_name'] }}</td>
             <td><div class="sign-space"></div>{{ $r['name'] }}</td>
         </tr>
     </table>

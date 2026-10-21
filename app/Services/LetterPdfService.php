@@ -133,6 +133,7 @@ class LetterPdfService
         'SBP' => 'research-response-letter',
         'SKKL' => 'birth-attestation-letter',
         'SKBK2' => 'unmarried-certificate',
+        'SPTJMDK' => 'birth-data-responsibility-statement',
     ];
 
     /**
@@ -171,6 +172,7 @@ class LetterPdfService
         'birth-certificate-application-form' => 'birth',
         'birth-certificate-power-of-attorney' => 'birth',
         'birth-certificate-referral-letter' => 'birth',
+        'birth-data-responsibility-statement' => 'birth',
         'birth-registration-report' => 'birth',
         'birth-report-form' => 'birth',
         'birth-report-statement' => 'birth',
@@ -772,6 +774,97 @@ class LetterPdfService
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
         ];
+
+        // SPTJM kebenaran data kelahiran memakai beberapa blok orang yang
+        // tidak dipakai oleh template umum. Bentuk data form publik/admin
+        // sengaja dipetakan di sini agar preview admin dan PDF final membaca
+        // field yang sama, baik key camelCase maupun alias backend lama.
+        if ($code === 'SPTJMDK' || $templateSlug === 'birth-data-responsibility-statement') {
+            $value = static function (array $keys, $fallback = null) use ($form) {
+                foreach ($keys as $key) {
+                    if (array_key_exists($key, $form) && filled($form[$key])) {
+                        return $form[$key];
+                    }
+                }
+
+                return $fallback;
+            };
+
+            $person = function (array $keys) use ($value): array {
+                $birthPlace = $value($keys['birth_place'] ?? []);
+                $birthDate = $value($keys['birth_date'] ?? []);
+
+                return [
+                    'name' => $value($keys['name'] ?? []),
+                    'nik' => $value($keys['nik'] ?? []),
+                    'birth' => $this->birth($birthPlace, $birthDate)
+                        ?: $value($keys['birth'] ?? []),
+                    'occupation' => $value($keys['occupation'] ?? []),
+                    'address' => $this->fullAddress($value($keys['address'] ?? [])),
+                ];
+            };
+
+            $data['applicant'] = array_merge($data['applicant'], $person([
+                'name' => ['name', 'nama_pemohon'],
+                'nik' => ['nik', 'applicant_nik'],
+                'birth_place' => ['birth_place', 'tempat_lahir_pemohon'],
+                'birth_date' => ['birth_date', 'tanggal_lahir_pemohon'],
+                'birth' => ['birth', 'birth_place_date'],
+                'occupation' => ['occupation', 'pekerjaan_pemohon'],
+                'address' => ['address', 'alamat_pemohon', 'applicant_address'],
+            ]));
+
+            $data['child'] = $person([
+                'name' => ['child_name', 'childName', 'nama_anak'],
+                'nik' => ['child_nik', 'childNik'],
+                'birth_place' => ['child_birth_place', 'childBirthPlace', 'tempat_lahir_anak'],
+                'birth_date' => ['child_birth_date', 'childBirthDate', 'tanggal_lahir_anak'],
+                'birth' => ['child_birth'],
+                'occupation' => ['child_occupation', 'childOccupation', 'pekerjaan_anak'],
+                'address' => ['child_address', 'childAddress', 'alamat_anak'],
+            ]);
+
+            $data['mother'] = $person([
+                'name' => ['mother_name', 'motherName', 'nama_ibu'],
+                'nik' => ['mother_nik', 'motherNik', 'nik_ibu'],
+                'birth_place' => ['mother_birth_place', 'motherBirthPlace', 'tempat_lahir_ibu'],
+                'birth_date' => ['mother_birth_date', 'motherBirthDate', 'tanggal_lahir_ibu'],
+                'birth' => ['mother_birth'],
+                'occupation' => ['mother_occupation', 'motherOccupation', 'pekerjaan_ibu'],
+                'address' => ['mother_address', 'motherAddress', 'alamat_ibu'],
+            ]);
+
+            $data['father'] = $person([
+                'name' => ['father_name', 'fatherName', 'nama_ayah'],
+                'nik' => ['father_nik', 'fatherNik', 'nik_ayah'],
+                'birth_place' => ['father_birth_place', 'fatherBirthPlace', 'tempat_lahir_ayah'],
+                'birth_date' => ['father_birth_date', 'fatherBirthDate', 'tanggal_lahir_ayah'],
+                'birth' => ['father_birth'],
+                'occupation' => ['father_occupation', 'fatherOccupation', 'pekerjaan_ayah'],
+                'address' => ['father_address', 'fatherAddress', 'alamat_ayah'],
+            ]);
+
+            $data['birth_attendant'] = $person([
+                'name' => ['birth_attendant_name', 'birthAttendantName'],
+                'nik' => ['birth_attendant_nik', 'birthAttendantNik'],
+                'birth_place' => ['birth_attendant_birth_place', 'birthAttendantBirthPlace'],
+                'birth_date' => ['birth_attendant_birth_date', 'birthAttendantBirthDate'],
+                'birth' => ['birth_attendant_birth'],
+                'occupation' => ['birth_attendant_occupation', 'birthAttendantOccupation'],
+                'address' => ['birth_attendant_address', 'birthAttendantAddress'],
+            ]);
+
+            $data['witnesses'] = [
+                [
+                    'name' => $value(['witness1_name', 'witness1Name', 'nama_saksi_1']),
+                    'nik' => $value(['witness1_nik', 'witness1Nik', 'nik_saksi_1']),
+                ],
+                [
+                    'name' => $value(['witness2_name', 'witness2Name', 'nama_saksi_2']),
+                    'nik' => $value(['witness2_nik', 'witness2Nik', 'nik_saksi_2']),
+                ],
+            ];
+        }
 
         if (in_array($templateSlug, self::MARRIED_LETTER_SLUGS, true)) {
             $data = array_merge($data, $this->marriedLetterData($form));
