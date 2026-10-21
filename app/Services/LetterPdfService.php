@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LetterRequest;
 use App\Models\LetterType;
+use App\Models\Staff;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
@@ -369,15 +370,18 @@ class LetterPdfService
             $signerPosition = 'KAMITUWA';
         }
 
-        // F-1.01 menuliskan jabatan "Kepala Desa", sedangkan data signer
-        // aplikasi memakai jabatan "Lurah". Keduanya adalah penandatangan
-        // yang sama pada konteks formulir ini.
-        if (
-            $templateSlug === 'family-biodata-form'
-            && $this->signedByLurah($signerPosition)
-            && blank($form['village_head_name'] ?? null)
-        ) {
-            $form['village_head_name'] = $signer?->name;
+        // F-1.01 menuliskan jabatan "Kepala Desa", sedangkan data struktur
+        // organisasi memakai jabatan "Lurah". Nama di bawah area TTD harus
+        // tetap nama Lurah, meskipun yang mengotorisasi surat adalah pejabat
+        // lain (mis. Kaur).
+        if ($templateSlug === 'family-biodata-form') {
+            $organizationLurahName = $this->organizationLurahName();
+
+            if (filled($organizationLurahName)) {
+                $form['village_head_name'] = $organizationLurahName;
+            } elseif (blank($form['village_head_name'] ?? null) && $this->signedByLurah($signerPosition)) {
+                $form['village_head_name'] = $signer?->name;
+            }
         }
 
         $isLurah = $this->signedByLurah($signerPosition);
@@ -2856,7 +2860,25 @@ class LetterPdfService
             return false;
         }
 
-        return str_contains($p, 'lurah') || str_contains($p, 'kepala desa');
+        return str_starts_with($p, 'lurah') || str_contains($p, 'kepala desa');
+    }
+
+    /**
+     * Ambil nama Lurah dari data struktur organisasi yang dikelola admin.
+     * Staff struktur disimpan sebagai is_signer=false, sedangkan akun pejabat
+     * penandatangan dapat tersimpan sebagai baris signer terpisah.
+     */
+    private function organizationLurahName(): ?string
+    {
+        return Staff::query()
+            ->where('is_signer', false)
+            ->get(['name', 'position'])
+            ->first(function (Staff $staff): bool {
+                $position = mb_strtolower(trim((string) $staff->position));
+
+                return str_starts_with($position, 'lurah') || str_contains($position, 'kepala desa');
+            })
+            ?->name;
     }
 
     private function signaturePrefix(?string $position, bool $direct = false): array

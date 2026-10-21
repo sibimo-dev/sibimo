@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -55,6 +56,26 @@ class Citizen extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $citizen): void {
+            $birthDate = $citizen->birth_date;
+
+            if (!$birthDate) {
+                $citizen->age = null;
+                return;
+            }
+
+            $birthDate = $birthDate instanceof Carbon
+                ? $birthDate
+                : Carbon::parse($birthDate);
+
+            $citizen->age = $birthDate->isFuture()
+                ? null
+                : $birthDate->age;
+        });
+    }
+
     /**
      * Table name.
      */
@@ -88,6 +109,24 @@ class Citizen extends Authenticatable
             'divorce_date' => 'date',
             'age' => 'integer',
         ];
+    }
+
+    /**
+     * Always expose the current age from birth_date, including legacy rows.
+     */
+    public function getAgeAttribute($value): ?int
+    {
+        $birthDate = $this->getAttribute('birth_date');
+
+        if (!$birthDate) {
+            return null;
+        }
+
+        $birthDate = $birthDate instanceof Carbon
+            ? $birthDate
+            : Carbon::parse($birthDate);
+
+        return $birthDate->isFuture() ? null : $birthDate->age;
     }
 
     public function letterRequests()
