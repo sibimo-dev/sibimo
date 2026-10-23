@@ -4,7 +4,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ($region['province_code'] ?? [] as $d)
+                @foreach ((array) ($region['province_code'] ?? []) as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -16,7 +16,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ($region['regency_code'] ?? [] as $d)
+                @foreach ((array) ($region['regency_code'] ?? []) as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -28,7 +28,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ($region['district_code'] ?? [] as $d)
+                @foreach ((array) ($region['district_code'] ?? []) as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -40,7 +40,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ($region['village_code'] ?? [] as $d)
+                @foreach ((array) ($region['village_code'] ?? []) as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>

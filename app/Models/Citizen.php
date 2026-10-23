@@ -13,6 +13,8 @@ use Laravel\Sanctum\HasApiTokens;
 #[Fillable([
     'record_type',
     'record_event',
+    'record_year',
+    'title_code',
     'national_id',
     'family_card_number',
     'dusun',
@@ -24,6 +26,8 @@ use Laravel\Sanctum\HasApiTokens;
     'address',
     'rt',
     'rw',
+    'rt_head_name',
+    'rw_head_name',
     'phone_number',
     'birth_certificate_status',
     'birth_certificate_number',
@@ -41,12 +45,16 @@ use Laravel\Sanctum\HasApiTokens;
     'physical_disability',
     'disability_status',
     'religion',
+    'belief_organization',
     'mother_national_id',
     'mother_name',
     'father_national_id',
     'father_name',
     'nationality',
     'ktp_address',
+    'previous_address',
+    'passport_number',
+    'passport_expiry_date',
     'status',
 ])]
 #[Hidden([
@@ -107,6 +115,7 @@ class Citizen extends Authenticatable
             'birth_date' => 'date',
             'marriage_date' => 'date',
             'divorce_date' => 'date',
+            'passport_expiry_date' => 'date',
             'age' => 'integer',
         ];
     }
@@ -132,6 +141,11 @@ class Citizen extends Authenticatable
     public function letterRequests()
     {
         return $this->hasMany(LetterRequest::class, 'citizen_id', 'citizen_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(CitizenDocument::class, 'citizen_id', 'citizen_id');
     }
 
     public function complaints()

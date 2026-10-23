@@ -59,6 +59,7 @@ Route::prefix('public')->group(function () {
         Route::get('/letter-types', [PublicLetterController::class, 'types']);
         Route::get('/letter-stats', [PublicLetterController::class, 'stats']);
         Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/citizens/reusable-documents', [PublicLetterController::class, 'reusableDocuments']);
         Route::post('/letter-requests', [PublicLetterController::class, 'store']);
         Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
         Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);
@@ -214,6 +215,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->parameters(['book-loans' => 'loan_id']);
 
     // Manajemen akun citizen
+    Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
 

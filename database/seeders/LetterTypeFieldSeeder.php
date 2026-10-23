@@ -470,6 +470,7 @@ class LetterTypeFieldSeeder extends Seeder
             ['section' => 'Data Catin Putra', 'label' => 'Agama', 'key' => 'agama_catin_putra', 'type' => 'select', 'options' => ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Khonghucu']],
             ['section' => 'Data Catin Putra', 'label' => 'Pekerjaan', 'key' => 'pekerjaan_catin_putra', 'type' => 'text'],
             ['section' => 'Data Catin Putra', 'label' => 'Alamat', 'key' => 'alamat_catin_putra', 'type' => 'textarea'],
+            ['section' => 'Data Catin Putra', 'label' => 'Status', 'key' => 'status_catin_putra', 'type' => 'select', 'options' => ['Jejaka', 'Duda', 'Beristri']],
         ]);
 
         $this->seedForCode('N1P', [ // Pengantar Nikah Perempuan
