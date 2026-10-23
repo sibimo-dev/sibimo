@@ -20,6 +20,7 @@ class BookSeeder extends Seeder
                     'category_id' => $categoryIds[$i % $categoryIds->count()],
                     'title' => 'Buku Seeder ' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
                     'author' => 'Penulis Seeder',
+                    'publisher' => 'Penerbit Seeder',
                     'stock' => 5,
                     'created_at' => now(),
                     'updated_at' => now(),
