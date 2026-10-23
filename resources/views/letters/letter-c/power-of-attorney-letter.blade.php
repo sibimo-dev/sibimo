@@ -161,7 +161,12 @@
             </td>
         </tr>
         <tr>
-            <td style="text-align: center; padding-top: 34pt;">({{ $fill($endorser['name'], 25) }})</td>
+            <td style="text-align: center; padding-top: 8pt;">
+                <div style="height: 42pt;">
+                    @include('letters.partials.signature-image')
+                </div>
+                ({{ $fill($endorser['name'], 25) }})
+            </td>
         </tr>
     </table>
 @endsection

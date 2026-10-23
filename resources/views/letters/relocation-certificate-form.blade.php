@@ -48,9 +48,13 @@
 
 @section('content')
     @php
+        // Be tolerant of legacy requests whose form_data was stored as a scalar.
+        // This template expects a map of fields and must still render an empty form safely.
+        $form = is_array($form ?? null) ? $form : [];
+        $applicant = is_array($applicant ?? null) ? $applicant : [];
         // ---- Normalisasi isian Pindah WNI: kode angka kotak + tabel keluarga ----
         $relFirst = function (array $keys) use ($form) {
-            foreach ($keys as $k) {
+            foreach ((array) $keys as $k) {
                 if (isset($form[$k]) && !is_array($form[$k]) && trim((string) $form[$k]) !== '') return trim((string) $form[$k]);
             }
             return '';
@@ -62,7 +66,7 @@
             if ($value === '') return '';
             if (preg_match('/^\s*(\d+)\s*(?:[.)\-:]|$)/', $value, $m)) return $m[1];
             $n = $relNorm($value);
-            foreach ($labels as $i => $label) {
+            foreach ((array) $labels as $i => $label) {
                 $ln = $relNorm($label);
                 if ($n === $ln || ($ln === 'lainnyasebutkan' && str_starts_with($n, 'lainnya'))) return (string) ($i + 1);
             }
@@ -70,7 +74,7 @@
         };
         // Cari nilai di kunci mana pun yang namanya cocok pola (nama field backend bisa Indonesia/Inggris, snake/camel)
         $relFind = function (string $include, string $exclude = '') use ($form) {
-            foreach ($form as $k => $v) {
+            foreach ((array) $form as $k => $v) {
                 if (is_array($v) || trim((string) $v) === '') continue;
                 $n = preg_replace('/[^a-z0-9]/', '', strtolower((string) $k));
                 if (preg_match($include, $n) && ($exclude === '' || !preg_match($exclude, $n))) return trim((string) $v);
@@ -80,7 +84,7 @@
         // Alamat asal/tujuan: $form['origin']['x'] atau origin_x / originX
         $relGroup = function (string $group, string $key) use ($form) {
             $studly = str_replace(' ', '', ucwords(str_replace('_', ' ', $key)));
-            foreach ([$form[$group][$key] ?? null, $form[$group . '_' . $key] ?? null, $form[$group . $studly] ?? null] as $v) {
+            foreach ((array) [$form[$group][$key] ?? null, $form[$group . '_' . $key] ?? null, $form[$group . $studly] ?? null] as $v) {
                 if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v);
             }
             return '';
@@ -96,7 +100,7 @@
         }
         if ($relRows === null && isset($family_members)) $relRows = $family_members;
         if ($relRows === null) {
-            foreach ($form as $v) {
+            foreach ((array) $form as $v) {
                 if (is_string($v) && str_starts_with(ltrim($v), '[{')) $v = json_decode($v, true);
                 if (is_array($v) && $v !== [] && is_array(reset($v)) && (isset(reset($v)['nik']) || isset(reset($v)['name']) || isset(reset($v)['nama']))) { $relRows = $v; break; }
             }
@@ -131,7 +135,7 @@
         $rel['reason_other'] = $rel['reason_other'] !== '' ? $rel['reason_other'] : '.....................';
         // Data pemohon & KK asal: utamakan $applicant / $form['origin'], cadangannya isian form datar (kunci snake_case/camelCase)
         $relPick = function (array $sources) {
-            foreach ($sources as $v) { if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v); }
+            foreach ((array) $sources as $v) { if (!is_array($v) && trim((string) $v) !== '') return trim((string) $v); }
             return '';
         };
         $rel['kk_number']   = $relPick([$form['origin']['kk_number'] ?? null, $form['kk_number'] ?? null, $form['kkNumber'] ?? null, $form['origin_kk_number'] ?? null, $form['originKkNumber'] ?? null]);
@@ -353,7 +357,7 @@
             <th style="border:1px solid #000; width:60pt; padding:0 2pt; line-height:1.05;">MASA BERLAKU KTP S/D</th>
             <th style="border:1px solid #000; width:55pt; padding:0 2pt; line-height:1.05;">SHDK</th>
         </tr>
-        @forelse (($form['family_members'] ?? []) as $i => $row)
+        @forelse ((array) ($form['family_members'] ?? []) as $i => $row)
             <tr>
                 <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.05;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:0 2pt; line-height:1.05;">{{ $row['nik'] ?? '' }}</td>

@@ -162,10 +162,7 @@ class LetterPdfService
     ];
 
     /** Template yang kopnya selalu memakai kop Pemerintah Kalurahan. */
-    private const KALURAHAN_KOP_TEMPLATES = [
-        'land-price-certificate-letter',
-        'land-origin-certificate-letter',
-    ];
+    private const KALURAHAN_KOP_TEMPLATES = [];
 
     private const VIEW_FOLDERS = [
         'birth-attestation-letter' => 'birth',
@@ -689,8 +686,12 @@ class LetterPdfService
             'condition' => $form['condition'] ?? null,
 
             'endorser' => [
-                'office' => $form['endorser_office'] ?? null,
-                'name' => $form['endorser_name'] ?? null,
+                'office' => filled($form['endorser_office'] ?? null)
+                    ? $form['endorser_office']
+                    : 'Kalurahan Bimomartani',
+                'name' => filled($form['endorser_name'] ?? null)
+                    ? $form['endorser_name']
+                    : $signer?->name,
             ],
 
             // Sengaja tetap fallback ke tanggal hari ini walau $letterDate null
@@ -762,9 +763,17 @@ class LetterPdfService
                 'area_in_words' => $form['land_area_in_words'] ?? $form['area_in_words'] ?? $form['areaInWords'] ?? null,
                 'owner_name' => $form['land_owner_name'] ?? $form['owner_name'] ?? $form['ownerName'] ?? null,
                 'hamlet' => $form['land_hamlet'] ?? $form['hamlet'] ?? null,
-                'village' => $form['land_village'] ?? $form['village'] ?? 'Bimomartani',
-                'district' => $form['land_district'] ?? $form['district'] ?? 'Ngemplak',
-                'regency' => $form['land_regency'] ?? $form['regency'] ?? $form['city'] ?? 'Sleman',
+                // SKTH berlaku untuk keterangan harga tanah di wilayah
+                // Kalurahan ini; sumber harga pembanding tetap bebas dari luar.
+                'village' => $code === 'SKTH'
+                    ? 'Bimomartani'
+                    : ($form['land_village'] ?? $form['village'] ?? 'Bimomartani'),
+                'district' => $code === 'SKTH'
+                    ? 'Ngemplak'
+                    : ($form['land_district'] ?? $form['district'] ?? 'Ngemplak'),
+                'regency' => $code === 'SKTH'
+                    ? 'Sleman'
+                    : ($form['land_regency'] ?? $form['regency'] ?? $form['city'] ?? 'Sleman'),
                 'price_min' => $this->rupiah($form['land_price_min'] ?? $form['price_min'] ?? $form['priceMin'] ?? null) ?: ($form['land_price_min'] ?? $form['price_min'] ?? $form['priceMin'] ?? null),
                 'price_max' => $this->rupiah($form['land_price_max'] ?? $form['price_max'] ?? $form['priceMax'] ?? null) ?: ($form['land_price_max'] ?? $form['price_max'] ?? $form['priceMax'] ?? null),
                 'measurement_letter_number' => $form['land_measurement_letter_number'] ?? $form['measurement_letter_number'] ?? $form['measurementLetterNumber'] ?? null,
@@ -3266,7 +3275,8 @@ class LetterPdfService
         ];
 
         if ($binLabel) {
-            $data[$binLabel] = $get($binLabel);
+            $fallbackLabel = $binLabel === 'binti' ? 'bin' : 'binti';
+            $data[$binLabel] = $get($binLabel) ?? $get($fallbackLabel);
         }
 
         return array_merge($data, $extra);

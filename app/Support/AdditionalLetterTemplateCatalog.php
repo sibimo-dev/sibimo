@@ -46,7 +46,9 @@ final class AdditionalLetterTemplateCatalog
             self::type('SKTA', 'Surat Keterangan Asal-Usul Tanah', 'Keterangan', 'manual', 'letters.letter-c.land-origin-certificate-letter', 'lurah', self::landFields(), $baseDocuments),
             self::type('SKTH', 'Surat Keterangan Harga Tanah', 'Keterangan', 'manual', 'letters.letter-c.land-price-certificate-letter', 'lurah', self::landFields(), $baseDocuments),
             self::type('SPKLC', 'Surat Pernyataan Data Letter C', 'Pernyataan', 'manual', 'letters.letter-c.letter-c-data-statement-letter', 'kaur tata laksana', self::letterCFields(), $baseDocuments),
-            self::type('SKC', 'Surat Kuasa Pelayanan Letter C', 'Permohonan', 'manual', 'letters.letter-c.power-of-attorney-letter', 'kaur tata laksana', self::attorneyFields(), $baseDocuments),
+            // Pada blok "Kalurahan/Notaris", penandatangan internal yang dipakai
+            // biasanya Jagabaya.
+            self::type('SKC', 'Surat Kuasa Pelayanan Letter C', 'Permohonan', 'manual', 'letters.letter-c.power-of-attorney-letter', 'jagabaya', self::attorneyFields(), $baseDocuments),
 
             self::type('SKBK2', 'Surat Keterangan Belum Pernah Menikah', 'Keterangan', 'manual', 'letters.marriage-women.letters.unmarried-certificate', 'lurah', self::identityFields(), $baseDocuments),
             self::type('SPCCP', 'Surat Persetujuan Calon Pengantin', 'Pernyataan', 'manual', 'letters.married-man.bride-groom-consent-letter', 'kaur tata laksana', self::marriedPersonFields(), $baseDocuments),

@@ -363,20 +363,65 @@ class PublicLetterController extends Controller
 
     private function residentPayload(Citizen $citizen): array
     {
+        $headOfFamilyName = null;
+        if (filled($citizen->family_card_number)) {
+            $headOfFamilyName = Citizen::query()
+                ->where('family_card_number', $citizen->family_card_number)
+                ->where('status', 'Active')
+                ->where(function ($query): void {
+                    $query->where('family_relationship', 'like', '%Kepala%')
+                        ->orWhere('family_relationship', 'like', '%KK%');
+                })
+                ->value('full_name');
+        }
+
+        $headOfFamilyName ??= preg_match('/kepala|kk/i', (string) $citizen->family_relationship)
+            ? $citizen->full_name
+            : null;
+
         return [
             'nik' => $citizen->national_id,
+            'titleCode' => $citizen->title_code,
             'familyCardNumber' => $citizen->family_card_number,
+            'headOfFamilyName' => $headOfFamilyName,
             'fullName' => $citizen->full_name,
             'gender' => $citizen->gender,
             'birthPlace' => $citizen->birth_place,
             'birthDate' => $citizen->birth_date?->format('Y-m-d'),
+            'age' => $citizen->age,
             'address' => $citizen->address,
             'ktpAddress' => $citizen->ktp_address ?: $citizen->address,
+            'dusun' => $citizen->dusun,
+            'rt' => $citizen->rt,
+            'rw' => $citizen->rw,
+            'rtHeadName' => $citizen->rt_head_name,
+            'rwHeadName' => $citizen->rw_head_name,
             'phoneNumber' => $citizen->phone_number,
+            'birthCertificateStatus' => $citizen->birth_certificate_status,
+            'birthCertificateNumber' => $citizen->birth_certificate_number,
+            'bloodType' => $citizen->blood_type,
             'occupation' => $citizen->occupation,
             'education' => $citizen->education,
             'maritalStatus' => $citizen->marital_status,
+            'marriageCertificateStatus' => $citizen->marriage_certificate_status,
+            'marriageCertificateNumber' => $citizen->marriage_certificate_number,
+            'marriageDate' => $citizen->marriage_date?->format('Y-m-d'),
+            'divorceCertificateStatus' => $citizen->divorce_certificate_status,
+            'divorceCertificateNumber' => $citizen->divorce_certificate_number,
+            'divorceDate' => $citizen->divorce_date?->format('Y-m-d'),
+            'familyRelationship' => $citizen->family_relationship,
+            'physicalDisability' => $citizen->physical_disability,
+            'disabilityStatus' => $citizen->disability_status,
             'religion' => $citizen->religion,
+            'beliefOrganization' => $citizen->belief_organization,
+            'motherNationalId' => $citizen->mother_national_id,
+            'motherName' => $citizen->mother_name,
+            'fatherNationalId' => $citizen->father_national_id,
+            'fatherName' => $citizen->father_name,
+            'nationality' => $citizen->nationality ?: 'WNI',
+            'previousAddress' => $citizen->previous_address,
+            'passportNumber' => $citizen->passport_number,
+            'passportExpiryDate' => $citizen->passport_expiry_date?->format('Y-m-d'),
         ];
     }
 

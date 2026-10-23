@@ -214,6 +214,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->parameters(['book-loans' => 'loan_id']);
 
     // Manajemen akun citizen
+    Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
 
