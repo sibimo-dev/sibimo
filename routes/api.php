@@ -59,6 +59,7 @@ Route::prefix('public')->group(function () {
         Route::get('/letter-types', [PublicLetterController::class, 'types']);
         Route::get('/letter-stats', [PublicLetterController::class, 'stats']);
         Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/citizens/reusable-documents', [PublicLetterController::class, 'reusableDocuments']);
         Route::post('/letter-requests', [PublicLetterController::class, 'store']);
         Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
         Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);

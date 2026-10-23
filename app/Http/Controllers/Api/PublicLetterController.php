@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Events\NotificationAvailable;
 use App\Models\Citizen;
+use App\Models\CitizenDocument;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterType;
@@ -40,6 +41,17 @@ class PublicLetterController extends Controller
      */
     private const NEW_RESIDENT_CODES = [
         'SPKTP', 'SPKIAF', 'FBWNI', 'PAK', 'SKDT', 'SKTS', 'SPTTS', 'SPPWNI', 'SPPWF', 'SPTJP',
+    ];
+
+    /**
+     * Layanan Umum boleh diajukan oleh pemohon dari luar Kalurahan.
+     * Daftar ini sengaja berbasis kode surat di backend, bukan nilai
+     * service_flow dari client, agar layanan warga tidak ikut terbuka.
+     *
+     * @var list<string>
+     */
+    private const NON_RESIDENT_PUBLIC_CODES = [
+        'SKU', 'SKP', 'SKK', 'SKJG',
     ];
 
     public function types(): JsonResponse
@@ -110,6 +122,52 @@ class PublicLetterController extends Controller
         ]);
     }
 
+    public function reusableDocuments(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'nik' => ['required', 'string', 'size:16', 'regex:/^\d{16}$/'],
+            'letter_type_code' => ['required', 'string', Rule::in(self::ONLINE_CODES)],
+        ]);
+
+        $citizen = Citizen::query()
+            ->where('national_id', $validated['nik'])
+            ->where('status', 'Active')
+            ->first();
+
+        if (! $citizen) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $letterType = LetterType::query()
+            ->where('code', $validated['letter_type_code'])
+            ->with('documents')
+            ->firstOrFail();
+
+        $allowedTypes = $letterType->documents
+            ->mapWithKeys(fn ($document) => [
+                (int) $document->letter_type_document_id => $this->documentType($document->document_name),
+            ]);
+
+        $documents = CitizenDocument::query()
+            ->where('citizen_id', $citizen->citizen_id)
+            ->where('is_active', true)
+            ->latest('last_used_at')
+            ->latest('citizen_document_id')
+            ->get()
+            ->filter(fn (CitizenDocument $document) => $document->document_type !== 'lainnya'
+                && $allowedTypes->contains($document->document_type))
+            ->map(fn (CitizenDocument $document) => [
+                'citizen_document_id' => $document->citizen_document_id,
+                'document_type' => $document->document_type,
+                'file_name' => $document->file_name,
+                'file_size' => $document->file_size,
+                'uploaded_at' => $document->created_at?->toISOString(),
+            ])
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $documents]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -123,6 +181,8 @@ class PublicLetterController extends Controller
             'attachment_document_ids.*' => ['integer'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'reused_document_ids' => ['nullable', 'array'],
+            'reused_document_ids.*' => ['integer'],
             'service_flow' => ['nullable', 'string', 'in:general,permit'],
             'is_new_resident' => ['nullable', 'boolean'],
         ]);
@@ -143,8 +203,9 @@ class PublicLetterController extends Controller
         $isNewResident = (bool) ($validated['is_new_resident'] ?? false);
         $isAllowedNewResidentRegistration = $isNewResident
             && in_array($letterType->code, self::NEW_RESIDENT_CODES, true);
+        $isAllowedNonResidentPublic = in_array($letterType->code, self::NON_RESIDENT_PUBLIC_CODES, true);
 
-        if (! $citizen && ! $isAllowedNewResidentRegistration) {
+        if (! $citizen && ! $isAllowedNewResidentRegistration && ! $isAllowedNonResidentPublic) {
             throw ValidationException::withMessages([
                 'applicant_nik' => 'NIK tidak terdaftar sebagai warga aktif.',
             ]);
@@ -154,6 +215,10 @@ class PublicLetterController extends Controller
 
         $files = array_values($request->file('attachments', []));
         $documentIds = array_values($request->input('attachment_document_ids', []));
+        $reusedDocumentIds = array_filter(
+            (array) ($validated['reused_document_ids'] ?? []),
+            fn ($value) => filled($value),
+        );
 
         if (count($files) !== count($documentIds)) {
             throw ValidationException::withMessages([
@@ -170,6 +235,44 @@ class PublicLetterController extends Controller
             }
         }
 
+        if ($reusedDocumentIds && ! $citizen) {
+            throw ValidationException::withMessages([
+                'reused_document_ids' => 'Dokumen tersimpan hanya dapat digunakan oleh warga yang sudah terdaftar.',
+            ]);
+        }
+
+        $reusedDocuments = [];
+        foreach ($reusedDocumentIds as $letterTypeDocumentId => $citizenDocumentId) {
+            $requirement = $documents->get((int) $letterTypeDocumentId);
+            if (! $requirement) {
+                throw ValidationException::withMessages([
+                    'reused_document_ids' => 'Jenis persyaratan dokumen tidak sesuai dengan surat.',
+                ]);
+            }
+
+            $citizenDocument = CitizenDocument::query()
+                ->where('citizen_document_id', (int) $citizenDocumentId)
+                ->where('citizen_id', $citizen->citizen_id)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $citizenDocument
+                || $this->documentType($requirement->document_name) === 'lainnya'
+                || $citizenDocument->document_type !== $this->documentType($requirement->document_name)) {
+                throw ValidationException::withMessages([
+                    'reused_document_ids' => 'Dokumen tersimpan tidak cocok dengan persyaratan surat atau sudah tidak tersedia.',
+                ]);
+            }
+
+            if (! Storage::disk('local')->exists($citizenDocument->storage_path)) {
+                throw ValidationException::withMessages([
+                    'reused_document_ids' => 'File dokumen tersimpan tidak ditemukan. Silakan unggah ulang dokumen tersebut.',
+                ]);
+            }
+
+            $reusedDocuments[(int) $letterTypeDocumentId] = $citizenDocument;
+        }
+
         $storedPaths = [];
 
         try {
@@ -180,6 +283,7 @@ class PublicLetterController extends Controller
                 $citizen,
                 $files,
                 $documentIds,
+                $reusedDocuments,
                 &$storedPaths,
             ): LetterRequest {
                 $letterRequest = LetterRequest::create([
@@ -201,10 +305,30 @@ class PublicLetterController extends Controller
                     LetterRequestAttachment::create([
                         'letter_request_id' => $letterRequest->letter_request_id,
                         'letter_type_document_id' => (int) $documentIds[$index],
+                        'citizen_document_id' => $this->storeCitizenDocument($citizen, $file, $letterType->documents->get((int) $documentIds[$index]), $storedPaths),
+                        'document_type' => $this->documentType($letterType->documents->get((int) $documentIds[$index])?->document_name),
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => Storage::disk('public')->url($storedPath),
                         'uploaded_at' => now(),
                     ]);
+                }
+
+                foreach ($reusedDocuments as $documentId => $citizenDocument) {
+                    $requestPath = "letter-requests/{$letterRequest->letter_request_id}/" . uniqid('reused-', true) . '-' . $citizenDocument->file_name;
+                    Storage::disk('public')->put($requestPath, Storage::disk('local')->get($citizenDocument->storage_path));
+                    $storedPaths[] = $requestPath;
+
+                    LetterRequestAttachment::create([
+                        'letter_request_id' => $letterRequest->letter_request_id,
+                        'letter_type_document_id' => $documentId,
+                        'citizen_document_id' => $citizenDocument->citizen_document_id,
+                        'document_type' => $citizenDocument->document_type,
+                        'file_name' => $citizenDocument->file_name,
+                        'file_path' => Storage::disk('public')->url($requestPath),
+                        'uploaded_at' => now(),
+                    ]);
+
+                    $citizenDocument->update(['last_used_at' => now()]);
                 }
 
                 return $letterRequest;
@@ -357,8 +481,89 @@ class PublicLetterController extends Controller
                 'document_name' => $document->document_name,
                 'description' => $document->description,
                 'is_required' => $document->is_required,
+                'document_type' => $this->documentType($document->document_name),
             ])->values(),
         ];
+    }
+
+    private function documentType(?string $name): string
+    {
+        $name = strtolower(trim((string) $name));
+        $name = preg_replace('/[^a-z0-9]+/', ' ', $name) ?: '';
+
+        $base = match (true) {
+            str_contains($name, 'kartu keluarga') || preg_match('/\bkk\b/', $name) === 1 => 'kk',
+            str_contains($name, 'paspor') || str_contains($name, 'passport') => 'paspor',
+            str_contains($name, 'akta kelahiran') || str_contains($name, 'akta lahir') || str_contains($name, 'surat keterangan lahir') => 'akta_kelahiran',
+            str_contains($name, 'akta perkawinan') || str_contains($name, 'buku nikah') || str_contains($name, 'akta nikah') => 'akta_perkawinan',
+            str_contains($name, 'akta perceraian') || str_contains($name, 'surat cerai') || str_contains($name, 'cerai') => 'akta_perceraian',
+            str_contains($name, 'surat kematian') || str_contains($name, 'akta kematian') || str_contains($name, 'meninggal') || str_contains($name, 'almarhum') => 'surat_kematian',
+            str_contains($name, 'pas foto') || str_contains($name, 'pass photo') || preg_match('/\bfoto\b/', $name) === 1 => 'pas_foto',
+            str_contains($name, 'pbb') => 'pbb',
+            str_contains($name, 'shm') || str_contains($name, 'letter c') => 'letter_c',
+            str_contains($name, 'rt rw') || str_contains($name, 'rt atau rw') => 'surat_rt_rw',
+            str_contains($name, 'ktp') || str_contains($name, 'kartu tanda penduduk') => 'ktp',
+            default => 'lainnya',
+        };
+
+        if (! in_array($base, ['ktp', 'kk', 'akta_kelahiran', 'akta_perkawinan', 'akta_perceraian', 'surat_kematian', 'paspor'], true)) {
+            return $base;
+        }
+
+        $scope = match (true) {
+            str_contains($name, 'pasangan') || str_contains($name, 'suami') || str_contains($name, 'istri') || str_contains($name, 'calon') => 'spouse',
+            str_contains($name, 'ayah') || str_contains($name, 'ibu') || str_contains($name, 'orang tua') || str_contains($name, 'wali') => 'parent',
+            str_contains($name, 'ahli waris') => 'heir',
+            str_contains($name, 'saksi') => 'witness',
+            str_contains($name, 'penerima kuasa') || str_contains($name, 'pemberi kuasa') => 'attorney',
+            str_contains($name, 'kematian') || str_contains($name, 'meninggal') || str_contains($name, 'almarhum') || str_contains($name, 'jenazah') => 'deceased',
+            default => 'applicant',
+        };
+
+        return "{$base}:{$scope}";
+    }
+
+    private function storeCitizenDocument(?Citizen $citizen, $file, $requirement, array &$storedPaths): ?int
+    {
+        if (! $citizen || ! $requirement) {
+            return null;
+        }
+
+        $hash = hash_file('sha256', $file->getRealPath());
+        $type = $this->documentType($requirement->document_name);
+        $extension = strtolower($file->getClientOriginalExtension() ?: 'bin');
+        $privatePath = "citizen-documents/{$citizen->citizen_id}/{$hash}.{$extension}";
+
+        if (! Storage::disk('local')->exists($privatePath)) {
+            Storage::disk('local')->putFileAs(
+                "citizen-documents/{$citizen->citizen_id}",
+                $file,
+                "{$hash}.{$extension}",
+            );
+        }
+
+        $document = CitizenDocument::query()->firstOrCreate(
+            [
+                'citizen_id' => $citizen->citizen_id,
+                'document_type' => $type,
+                'file_hash' => $hash,
+            ],
+            [
+                'file_name' => $file->getClientOriginalName(),
+                'storage_path' => $privatePath,
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'is_active' => true,
+            ],
+        );
+
+        $document->update([
+            'file_name' => $file->getClientOriginalName(),
+            'is_active' => true,
+            'last_used_at' => now(),
+        ]);
+
+        return $document->citizen_document_id;
     }
 
     private function residentPayload(Citizen $citizen): array

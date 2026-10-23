@@ -143,6 +143,11 @@ class Citizen extends Authenticatable
         return $this->hasMany(LetterRequest::class, 'citizen_id', 'citizen_id');
     }
 
+    public function documents()
+    {
+        return $this->hasMany(CitizenDocument::class, 'citizen_id', 'citizen_id');
+    }
+
     public function complaints()
     {
         return $this->hasMany(Complaint::class, 'citizen_id', 'citizen_id');
