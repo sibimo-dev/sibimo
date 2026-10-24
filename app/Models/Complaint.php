@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
     'status',
     'submitted_at',
     'resolved_at',
+    'resolution_description',
 ])]
 class Complaint extends Model
 {
@@ -58,7 +59,14 @@ class Complaint extends Model
 
     public function attachments()
     {
-        return $this->hasMany(ComplaintAttachment::class, 'complaint_id', 'complaint_id');
+        return $this->hasMany(ComplaintAttachment::class, 'complaint_id', 'complaint_id')
+            ->where('type', 'report');
+    }
+
+    public function resolutionAttachments()
+    {
+        return $this->hasMany(ComplaintAttachment::class, 'complaint_id', 'complaint_id')
+            ->where('type', 'resolution');
     }
 
     public function statusHistories()

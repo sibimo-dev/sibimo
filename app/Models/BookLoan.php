@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'book_id',
     'citizen_id',
+    'borrower_name',
     'borrowed_at',
     'due_date',
     'returned_at',

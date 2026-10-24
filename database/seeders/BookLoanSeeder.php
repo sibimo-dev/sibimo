@@ -19,6 +19,7 @@ class BookLoanSeeder extends Seeder
                 [
                     'book_id' => $bookIds[$i % $bookIds->count()],
                     'citizen_id' => $citizenIds[$i % $citizenIds->count()],
+                    'borrower_name' => $i % 4 === 0 ? 'Pengunjung Umum' : null,
                     'borrowed_at' => $borrowedAt->format('Y-m-d'),
                 ],
                 [
