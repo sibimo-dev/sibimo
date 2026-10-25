@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LetterRequest;
+use App\Support\LetterNumberFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
@@ -174,10 +175,12 @@ class DeathTemplateService
             'relationship' => $this->value($form, ['hubungan_pelapor']),
         ];
 
-        $now = $request->authorized_at ?? now();
-        $code = rtrim($request->letterType?->number_prefix ?: ($request->letterType?->code ?? ''), '/');
-        $draftNumber = $code !== '' ? "{$code}/.../{$this->toRomanMonth($now->month)}/{$now->year}" : '';
-        $data['number'] = $data['nomor'] = $request->letter_number ?? $draftNumber;
+        $classificationIndex = trim((string) ($request->letterType?->classification_index ?: '400.12'));
+        $draftNumber = $classificationIndex !== '' ? "{$classificationIndex}/..." : '';
+        $data['number'] = $data['nomor'] = LetterNumberFormatter::forDisplay(
+            $request->letter_number,
+            $classificationIndex,
+        ) ?? $draftNumber;
         $data['document_title'] = $request->letterType?->letter_name
             ?? $data['document_title'];
         $data['request'] = [
