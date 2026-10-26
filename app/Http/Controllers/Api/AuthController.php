@@ -43,10 +43,9 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Hapus token lama jika ingin satu sesi/token aktif.
-        // Kalau ingin banyak device bisa login, baris ini boleh dihapus.
-        $user->tokens()->delete();
-
+          // Token lama tidak dihapus: login pada perangkat lain tidak memaksa
+          // sesi yang sedang aktif logout. Token tetap dapat diakhiri manual
+          // lewat endpoint logout atau saat token benar-benar tidak valid.
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

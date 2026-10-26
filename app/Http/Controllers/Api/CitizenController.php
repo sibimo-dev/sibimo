@@ -198,6 +198,8 @@ class CitizenController extends Controller
 
     public function show(int $citizen_id): JsonResponse
     {
+        // Dokumen warga dimuat lewat endpoint CitizenDocumentController sendiri,
+        // supaya kegagalan file/penyimpanan tidak membuat form edit warga blank.
         $citizen = Citizen::query()->findOrFail($citizen_id);
 
         return response()->json([
