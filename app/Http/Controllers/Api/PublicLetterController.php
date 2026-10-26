@@ -11,6 +11,7 @@ use App\Models\LetterRequestAttachment;
 use App\Models\LetterType;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
+use App\Support\LetterNumberFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -138,6 +139,11 @@ class PublicLetterController extends Controller
             return response()->json(['success' => true, 'data' => []]);
         }
 
+        // Pengajuan yang dibuat sebelum fitur dokumen warga diperbaiki belum
+        // memiliki citizen_document_id. Pulihkan lampiran lama yang file
+        // fisiknya masih tersedia agar langsung bisa dipakai ulang.
+        $this->backfillLegacyCitizenDocuments($citizen);
+
         $letterType = LetterType::query()
             ->where('code', $validated['letter_type_code'])
             ->with('documents')
@@ -154,8 +160,7 @@ class PublicLetterController extends Controller
             ->latest('last_used_at')
             ->latest('citizen_document_id')
             ->get()
-            ->filter(fn (CitizenDocument $document) => $document->document_type !== 'lainnya'
-                && $allowedTypes->contains($document->document_type))
+            ->filter(fn (CitizenDocument $document) => $allowedTypes->contains($document->document_type))
             ->map(fn (CitizenDocument $document) => [
                 'citizen_document_id' => $document->citizen_document_id,
                 'document_type' => $document->document_type,
@@ -257,7 +262,6 @@ class PublicLetterController extends Controller
                 ->first();
 
             if (! $citizenDocument
-                || $this->documentType($requirement->document_name) === 'lainnya'
                 || $citizenDocument->document_type !== $this->documentType($requirement->document_name)) {
                 throw ValidationException::withMessages([
                     'reused_document_ids' => 'Dokumen tersimpan tidak cocok dengan persyaratan surat atau sudah tidak tersedia.',
@@ -280,6 +284,7 @@ class PublicLetterController extends Controller
                 $validated,
                 $formData,
                 $letterType,
+                $documents,
                 $citizen,
                 $files,
                 $documentIds,
@@ -301,12 +306,13 @@ class PublicLetterController extends Controller
                 foreach ($files as $index => $file) {
                     $storedPath = $file->store("letter-requests/{$letterRequest->letter_request_id}", 'public');
                     $storedPaths[] = $storedPath;
+                    $requirement = $documents->get((int) $documentIds[$index]);
 
                     LetterRequestAttachment::create([
                         'letter_request_id' => $letterRequest->letter_request_id,
                         'letter_type_document_id' => (int) $documentIds[$index],
-                        'citizen_document_id' => $this->storeCitizenDocument($citizen, $file, $letterType->documents->get((int) $documentIds[$index]), $storedPaths),
-                        'document_type' => $this->documentType($letterType->documents->get((int) $documentIds[$index])?->document_name),
+                        'citizen_document_id' => $this->storeCitizenDocument($citizen, $file, $requirement, $storedPaths),
+                        'document_type' => $this->documentType($requirement?->document_name),
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => Storage::disk('public')->url($storedPath),
                         'uploaded_at' => now(),
@@ -489,7 +495,7 @@ class PublicLetterController extends Controller
     private function documentType(?string $name): string
     {
         $name = strtolower(trim((string) $name));
-        $name = preg_replace('/[^a-z0-9]+/', ' ', $name) ?: '';
+        $name = trim(preg_replace('/[^a-z0-9]+/', ' ', $name) ?: '');
 
         $base = match (true) {
             str_contains($name, 'kartu keluarga') || preg_match('/\bkk\b/', $name) === 1 => 'kk',
@@ -507,7 +513,9 @@ class PublicLetterController extends Controller
         };
 
         if (! in_array($base, ['ktp', 'kk', 'akta_kelahiran', 'akta_perkawinan', 'akta_perceraian', 'surat_kematian', 'paspor'], true)) {
-            return $base;
+            return $base === 'lainnya'
+                ? 'lainnya:' . mb_substr($name !== '' ? $name : 'dokumen', 0, 71)
+                : $base;
         }
 
         $scope = match (true) {
@@ -566,23 +574,143 @@ class PublicLetterController extends Controller
         return $document->citizen_document_id;
     }
 
+    private function backfillLegacyCitizenDocuments(Citizen $citizen): void
+    {
+        $attachments = LetterRequestAttachment::query()
+            ->whereHas('letterRequest', fn ($query) => $query->where('citizen_id', $citizen->citizen_id))
+            ->where(function ($query): void {
+                $query->whereNull('citizen_document_id')
+                    ->orWhereHas('citizenDocument', fn ($documentQuery) => $documentQuery->where('document_type', 'lainnya'))
+                    ->orWhere(function ($legacyKtpQuery): void {
+                        $legacyKtpQuery
+                            ->where('document_type', 'kk:applicant')
+                            ->whereHas('letterRequest.letterType', fn ($typeQuery) => $typeQuery->where('code', 'SPKTP'));
+                    });
+            })
+            ->with(['letterTypeDocument', 'citizenDocument', 'letterRequest.letterType.documents'])
+            ->get();
+
+        // Versi lama public mengirimkan "Pas foto" dengan ID persyaratan KK.
+        // Bila satu pengajuan KTP memiliki dua lampiran pada ID KK dengan file
+        // berbeda, lampiran kedua adalah pas foto sesuai urutan form publik.
+        $legacyPhotoRequirements = [];
+        foreach ($attachments->groupBy('letter_request_id') as $requestAttachments) {
+            $letterType = $requestAttachments->first()?->letterRequest?->letterType;
+            if ($letterType?->code !== 'SPKTP') continue;
+
+            $photoRequirement = $letterType->documents->first(
+                fn ($document): bool => preg_match('/pas\s*foto|pass\s*photo/i', (string) $document->document_name) === 1,
+            );
+            if (! $photoRequirement) continue;
+
+            foreach ($requestAttachments->groupBy('letter_type_document_id') as $sameRequirement) {
+                if ($sameRequirement->count() < 2) continue;
+                $seenHashes = [];
+                foreach ($sameRequirement as $attachment) {
+                    $publicPath = (string) $attachment->file_path;
+                    $publicPath = (string) (parse_url($publicPath, PHP_URL_PATH) ?: $publicPath);
+                    $publicPath = preg_replace('#^/storage/#', '', $publicPath) ?: $publicPath;
+                    if (! Storage::disk('public')->exists($publicPath)) continue;
+
+                    $hash = hash('sha256', Storage::disk('public')->get($publicPath));
+                    if ($seenHashes !== [] && ! in_array($hash, $seenHashes, true)) {
+                        $legacyPhotoRequirements[$attachment->attachment_id] = $photoRequirement;
+                    }
+                    $seenHashes[] = $hash;
+                }
+            }
+        }
+
+        foreach ($attachments as $attachment) {
+            $publicPath = (string) $attachment->file_path;
+            $publicPath = (string) (parse_url($publicPath, PHP_URL_PATH) ?: $publicPath);
+            $publicPath = preg_replace('#^/storage/#', '', $publicPath) ?: $publicPath;
+
+            if (! Storage::disk('public')->exists($publicPath)) {
+                continue;
+            }
+
+            $contents = Storage::disk('public')->get($publicPath);
+            $hash = hash('sha256', $contents);
+            $requirement = $legacyPhotoRequirements[$attachment->attachment_id] ?? $attachment->letterTypeDocument;
+            $requirementName = $requirement?->document_name ?: $attachment->document_type;
+            $type = $this->documentType($requirementName);
+            $extension = strtolower(pathinfo($attachment->file_name, PATHINFO_EXTENSION) ?: 'bin');
+            $privatePath = "citizen-documents/{$citizen->citizen_id}/{$hash}.{$extension}";
+
+            if (! Storage::disk('local')->exists($privatePath)) {
+                Storage::disk('local')->put($privatePath, $contents);
+            }
+
+            $document = CitizenDocument::query()->firstOrCreate(
+                [
+                    'citizen_id' => $citizen->citizen_id,
+                    'document_type' => $type,
+                    'file_hash' => $hash,
+                ],
+                [
+                    'file_name' => $attachment->file_name,
+                    'storage_path' => $privatePath,
+                    'mime_type' => Storage::disk('public')->mimeType($publicPath),
+                    'file_size' => Storage::disk('public')->size($publicPath),
+                    'is_active' => true,
+                    'last_used_at' => now(),
+                ],
+            );
+
+            $attachment->update([
+                'letter_type_document_id' => $requirement?->letter_type_document_id ?? $attachment->letter_type_document_id,
+                'citizen_document_id' => $document->citizen_document_id,
+                'document_type' => $type,
+            ]);
+        }
+    }
+
     private function residentPayload(Citizen $citizen): array
     {
         $headOfFamilyName = null;
+        $spouse = null;
         if (filled($citizen->family_card_number)) {
-            $headOfFamilyName = Citizen::query()
+            $familyMembers = Citizen::query()
                 ->where('family_card_number', $citizen->family_card_number)
                 ->where('status', 'Active')
-                ->where(function ($query): void {
-                    $query->where('family_relationship', 'like', '%Kepala%')
-                        ->orWhere('family_relationship', 'like', '%KK%');
+                ->get();
+
+            $headOfFamilyName = $familyMembers
+                ->first(function (Citizen $member): bool {
+                    return preg_match('/kepala|kk/i', (string) $member->family_relationship) === 1;
                 })
-                ->value('full_name');
+                ?->full_name;
+
+            $spouseRelation = preg_match('/istri/i', (string) $citizen->family_relationship) === 1
+                ? 'suami'
+                : (preg_match('/suami/i', (string) $citizen->family_relationship) === 1
+                    ? 'istri'
+                    : (strtolower((string) $citizen->gender) === 'laki-laki' ? 'istri' : 'suami'));
+            $spouse = $familyMembers
+                ->where('citizen_id', '!=', $citizen->citizen_id)
+                ->first(function (Citizen $member) use ($spouseRelation, $citizen): bool {
+                    $relation = strtolower((string) $member->family_relationship);
+                    if ($spouseRelation !== null && str_contains($relation, $spouseRelation)) return true;
+
+                    $gender = strtolower((string) $citizen->gender);
+                    $memberGender = strtolower((string) $member->gender);
+                    return ($gender === 'laki-laki' && $memberGender === 'perempuan')
+                        || ($gender === 'perempuan' && $memberGender === 'laki-laki');
+                });
+
+            if ($headOfFamilyName === null) {
+                $headOfFamilyName = $familyMembers
+                    ->first(function (Citizen $member): bool {
+                        return preg_match('/kepala|kk/i', (string) $member->family_relationship) === 1;
+                    })
+                    ?->full_name;
+            }
         }
 
-        $headOfFamilyName ??= preg_match('/kepala|kk/i', (string) $citizen->family_relationship)
-            ? $citizen->full_name
-            : null;
+        if ($headOfFamilyName === null && preg_match('/kepala|kk/i', (string) $citizen->family_relationship)) {
+            $headOfFamilyName = $citizen->full_name;
+        }
 
         return [
             'nik' => $citizen->national_id,
@@ -627,7 +755,38 @@ class PublicLetterController extends Controller
             'previousAddress' => $citizen->previous_address,
             'passportNumber' => $citizen->passport_number,
             'passportExpiryDate' => $citizen->passport_expiry_date?->format('Y-m-d'),
+            'spouse' => $spouse ? [
+                'nik' => $spouse->national_id,
+                'fullName' => $spouse->full_name,
+                'gender' => $spouse->gender,
+                'birthPlace' => $spouse->birth_place,
+                'birthDate' => $spouse->birth_date?->format('Y-m-d'),
+                'birthPlaceDate' => $this->formatBirthPlaceDate($spouse),
+                'religion' => $spouse->religion,
+                'occupation' => $spouse->occupation,
+                'address' => $spouse->address,
+                'familyRelationship' => $spouse->family_relationship,
+            ] : null,
         ];
+    }
+
+    private function formatBirthPlaceDate(Citizen $citizen): ?string
+    {
+        $place = trim((string) $citizen->birth_place);
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+        $date = $citizen->birth_date
+            ? ltrim($citizen->birth_date->format('d'), '0') . ' '
+                . ($monthNames[(int) $citizen->birth_date->format('n')] ?? $citizen->birth_date->format('F'))
+                . ' ' . $citizen->birth_date->format('Y')
+            : null;
+        if ($place === '' && $date === null) return null;
+        if ($place === '') return $date;
+        if ($date === null) return $place;
+        return $place . ', ' . $date;
     }
 
     private function maskedName(?string $name): ?string
@@ -691,7 +850,10 @@ class PublicLetterController extends Controller
         return [
             'request_code' => $letterRequest->request_code,
             'status' => $letterRequest->status,
-            'letter_number' => $letterRequest->letter_number,
+            'letter_number' => LetterNumberFormatter::forDisplay(
+                $letterRequest->letter_number,
+                $letterRequest->letterType?->classification_index,
+            ),
             'submitted_at' => $letterRequest->submitted_at,
             'verified_at' => $letterRequest->verified_at,
             'authorized_at' => $letterRequest->authorized_at,

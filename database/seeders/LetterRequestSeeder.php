@@ -34,7 +34,7 @@ class LetterRequestSeeder extends Seeder
 
         DB::table('letter_types')
             ->orderBy('letter_type_id')
-            ->get(['letter_type_id', 'code', 'letter_name', 'signature_method', 'number_prefix', 'signer_id'])
+            ->get(['letter_type_id', 'code', 'letter_name', 'signature_method', 'number_prefix', 'classification_index', 'signer_id'])
             ->values()
             ->each(function ($type, int $index) use (
                 $citizens,
@@ -85,7 +85,7 @@ class LetterRequestSeeder extends Seeder
                         'status' => $status,
                         'form_data' => json_encode($formData, JSON_THROW_ON_ERROR),
                         'letter_number' => in_array($status, ['authorized', 'completed'], true)
-                            ? ($type->number_prefix ?? ($type->code . '/')) . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT)
+                            ? ($type->classification_index ?: '100.2') . '/' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT)
                             : null,
                         'signature_type' => $type->signature_method,
                         'verified_by' => $verifiedAt ? $userId : null,

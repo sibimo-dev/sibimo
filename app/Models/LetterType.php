@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
     'letter_name',
     'category',
     'number_prefix',
+    'classification_index',
     'processing_time',
     'signature_method',
     'signer_id',

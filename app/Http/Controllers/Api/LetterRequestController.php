@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Events\NotificationAvailable;
-use App\Models\LetterNumberSequence;
+use App\Models\LetterClassificationSequence;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
@@ -332,7 +332,7 @@ class LetterRequestController extends Controller
             $updateData['authorized_by_signer_id'] = $validated['authorized_by_signer_id'];
             $updateData['signature_type']           = $validated['signature_type'];
             $updateData['authorized_at']            = now();
-            // FIX #3: gunakan LetterNumberSequence + DB transaction (atomic)
+            // Gunakan sequence berdasarkan indeks klasifikasi + DB transaction.
             $updateData['letter_number']            = $this->generateLetterNumber($letterRequest->letterType);
         } elseif ($validated['status'] === 'rejected') {
             // Simpan alasan penolakan; fallback ke catatan sebelumnya jika kosong.
@@ -375,7 +375,7 @@ class LetterRequestController extends Controller
     }
 
     /**
-     * Generate nomor surat secara atomic menggunakan tabel letter_number_sequences.
+     * Generate nomor surat secara atomic berdasarkan indeks klasifikasi.
      * Memakai DB::transaction + lockForUpdate() untuk mencegah race condition
      * saat dua permohonan diotorisasi bersamaan (nomor surat tidak akan duplikat).
      */
@@ -402,11 +402,11 @@ class LetterRequestController extends Controller
     {
         return DB::transaction(function () use ($letterType) {
             $now = now();
-            $seq = LetterNumberSequence::lockForUpdate()->firstOrCreate(
+            $classificationIndex = trim((string) ($letterType->classification_index ?: '100.2'));
+            $seq = LetterClassificationSequence::lockForUpdate()->firstOrCreate(
                 [
-                    'letter_type_id' => $letterType->letter_type_id,
-                    'year'           => $now->year,
-                    'month'          => $now->month,
+                    'classification_index' => $classificationIndex,
+                    'year' => $now->year,
                 ],
                 ['last_sequence' => 0],
             );
@@ -414,12 +414,9 @@ class LetterRequestController extends Controller
             $seq->increment('last_sequence');
             $seq->refresh();
 
-            $code       = rtrim($letterType->number_prefix ?: $letterType->code, '/');
             $sequence   = str_pad($seq->last_sequence, 3, '0', STR_PAD_LEFT);
-            $monthRoman = $this->toRomanMonth($now->month);
-            $year       = $now->year;
 
-            return "{$code}/{$sequence}/{$monthRoman}/{$year}";
+            return "{$classificationIndex}/{$sequence}";
         });
     }
 
