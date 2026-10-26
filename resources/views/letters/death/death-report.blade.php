@@ -32,5 +32,5 @@
     <tr><td>16.</td><td>Kab/Kota Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_city'] ?? '' }}</td></tr>
 </table>
 <p style="margin-top:5pt;text-align:justify">Demikian laporan saya ini saya buat dengan sebenar-benarnya dan disertai bukti dan dokumen pendukung pelaporan Kematian, apabila laporan saya ini dikemudian hari diketahui tidak benar maka saya siap dituntut sesuai peraturan perundang-undangan yang berlaku.</p>
-<table class="signature-lines" style="margin-top:6pt"><tr><td>Mengetahui<br>Dukuh<br><div class="space"></div><strong><u></u></strong></td><td>{{ $signature['city'] ?? 'Bimomartani' }} &nbsp;&nbsp; {{ $signature['date'] ?? '' }}<br>Pelapor<br><div class="space"></div><strong><u>{{ $death['reporter']['name'] ?? '' }}</u></strong></td></tr></table>
+<table class="signature-lines" style="margin-top:6pt"><tr><td>Mengetahui<br>Dukuh<br><div class="space"></div><strong><u>{{ $signers['hamlet_head_name'] ?? $birth['hamlet']['head_name'] ?? '' }}</u></strong></td><td>{{ $signature['city'] ?? 'Bimomartani' }} &nbsp;&nbsp; {{ $signature['date'] ?? '' }}<br>Pelapor<br><div class="space"></div><strong><u>{{ $death['reporter']['name'] ?? '' }}</u></strong></td></tr></table>
 @endsection

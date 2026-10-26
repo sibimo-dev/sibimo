@@ -63,12 +63,15 @@
             line-height: 12pt;
             padding-top: 6pt;
         }
-
-        /* Nama pemohon: ruang kosong di atas untuk tanda tangan, garis putus-putus di bawah */
+        .signature-space {
+            width: 150pt;
+            height: 32pt;
+        }
         .sign-name {
-            width: 170pt;
-            margin-top: 8pt;
+            width: 220pt;
+            margin-top: 34pt;          /* ruang kosong untuk tanda tangan di atas nama */
             text-align: center;
+            white-space: nowrap;
             border-bottom: 1px dashed #000;
             line-height: 14pt;
             padding-bottom: 1pt;
@@ -151,18 +154,16 @@
 
     {{-- ===== TANDA TANGAN ===== --}}
     <div class="signature-block">
-        <div class="line">Sleman, ..................</div>
-        <div class="line">Yang Membuat Pernyataan</div>
-
-        <div class="stamp-duty-box">materai<br>RP 10000</div>
-
+        <div>Sleman, {{ $signature['date'] ?? '' }}</div>
+        <div>Yang Membuat Pernyataan</div>
+        <div class="materai-box">materai<br>RP 10000</div>
         <div class="sign-name">{{ $applicant['name'] ?? '' }}&nbsp;</div>
 
         <table class="meta">
             <tr>
                 <td class="meta-label">Nomor</td>
                 <td class="meta-sep">:</td>
-                <td>{{ $number ?? '' }}</td>
+                <td>{{ $number ?? $nomor ?? '' }}</td>
             </tr>
             <tr>
                 <td class="meta-label">Tanggal</td>
@@ -171,13 +172,14 @@
             </tr>
         </table>
 
-        <div class="acknowledged-by">
-            <div class="line">Mengetahui</div>
-            <div class="line">{{ $acknowledger['position'] ?? 'Jagabaya' }}</div>
-            <div class="official-spacer"></div>
-            @if (!empty($acknowledger['name']))
-                <div class="official-name">{{ $acknowledger['name'] }}</div>
-            @endif
+        <div class="mengetahui">
+            Mengetahui<br>
+            @foreach (($signature['prefix'] ?? []) as $line)
+                {{ $line }}<br>
+            @endforeach
+            {{ $signature['position'] ?? '' }}
+            <div class="signature-space">@include('letters.partials.signature-image')</div>
+            <div class="sign-name" style="margin-top:4pt;">{{ $signature['name'] ?? '' }}&nbsp;</div>
         </div>
     </div>
 

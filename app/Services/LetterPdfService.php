@@ -138,16 +138,11 @@ class LetterPdfService
     ];
 
     /**
-     * Slug letter_type yang kopnya HARUS selalu format "PEMERINTAH KALURAHAN
-     * BIMOMARTANI" biasa, walau signer-nya Lurah langsung. TTD tetap ikut
-     * jabatan signer asli, tapi kop tidak berubah.
+     * Semua surat yang ditandatangani langsung oleh Lurah memakai kop Lurah.
+     * Kop Pemerintah Kalurahan hanya dipakai bila penandatangan bukan Lurah
+     * atau template memang secara khusus mensyaratkannya.
      */
-    private const KOP_ALWAYS_KALURAHAN_SLUGS = [
-        'permit-followup-letter',
-        'surat-tindak-lanjut-izin',
-        'lease-offer-letter',
-        'surat-penawaran-sewa',
-    ];
+    private const KOP_ALWAYS_KALURAHAN_SLUGS = [];
 
     /** Slug yang TTD-nya cukup "a.n LURAH" tanpa rantai Carik / u.b. */
     private const SIGNATURE_DIRECT_SLUGS = [
@@ -345,7 +340,17 @@ class LetterPdfService
         $code = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
         $form = $letterRequest->form_data ?? [];
         $citizen = $letterRequest->citizen;
+        // Preview harus tetap bisa menampilkan nama pejabat setelah otorisasi.
+        // Relasi authorizedSigner memakai scope khusus signer; fallback langsung
+        // ke Staff diperlukan untuk data lama/konfigurasi yang menyimpan pejabat
+        // sah pada tabel staff tetapi belum memiliki flag is_signer yang sama.
         $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        if (! $signer && filled($letterRequest->authorized_by_signer_id)) {
+            $signer = Staff::query()->find($letterRequest->authorized_by_signer_id);
+        }
+        if (! $signer && filled($letterRequest->letterType?->signer_id)) {
+            $signer = Staff::query()->find($letterRequest->letterType->signer_id);
+        }
 
         // Tidak fallback ke now(): kalau belum authorized_at, tanggal TTD tampil
         // placeholder titik-titik (lihat signature()).
@@ -712,10 +717,10 @@ class LetterPdfService
             'kia' => $this->kiaApplicationFromForm($form, $letterRequest),
 
             // permohonan tinggal sementara
-            'stayApplication' => $this->stayApplicationFromForm($form),
+            'stayApplication' => $this->stayApplicationFromForm($form, $number, $letterDate),
 
             // permohonan menjadi penduduk sementara (SKTS)
-            'residentRequest' => $this->residentRequestFromForm($form),
+            'residentRequest' => $this->residentRequestFromForm($form, $number, $letterDate),
 
             // formulir pendaftaran peristiwa kependudukan (F-1.02)
             'populationOccurrence' => $this->populationOccurrenceFromForm($form, [
@@ -747,14 +752,56 @@ class LetterPdfService
 
             // ktp-application-form.blade.php menggunakan $signers['hamlet_head_name'], dsb.
             'signers' => [
-                'hamlet_head_name'   => $form['nama_dukuh'] ?? $form['hamlet_head_name'] ?? $form['dukuh_name'] ?? null,
-                'applicant_name'     => $form['nama_pemohon'] ?? $form['applicant_name'] ?? $letterRequest->applicant_name,
-                'district_head_name' => $form['nama_camat'] ?? $form['district_head_name'] ?? null,
-                'village_officer_name' => $form['nama_lurah'] ?? $form['village_officer_name'] ?? $signer?->name,
-                'notary_name'        => $form['nama_notaris'] ?? $form['notary_name'] ?? null,
+                // Form admin/public dapat menyimpan key snake_case maupun
+                // camelCase. Baca keduanya supaya nama Dukuh/Camat konsisten
+                // di preview dan PDF final.
+                'hamlet_head_name'   => $form['nama_dukuh']
+                    ?? $form['hamlet_head_name']
+                    ?? $form['hamletHeadName']
+                    ?? $form['dukuh_name']
+                    ?? $form['dukuhName']
+                    ?? null,
+                'applicant_name'     => $form['nama_pemohon']
+                    ?? $form['applicant_name']
+                    ?? $form['applicantName']
+                    ?? $letterRequest->applicant_name,
+                'district_head_name' => $form['nama_camat']
+                    ?? $form['district_head_name']
+                    ?? $form['districtHeadName']
+                    ?? $form['camat_name']
+                    ?? $form['camatName']
+                    ?? null,
+                'village_officer_name' => $form['nama_lurah']
+                    ?? $form['village_officer_name']
+                    ?? $form['villageOfficerName']
+                    ?? $signer?->name,
+                'notary_name'        => $form['nama_notaris']
+                    ?? $form['notary_name']
+                    ?? $form['notaryName']
+                    ?? null,
+                // Nomor/tanggal khusus Dukuh/Camat dipakai oleh template
+                // formulir; jika tidak disimpan sebagai field terpisah, surat
+                // memakai nomor dan tanggal resminya sendiri.
+                'hamlet_head_number' => $form['hamlet_head_number']
+                    ?? $form['hamletHeadNumber']
+                    ?? $number,
+                'hamlet_head_date' => $form['hamlet_head_date']
+                    ?? $form['hamletHeadDate']
+                    ?? ($letterDate ? $this->longDate($letterDate) : self::BLANK_PLACEHOLDER),
+                'district_head_number' => $form['district_head_number']
+                    ?? $form['districtHeadNumber']
+                    ?? $number,
+                'district_head_date' => $form['district_head_date']
+                    ?? $form['districtHeadDate']
+                    ?? ($letterDate ? $this->longDate($letterDate) : self::BLANK_PLACEHOLDER),
             ],
 
-            'hamlet_head_name' => $form['dukuh_name'] ?? null,
+            'hamlet_head_name' => $form['dukuh_name']
+                ?? $form['dukuhName']
+                ?? $form['hamlet_head_name']
+                ?? $form['hamletHeadName']
+                ?? $form['nama_dukuh']
+                ?? null,
 
             'letter_c' => [
                 'hamlet' => $form['letter_c_hamlet'] ?? null,
@@ -2640,7 +2687,12 @@ class LetterPdfService
             $form['head_name'] ??= $form['name'] ?? null;
             $form['postal_code'] ??= $form['postalCode'] ?? null;
             $form['member_count'] ??= $form['memberCount'] ?? null;
-            $form['hamlet_head_name'] ??= $form['hamletHead'] ?? $form['dukuh_name'] ?? null;
+            $form['hamlet_head_name'] ??= $form['hamletHeadName']
+                ?? $form['hamletHead']
+                ?? $form['nama_dukuh']
+                ?? $form['dukuh_name']
+                ?? $form['dukuhName']
+                ?? null;
             $form['village_head_name'] ??= $form['villageHead'] ?? $form['lurah_name'] ?? null;
             $form['district_officer_name'] ??= $form['districtOfficer'] ?? null;
             $form['kk_number'] ??= $form['familyCardNumber'] ?? null;
@@ -3462,8 +3514,10 @@ class LetterPdfService
     /**
      * Petakan $form ke struktur $stayApplication (temporary-stay-application-form.blade.php).
      */
-    private function stayApplicationFromForm(array $form): array
+    private function stayApplicationFromForm(array $form, ?string $number = null, $letterDate = null): array
     {
+        $longLetterDate = $letterDate ? $this->longDate($letterDate) : null;
+
         return [
             'regency'  => $form['regency'] ?? 'SLEMAN',
             'district' => $form['district'] ?? 'NGEMPLAK',
@@ -3501,22 +3555,38 @@ class LetterPdfService
 
             'familyMembers' => $form['family_members'] ?? [],
 
-            'letterDate' => $form['letter_date'] ?? null,
+            'letterDate' => $form['letter_date'] ?? $form['letterDate'] ?? $longLetterDate,
 
-            'applicantSignerName' => $form['applicant_name'] ?? $form['name'] ?? null,
-            'applicantNumber'     => $form['applicant_number'] ?? null,
-            'applicantDate'       => $form['applicant_date'] ?? null,
+            'applicantSignerName' => $form['applicant_name'] ?? $form['applicantName'] ?? $form['name'] ?? null,
+            'applicantNumber'     => $form['applicant_number'] ?? $form['applicantNumber'] ?? $number,
+            'applicantDate'       => $form['applicant_date'] ?? $form['applicantDate'] ?? $longLetterDate,
 
-            'hamletHeadNumber' => $form['hamlet_head_number'] ?? null,
-            'hamletHeadDate'   => $form['hamlet_head_date'] ?? null,
+            'hamletHeadName' => $form['nama_dukuh']
+                ?? $form['hamlet_head_name']
+                ?? $form['hamletHeadName']
+                ?? $form['dukuh_name']
+                ?? $form['dukuhName']
+                ?? null,
+            'hamletHeadNumber' => $form['hamlet_head_number'] ?? $form['hamletHeadNumber'] ?? $number,
+            'hamletHeadDate'   => $form['hamlet_head_date'] ?? $form['hamletHeadDate'] ?? $longLetterDate,
+            'panewuName' => $form['panewu_name']
+                ?? $form['panewuName']
+                ?? $form['nama_panewu']
+                ?? $form['district_head_name']
+                ?? $form['districtHeadName']
+                ?? $form['nama_camat']
+                ?? $form['camat_name']
+                ?? null,
         ];
     }
 
     /**
      * Petakan $form ke struktur $residentRequest (temporary-resident-request.blade.php).
      */
-    private function residentRequestFromForm(array $form): array
+    private function residentRequestFromForm(array $form, ?string $number = null, $letterDate = null): array
     {
+        $longLetterDate = $letterDate ? $this->longDate($letterDate) : null;
+
         return [
             'applicantName' => $form['applicant_name'] ?? $form['name'] ?? null,
             'applicantNik'  => $form['applicant_nik'] ?? $form['nik'] ?? null,
@@ -3549,14 +3619,34 @@ class LetterPdfService
 
             'familyMembers' => $form['family_members'] ?? [],
 
-            'letterDate' => $form['letter_date'] ?? null,
+            'letterDate' => $form['letter_date']
+                ?? $form['letterDate']
+                ?? $longLetterDate,
 
-            'applicantSignerName' => $form['applicant_name'] ?? $form['name'] ?? null,
-            'applicantNumber'     => $form['applicant_number'] ?? null,
-            'applicantDate'       => $form['applicant_date'] ?? null,
+            'applicantSignerName' => $form['applicant_name'] ?? $form['applicantName'] ?? $form['name'] ?? null,
+            'applicantNumber'     => $form['applicant_number'] ?? $form['applicantNumber'] ?? $number,
+            'applicantDate'       => $form['applicant_date'] ?? $form['applicantDate'] ?? $longLetterDate,
 
-            'hamletHeadNumber' => $form['hamlet_head_number'] ?? null,
-            'hamletHeadDate'   => $form['hamlet_head_date'] ?? null,
+            'hamletHeadName' => $form['nama_dukuh']
+                ?? $form['hamlet_head_name']
+                ?? $form['hamletHeadName']
+                ?? $form['dukuh_name']
+                ?? $form['dukuhName']
+                ?? null,
+            'hamletHeadNumber' => $form['hamlet_head_number'] ?? $form['hamletHeadNumber'] ?? $number,
+            'hamletHeadDate'   => $form['hamlet_head_date'] ?? $form['hamletHeadDate'] ?? $longLetterDate,
+
+            // Di wilayah Ngemplak, Panewu adalah pejabat kecamatan. Bila
+            // namanya dikirim dari form/bundle, tampilkan di bawah label
+            // PANEWU NGEMPLAK; label tetap menjadi fallback resmi.
+            'panewuName' => $form['panewu_name']
+                ?? $form['panewuName']
+                ?? $form['nama_panewu']
+                ?? $form['district_head_name']
+                ?? $form['districtHeadName']
+                ?? $form['nama_camat']
+                ?? $form['camat_name']
+                ?? null,
         ];
     }
 
@@ -4063,16 +4153,14 @@ class LetterPdfService
                 'kodeForm' => 'F.1.07',
             ],
 
-            // Surat tindak lanjut izin: TTD langsung Lurah, kop tetap Kalurahan.
+            // Surat tindak lanjut izin: TTD dan kop langsung Lurah.
             'permit-followup-letter', 'surat-tindak-lanjut-izin' => [
                 'signer' => ['position' => 'Lurah'],
-                'kop_position' => 'Kepala Urusan Tata Laksana',
             ],
 
-            // Surat penawaran sewa: TTD langsung Lurah, kop tetap Kalurahan.
+            // Surat penawaran sewa: TTD dan kop langsung Lurah.
             'lease-offer-letter', 'surat-penawaran-sewa' => [
                 'signer' => ['position' => 'Lurah'],
-                'kop_position' => 'Kepala Urusan Tata Laksana',
             ],
 
             'birth-certificate-referral-letter',
