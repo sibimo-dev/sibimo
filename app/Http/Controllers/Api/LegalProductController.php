@@ -14,12 +14,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LegalProductController extends Controller
 {
-    private const CATEGORIES = ['perkal', 'sk-lurah'];
     private const STATUSES = ['berlaku', 'dicabut'];
 
     public function index(): JsonResponse
     {
-        $items = LegalProduct::query()->orderByDesc('year')->orderBy('title')->get()->map(fn (LegalProduct $item) => $this->present($item));
+        $items = LegalProduct::query()
+            ->with('categoryRelation')
+            ->orderByDesc('year')
+            ->orderBy('title')
+            ->get()
+            ->map(fn (LegalProduct $item) => $this->present($item));
+
         return response()->json(['success' => true, 'message' => 'Data produk hukum berhasil diambil.', 'data' => $items]);
     }
 
@@ -63,11 +68,15 @@ class LegalProductController extends Controller
     private function rules(bool $partial = false): array
     {
         $required = fn (array $rules) => $partial ? array_merge(['sometimes'], $rules) : $rules;
+
         return [
-            'title' => $required(['required', 'string', 'max:255']), 'category' => $required(['required', Rule::in(self::CATEGORIES)]),
-            'status' => ['nullable', Rule::in(self::STATUSES)], 'number' => ['nullable', 'string', 'max:100'],
-            'year' => $required(['required', 'integer', 'between:1945,2100']), 'description' => ['nullable', 'string'],
-            'document' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'title'       => $required(['required', 'string', 'max:255']),
+            'category'    => $required(['required', Rule::exists('legal_product_categories', 'slug')]),
+            'status'      => ['nullable', Rule::in(self::STATUSES)],
+            'number'      => ['nullable', 'string', 'max:100'],
+            'year'        => $required(['required', 'integer', 'between:1945,2100']),
+            'description' => ['nullable', 'string'],
+            'document'    => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
         ];
     }
 
@@ -86,9 +95,18 @@ class LegalProductController extends Controller
 
     private function present(LegalProduct $item): array
     {
-        return ['legal_product_id' => $item->legal_product_id, 'title' => $item->title, 'category' => $item->category, 'status' => $item->status,
-            'number' => $item->number, 'year' => $item->year, 'description' => $item->description,
-            'document' => $this->mediaUrl($item->getRawOriginal('document')), 'created_at' => $item->created_at];
+        return [
+            'legal_product_id' => $item->legal_product_id,
+            'title' => $item->title,
+            'category' => $item->category,
+            'category_label' => $item->categoryRelation?->category_name ?? $item->category,
+            'status' => $item->status,
+            'number' => $item->number,
+            'year' => $item->year,
+            'description' => $item->description,
+            'document' => $this->mediaUrl($item->getRawOriginal('document')),
+            'created_at' => $item->created_at,
+        ];
     }
 
     private function mediaUrl(?string $path): ?string

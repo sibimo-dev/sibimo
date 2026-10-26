@@ -30,7 +30,8 @@ class BookLoanController extends Controller
     {
         $validated = $request->validate([
             'book_id' => ['required','exists:books,book_id'],
-            'citizen_id' => ['required','exists:citizens,citizen_id'],
+            'citizen_id' => ['nullable','exists:citizens,citizen_id'],
+            'borrower_name' => ['nullable','string','max:150'],
             'borrowed_at' => ['required','date'],
             'due_date' => ['required','date','after_or_equal:borrowed_at'],
         ]);

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\FooterSettingController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\LegalProductController;
+use App\Http\Controllers\Api\LegalProductCategoryController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\PermissionController;
@@ -203,6 +204,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachment']);
     Route::get('complaints/{complaint_id}/attachments', [ComplaintController::class, 'attachments']);
 
+    Route::get('legal-product-categories', [LegalProductCategoryController::class, 'index']);
+    Route::post('legal-product-categories', [LegalProductCategoryController::class, 'store']);
+    Route::put('legal-product-categories/{category_id}', [LegalProductCategoryController::class, 'update']);
+    Route::delete('legal-product-categories/{category_id}', [LegalProductCategoryController::class, 'destroy']);
     Route::apiResource('feedbacks', FeedbackController::class)
         ->parameters(['feedbacks' => 'feedback_id'])
         ->except(['store']);

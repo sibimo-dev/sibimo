@@ -22,4 +22,9 @@ class LegalProduct extends Model
     {
         return ['year' => 'integer'];
     }
+
+    public function categoryRelation()
+    {
+        return $this->belongsTo(LegalProductCategory::class, 'category', 'slug');
+    }
 }

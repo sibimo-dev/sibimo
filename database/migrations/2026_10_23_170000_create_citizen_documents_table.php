@@ -39,7 +39,10 @@ return new class extends Migration {
         if (! Schema::hasColumn('letter_request_attachments', 'document_type')) {
             Schema::table('letter_request_attachments', function (Blueprint $table) {
                 $table->string('document_type', 80)->nullable()->after('citizen_document_id');
-                $table->index(['citizen_document_id', 'document_type']);
+                $table->index(
+                    ['citizen_document_id', 'document_type'],
+                    'lra_citizen_doc_type_idx'
+                );
             });
         }
     }
@@ -48,7 +51,7 @@ return new class extends Migration {
     {
         Schema::table('letter_request_attachments', function (Blueprint $table) {
             $table->dropForeign(['citizen_document_id']);
-            $table->dropIndex(['citizen_document_id', 'document_type']);
+            $table->dropIndex('lra_citizen_doc_type_idx');
             $table->dropColumn(['citizen_document_id', 'document_type']);
         });
 

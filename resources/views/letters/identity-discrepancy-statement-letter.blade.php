@@ -34,7 +34,7 @@
             margin-left: 24pt;
         }
         table.data td { padding: 2pt 0; vertical-align: top; }
-        td.lbl { width: 150pt; }
+        td.label { width: 150pt; }
         td.sep { width: 12pt; }
         td.val {
             border-bottom: 1px dashed #000;
@@ -45,17 +45,19 @@
         p.gap-top { margin-top: 14pt; }
 
         /* ===== TANDA TANGAN ===== */
+        /* Semua elemen di dalam blok ini rata kiri pada tepi yang sama */
         .signature-block {
             margin-top: 20pt;
             margin-left: 260pt;
+            width: 190pt;
         }
-        .signature-block div { line-height: 18pt; }
-        .materai-box {
+        .signature-block .line { line-height: 18pt; }
+
+        .stamp-duty-box {
             border: 1pt solid #000;
             width: 80pt;
             height: 34pt;
             margin-top: 4pt;
-            margin-left: -12pt;
             text-align: center;
             font-size: 8pt;
             line-height: 12pt;
@@ -75,18 +77,21 @@
             padding-bottom: 1pt;
         }
 
-        /* Baris "Nomor :" dan "Tanggal :" — label sempit rata kiri */
+        /* Baris "Nomor :" dan "Tanggal :" */
         table.meta {
-            margin-top: 10pt;
-            margin-left: -12pt;
+            margin-top: 14pt;
             border-collapse: collapse;
         }
         table.meta td { padding: 1pt 0; }
-        table.meta td.meta-lbl { width: 55pt; }
+        table.meta td.meta-label { width: 55pt; }
         table.meta td.meta-sep { width: 10pt; }
 
-        .mengetahui {
-            margin-top: 22pt;
+        /* Mengetahui: jabatan + nama pejabat */
+        .acknowledged-by { margin-top: 22pt; }
+        .official-spacer { height: 50pt; }   /* ruang tanda tangan pejabat */
+        .official-name {
+            font-weight: bold;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -99,22 +104,22 @@
     <p>Saya yang bertanda tangan dibawah ini</p>
     <table class="data">
         <tr>
-            <td class="lbl">Nama Lengkap</td>
+            <td class="label">Nama Lengkap</td>
             <td class="sep">:</td>
             <td class="val">{{ $applicant['name'] }}</td>
         </tr>
         <tr>
-            <td class="lbl">NIK</td>
+            <td class="label">NIK</td>
             <td class="sep">:</td>
             <td class="val">{{ $applicant['nik'] }}</td>
         </tr>
         <tr>
-            <td class="lbl">Alamat Sesuai KTP</td>
+            <td class="label">Alamat Sesuai KTP</td>
             <td class="sep">:</td>
             <td class="val">{{ $applicant['address'] }}</td>
         </tr>
         <tr>
-            <td class="lbl">&nbsp;</td>
+            <td class="label">&nbsp;</td>
             <td class="sep">&nbsp;</td>
             <td class="val">&nbsp;</td>
         </tr>
@@ -123,17 +128,17 @@
     <p class="gap-top">Dengan ini menyatakan dengan sebenarnya bahwa terdapat perbedaan Nama/NIK/Alamat dalam</p>
     <table class="data">
         <tr>
-            <td class="lbl">Nama</td>
+            <td class="label">Nama</td>
             <td class="sep">:</td>
             <td class="val">{{ $other_identity['name'] }}</td>
         </tr>
         <tr>
-            <td class="lbl">Alamat</td>
+            <td class="label">Alamat</td>
             <td class="sep">:</td>
             <td class="val">{{ $other_identity['address'] }}</td>
         </tr>
         <tr>
-            <td class="lbl">NIK</td>
+            <td class="label">NIK</td>
             <td class="sep">:</td>
             <td class="val">{{ $other_identity['nik'] }}</td>
         </tr>
@@ -156,14 +161,14 @@
 
         <table class="meta">
             <tr>
-                <td class="meta-lbl">Nomor</td>
+                <td class="meta-label">Nomor</td>
                 <td class="meta-sep">:</td>
                 <td>{{ $number ?? $nomor ?? '' }}</td>
             </tr>
             <tr>
-                <td class="meta-lbl">Tanggal</td>
+                <td class="meta-label">Tanggal</td>
                 <td class="meta-sep">:</td>
-                <td>{{ $signature['date'] }}</td>
+                <td>{{ $signature['date'] ?? '' }}</td>
             </tr>
         </table>
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
     'complaint_id',
     'file_name',
     'file_path',
+    'type',
 ])]
 class ComplaintAttachment extends Model
 {
