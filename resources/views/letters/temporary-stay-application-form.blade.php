@@ -96,7 +96,8 @@
        sejajar). */
     table.tsa-final { width: 100%; border-collapse: collapse; margin-top: 3pt; }
     table.tsa-final td { width: 50%; vertical-align: top; font-size: 9.5pt; }
-    .tsa-sign-space { height: 30pt; }
+    /* Ruang tanda tangan Dukuh dan Panewu dibuat cukup lega untuk tanda tangan manual. */
+    .tsa-sign-space { height: 48pt; min-width: 180pt; }
     td.tsa-sign-name { font-weight: bold; text-align: right; }
 
     table.tsa-bottom-inner { border-collapse: collapse; }
@@ -254,7 +255,7 @@
                 <td class="tsa-sign-space"></td>
             </tr>
             <tr>
-                <td><span class="tsa-sign-name">{{ $stayApplication['hamletHeadName'] ?? '' }}</span><br>Mengetahui</td>
+                <td><span class="tsa-sign-name">{{ $stayApplication['hamletHeadName'] ?? '' }}</span><br><br>Mengetahui</td>
                 <td class="tsa-sign-name">{{ $stayApplication['applicantSignerName'] ?? '' }}</td>
             </tr>
             <tr>
@@ -282,7 +283,15 @@
                 </td>
             </tr>
             <tr>
-                <td>PANEWU NGEMPLAK</td>
+                <td>PANEWU NGEMPLAK:</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="tsa-sign-space"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>{{ $stayApplication['panewuName'] ?? '' }}</td>
                 <td></td>
             </tr>
         </table>

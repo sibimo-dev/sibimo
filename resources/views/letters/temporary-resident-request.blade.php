@@ -92,7 +92,8 @@
 
     table.trr-final { width: 100%; border-collapse: collapse; margin-top: 5pt; }
     table.trr-final td { width: 50%; vertical-align: top; }
-    .trr-sign-space { height: 30pt; }
+    /* Ruang tanda tangan Dukuh dan Panewu dibuat cukup lega untuk tanda tangan manual. */
+    .trr-sign-space { height: 48pt; min-width: 180pt; }
     td.trr-sign-name { font-weight: bold; text-align: right; }
 
     table.trr-bottom-inner { border-collapse: collapse; }
@@ -249,7 +250,7 @@
                 <td class="trr-sign-space"></td>
             </tr>
             <tr>
-                <td><span class="trr-sign-name">{{ $residentRequest['hamletHeadName'] ?? '' }}</span><br>Mengetahui</td>
+                <td><span class="trr-sign-name">{{ $residentRequest['hamletHeadName'] ?? '' }}</span><br><br>Mengetahui</td>
                 <td class="trr-sign-name">{{ $residentRequest['applicantSignerName'] ?? '' }}</td>
             </tr>
             <tr>
@@ -289,7 +290,15 @@
                 </td>
             </tr>
             <tr>
-                <td>PANEWU NGEMPLAK</td>
+                <td>PANEWU NGEMPLAK:</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="trr-sign-space"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>{{ $residentRequest['panewuName'] ?? '' }}</td>
                 <td></td>
             </tr>
         </table>
