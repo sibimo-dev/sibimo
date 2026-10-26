@@ -291,6 +291,14 @@
                         <td style="text-align:left;">{{ $signers['hamlet_head_name'] ?? '' }}</td>
                         <td style="text-align:right;">{{ $signers['applicant_name'] ?? '' }}</td>
                     </tr>
+                    <tr>
+                        <td style="text-align:left; padding-top:4pt;">Nomor: {{ $signers['hamlet_head_number'] ?? ($number ?? '') }}</td>
+                        <td style="text-align:right; padding-top:4pt;">Nomor: {{ $number ?? '' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:left;">Tanggal: {{ $signers['hamlet_head_date'] ?? ($signature['date'] ?? '') }}</td>
+                        <td style="text-align:right;">Tanggal: {{ $signature['date'] ?? '' }}</td>
+                    </tr>
                 </table>
             </td>
         </tr>
@@ -306,6 +314,8 @@
                             Camat
                             <div style="height:40pt;"></div>
                             <div style="margin-top:3pt;">{{ $signers['district_head_name'] ?? '' }}</div>
+                            <div style="margin-top:4pt;">Nomor: {{ $signers['district_head_number'] ?? ($number ?? '') }}</div>
+                            <div>Tanggal: {{ $signers['district_head_date'] ?? ($signature['date'] ?? '') }}</div>
                         </td>
                         <td style="text-align:right; vertical-align:top; line-height:1.2;">
                             Mengetahui Lurah
