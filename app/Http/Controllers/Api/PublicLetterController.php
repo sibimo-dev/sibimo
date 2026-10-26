@@ -666,6 +666,15 @@ class PublicLetterController extends Controller
         }
     }
 
+    /**
+     * Sinkronisasi satu kali untuk lampiran lama yang dibuat sebelum citizen_documents.
+     * Dipakai endpoint admin agar dokumen historis juga muncul pada Data Warga.
+     */
+    public function syncLegacyDocuments(Citizen $citizen): void
+    {
+        $this->backfillLegacyCitizenDocuments($citizen);
+    }
+
     private function residentPayload(Citizen $citizen): array
     {
         $headOfFamilyName = null;
