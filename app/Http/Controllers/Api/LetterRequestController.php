@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Events\NotificationAvailable;
-use App\Models\LetterNumberSequence;
+use App\Models\LetterClassificationSequence;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
@@ -77,6 +77,10 @@ class LetterRequestController extends Controller
         ]);
 
         $letterType = LetterType::findOrFail($validated['letter_type_id']);
+        $validated['form_data'] = $this->normalizeLegacyMarriageStatus(
+            $letterType,
+            $validated['form_data'] ?? [],
+        );
         $this->validateFormData(
             $letterType,
             $validated['form_data'] ?? [],
@@ -302,6 +306,24 @@ class LetterRequestController extends Controller
             ]);
         }
 
+        // Surat keterangan tanah diterbitkan langsung oleh Bu Lurah. Jangan
+        // biarkan pilihan penandatangan di layar otorisasi mengganti ketentuan
+        // ini menjadi pejabat lain.
+        if ($validated['status'] === 'authorized'
+            && in_array(strtoupper((string) $letterRequest->letterType?->code), ['SKTA', 'SKTH'], true)) {
+            $signer = Staff::query()->find($validated['authorized_by_signer_id']);
+            $position = mb_strtolower(trim((string) $signer?->position));
+            $isLurah = (str_starts_with($position, 'lurah') || str_contains($position, 'kepala desa'))
+                && !str_contains($position, 'urusan')
+                && !str_starts_with($position, 'kaur');
+
+            if (!$isLurah) {
+                throw ValidationException::withMessages([
+                    'authorized_by_signer_id' => 'Surat keterangan tanah wajib ditandatangani Bu Lurah.',
+                ]);
+            }
+        }
+
         // notes hanya relevan sebagai alasan penolakan.
         // Saat authorized, kolom notes TIDAK disentuh agar catatan verifikasi tidak tertimpa.
         $updateData = ['status' => $validated['status']];
@@ -310,7 +332,7 @@ class LetterRequestController extends Controller
             $updateData['authorized_by_signer_id'] = $validated['authorized_by_signer_id'];
             $updateData['signature_type']           = $validated['signature_type'];
             $updateData['authorized_at']            = now();
-            // FIX #3: gunakan LetterNumberSequence + DB transaction (atomic)
+            // Gunakan sequence berdasarkan indeks klasifikasi + DB transaction.
             $updateData['letter_number']            = $this->generateLetterNumber($letterRequest->letterType);
         } elseif ($validated['status'] === 'rejected') {
             // Simpan alasan penolakan; fallback ke catatan sebelumnya jika kosong.
@@ -353,7 +375,7 @@ class LetterRequestController extends Controller
     }
 
     /**
-     * Generate nomor surat secara atomic menggunakan tabel letter_number_sequences.
+     * Generate nomor surat secara atomic berdasarkan indeks klasifikasi.
      * Memakai DB::transaction + lockForUpdate() untuk mencegah race condition
      * saat dua permohonan diotorisasi bersamaan (nomor surat tidak akan duplikat).
      */
@@ -380,11 +402,11 @@ class LetterRequestController extends Controller
     {
         return DB::transaction(function () use ($letterType) {
             $now = now();
-            $seq = LetterNumberSequence::lockForUpdate()->firstOrCreate(
+            $classificationIndex = trim((string) ($letterType->classification_index ?: '100.2'));
+            $seq = LetterClassificationSequence::lockForUpdate()->firstOrCreate(
                 [
-                    'letter_type_id' => $letterType->letter_type_id,
-                    'year'           => $now->year,
-                    'month'          => $now->month,
+                    'classification_index' => $classificationIndex,
+                    'year' => $now->year,
                 ],
                 ['last_sequence' => 0],
             );
@@ -392,12 +414,9 @@ class LetterRequestController extends Controller
             $seq->increment('last_sequence');
             $seq->refresh();
 
-            $code       = rtrim($letterType->number_prefix ?: $letterType->code, '/');
             $sequence   = str_pad($seq->last_sequence, 3, '0', STR_PAD_LEFT);
-            $monthRoman = $this->toRomanMonth($now->month);
-            $year       = $now->year;
 
-            return "{$code}/{$sequence}/{$monthRoman}/{$year}";
+            return "{$classificationIndex}/{$sequence}";
         });
     }
 
@@ -457,6 +476,68 @@ class LetterRequestController extends Controller
             'message' => 'Data lampiran berhasil diambil.',
             'data' => $attachments,
         ]);
+    }
+
+    /**
+     * PNP pernah dikirim oleh beberapa versi admin dengan key camelCase atau
+     * dengan status perkawinan umum. Normalisasi di backend mencegah status
+     * catin pria terbaca sebagai status catin putri ketika mapper lama masih
+     * tersimpan di browser/cache.
+     */
+    private function normalizeLegacyMarriageStatus(LetterType $letterType, array $formData): array
+    {
+        if (strtoupper((string) $letterType->code) !== 'PNP') {
+            return $formData;
+        }
+
+        $pick = static function (array $keys) use ($formData): mixed {
+            foreach ($keys as $key) {
+                $value = $formData[$key] ?? null;
+                if ($value !== null && trim((string) $value) !== '') {
+                    return $value;
+                }
+            }
+
+            return null;
+        };
+
+        $normalize = static function (mixed $value, array $aliases): mixed {
+            $value = trim((string) $value);
+            $normalized = strtolower($value);
+
+            return $aliases[$normalized] ?? $value;
+        };
+
+        $groomStatus = $pick(['groomStatus', 'groom_status', 'status_catin_putra']);
+        if ($groomStatus !== null) {
+            $formData['status_catin_putra'] = $normalize($groomStatus, [
+                'perjaka' => 'Jejaka',
+                'jejaka' => 'Jejaka',
+                'belum kawin' => 'Jejaka',
+                'belum menikah' => 'Jejaka',
+                'duda' => 'Duda',
+                'cerai hidup' => 'Duda',
+                'cerai mati' => 'Duda',
+                'kawin' => 'Beristri',
+                'kawin tercatat' => 'Beristri',
+                'kawin belum tercatat' => 'Beristri',
+                'beristri' => 'Beristri',
+            ]);
+        }
+
+        $brideStatus = $pick(['brideStatus', 'bride_status', 'status_catin_putri']);
+        if ($brideStatus !== null) {
+            $formData['status_catin_putri'] = $normalize($brideStatus, [
+                'perawan' => 'Perawan',
+                'belum kawin' => 'Perawan',
+                'belum menikah' => 'Perawan',
+                'janda' => 'Janda',
+                'cerai hidup' => 'Janda',
+                'cerai mati' => 'Janda',
+            ]);
+        }
+
+        return $formData;
     }
 
     private function validateFormData(LetterType $letterType, array $formData, bool $allowLegacyKeys = false): void

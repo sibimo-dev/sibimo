@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LetterRequest;
 use App\Models\LetterType;
 use App\Models\Staff;
+use App\Support\LetterNumberFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Support\Carbon;
@@ -162,10 +163,7 @@ class LetterPdfService
     ];
 
     /** Template yang kopnya selalu memakai kop Pemerintah Kalurahan. */
-    private const KALURAHAN_KOP_TEMPLATES = [
-        'land-price-certificate-letter',
-        'land-origin-certificate-letter',
-    ];
+    private const KALURAHAN_KOP_TEMPLATES = [];
 
     private const VIEW_FOLDERS = [
         'birth-attestation-letter' => 'birth',
@@ -433,7 +431,10 @@ class LetterPdfService
             'document_title' => $letterRequest->letterType?->letter_name,
 
             // 'number' (baru) dan 'nomor' (alias untuk blade lama).
-            'number' => $number = $letterRequest->letter_number
+            'number' => $number = LetterNumberFormatter::forDisplay(
+                $letterRequest->letter_number,
+                $letterRequest->letterType?->classification_index,
+            )
                 ?? $form['letter_number']
                 ?? $form['nomor_surat']
                 ?? $form['nomor']
@@ -689,8 +690,12 @@ class LetterPdfService
             'condition' => $form['condition'] ?? null,
 
             'endorser' => [
-                'office' => $form['endorser_office'] ?? null,
-                'name' => $form['endorser_name'] ?? null,
+                'office' => filled($form['endorser_office'] ?? null)
+                    ? $form['endorser_office']
+                    : 'Kalurahan Bimomartani',
+                'name' => filled($form['endorser_name'] ?? null)
+                    ? $form['endorser_name']
+                    : $signer?->name,
             ],
 
             // Sengaja tetap fallback ke tanggal hari ini walau $letterDate null
@@ -762,9 +767,17 @@ class LetterPdfService
                 'area_in_words' => $form['land_area_in_words'] ?? $form['area_in_words'] ?? $form['areaInWords'] ?? null,
                 'owner_name' => $form['land_owner_name'] ?? $form['owner_name'] ?? $form['ownerName'] ?? null,
                 'hamlet' => $form['land_hamlet'] ?? $form['hamlet'] ?? null,
-                'village' => $form['land_village'] ?? $form['village'] ?? 'Bimomartani',
-                'district' => $form['land_district'] ?? $form['district'] ?? 'Ngemplak',
-                'regency' => $form['land_regency'] ?? $form['regency'] ?? $form['city'] ?? 'Sleman',
+                // SKTH berlaku untuk keterangan harga tanah di wilayah
+                // Kalurahan ini; sumber harga pembanding tetap bebas dari luar.
+                'village' => $code === 'SKTH'
+                    ? 'Bimomartani'
+                    : ($form['land_village'] ?? $form['village'] ?? 'Bimomartani'),
+                'district' => $code === 'SKTH'
+                    ? 'Ngemplak'
+                    : ($form['land_district'] ?? $form['district'] ?? 'Ngemplak'),
+                'regency' => $code === 'SKTH'
+                    ? 'Sleman'
+                    : ($form['land_regency'] ?? $form['regency'] ?? $form['city'] ?? 'Sleman'),
                 'price_min' => $this->rupiah($form['land_price_min'] ?? $form['price_min'] ?? $form['priceMin'] ?? null) ?: ($form['land_price_min'] ?? $form['price_min'] ?? $form['priceMin'] ?? null),
                 'price_max' => $this->rupiah($form['land_price_max'] ?? $form['price_max'] ?? $form['priceMax'] ?? null) ?: ($form['land_price_max'] ?? $form['price_max'] ?? $form['priceMax'] ?? null),
                 'measurement_letter_number' => $form['land_measurement_letter_number'] ?? $form['measurement_letter_number'] ?? $form['measurementLetterNumber'] ?? null,
@@ -2808,32 +2821,31 @@ class LetterPdfService
     private function sampleNumber(string $template): ?string
     {
         return match ($template) {
-            'domicile-certificate', 'surat-keterangan-domisili' => '581/ 4',
-            'sktm-school', 'sktm-sekolah' => '466/ 73',
-            'sktm-general', 'sktm-umum' => '470/ 74',
-            'relocation-cover-letter',
-            'resident-arrival-form',
+            'domicile-certificate', 'surat-keterangan-domisili' => '400.12/001',
+            'sktm-school', 'sktm-sekolah' => '400.3/001',
+            'sktm-general', 'sktm-umum' => '400.9/001',
             'surat-keterangan-jalan',
             'travel-permit-letter',
             'travel-permit-letter-gov',
             'surat-keterangan-jalan-lurah',
-            'travel-permit-letter-lurah',
-            'travel-permit-letter-vill' => '471.21/ 10',
-            'fuel-recommendation-letter' => '471/ 12',
+            'travel-permit-letter-lurah' => '100.2/001',
+            'relocation-cover-letter',
+            'resident-arrival-form',
+            'relocation-certificate-form' => '400.12/001',
+            'travel-permit-letter-vill' => '100.2/001',
+            'fuel-recommendation-letter' => '600/001',
             'land-price-certificate-letter',
-            'land-origin-certificate-letter' => '593/ 05',
+            'land-origin-certificate-letter' => '500.6/001',
             'population-document-statement-letter' => null, // pakai form_code
             'population-occurrence-registration-form' => null, // pakai form_code (F-1.02)
             'heir-power-of-attorney-letter' => null, // surat kuasa antar-warga, tidak bernomor
             'research-response-letter' => null,
             'marriage-certificate-duplicate-letter' => null,
             'general-cover-letter' => null,
-            'permit-followup-letter', 'surat-tindak-lanjut-izin' => '010/ 02',
-            'lease-offer-letter', 'surat-penawaran-sewa' => '028/ 01/2026',
-            'relocation-cover-letter' => '471.21/ 01',
-            'relocation-certificate-form' => '471.21/ 02',
-            'general-statement-letter' => '470/49',
-            'general-statement-letter-gov' => '470/51',
+            'permit-followup-letter', 'surat-tindak-lanjut-izin' => '100.2/001',
+            'lease-offer-letter', 'surat-penawaran-sewa' => '600/001',
+            'general-statement-letter' => '100.2/001',
+            'general-statement-letter-gov' => '100/001',
 
             // Formulir F-1.01 tidak bernomor; pakai form_code.
             'family-biodata-form' => null,
@@ -2843,8 +2855,8 @@ class LetterPdfService
             'temporary-stay-application-form',
             'temporary-resident-request' => null,
 
-            'birth-certificate-referral-letter' => '472/ 08',
-            'birth-attestation-letter' => '472.11/ 04',
+            'birth-certificate-referral-letter' => '400.12/001',
+            'birth-attestation-letter' => '400.12/001',
             'birth-certificate-application-form',
             'birth-report-form',
             'birth-report-statement',
@@ -2853,7 +2865,15 @@ class LetterPdfService
             'late-birth-registration-approval-decree',
             'birth-registration-report',
             'birth-certificate-power-of-attorney' => null,
-            default => '581/ 1',
+            'registration-form', 'n1', 'n2', 'n4', 'n5', 'n6',
+            'guardian-statement', 'judge-guardian', 'health-referral',
+            'unmarried-statement', 'unmarried-certificate', 'numpang-nikah',
+            'general-certificate-letter', 'marriage-application-letter',
+            'marriage-lodging-certificate-letter', 'never-married-certificate-letter',
+            'not-remarried-statement-letter', 'death-certificate-for-marriage-letter',
+            'bride-groom-consent-letter', 'parental-consent-letter',
+            'marriage-introduction-letter', 'marriage-registration-data-sheet' => '400.12/001',
+            default => '100.2/001',
         };
     }
 
@@ -2895,18 +2915,13 @@ class LetterPdfService
     private function draftLetterNumber(LetterRequest $letterRequest, $letterDate): string
     {
         $now = $letterDate ? Carbon::parse($letterDate) : now();
-        $code = rtrim($letterRequest->letterType?->number_prefix ?: ($letterRequest->letterType?->code ?? ''), '/');
-
-        if ($code === '') {
-            $code = '470';
-        }
+        $classificationIndex = trim((string) ($letterRequest->letterType?->classification_index ?: '100.2'));
 
         $seq = null;
         if ($letterRequest->letter_type_id) {
             try {
-                $lastSeq = \App\Models\LetterNumberSequence::where('letter_type_id', $letterRequest->letter_type_id)
+                $lastSeq = \App\Models\LetterClassificationSequence::where('classification_index', $classificationIndex)
                     ->where('year', $now->year)
-                    ->where('month', $now->month)
                     ->value('last_sequence');
                 $seq = str_pad((int) ($lastSeq ?? 0) + 1, 3, '0', STR_PAD_LEFT);
             } catch (\Throwable) {
@@ -2915,9 +2930,8 @@ class LetterPdfService
         }
 
         $seq = $seq ?: '001';
-        $romanMonth = $this->toRomanMonth($now->month);
 
-        return "{$code}/{$seq}/{$romanMonth}/{$now->year}";
+        return "{$classificationIndex}/{$seq}";
     }
 
     private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null): array
@@ -3266,7 +3280,8 @@ class LetterPdfService
         ];
 
         if ($binLabel) {
-            $data[$binLabel] = $get($binLabel);
+            $fallbackLabel = $binLabel === 'binti' ? 'bin' : 'binti';
+            $data[$binLabel] = $get($binLabel) ?? $get($fallbackLabel);
         }
 
         return array_merge($data, $extra);

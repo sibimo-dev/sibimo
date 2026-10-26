@@ -49,22 +49,22 @@ function deathTemplateForType(LetterType $letterType): ?string
 it('seeds a complete and connected letter fixture set', function () {
     seedLetterFixtures();
 
-    expect(DB::table('letter_types')->count())->toBe(85)
+    expect(DB::table('letter_types')->count())->toBe(86)
         ->and(DB::table('letter_type_fields')->count())->toBeGreaterThan(0)
         ->and(DB::table('letter_type_documents')->count())->toBeGreaterThanOrEqual(170)
-        ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(85)
-        ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(85);
+        ->and(DB::table('letter_number_sequences')->where('year', now()->year)->count())->toBe(86)
+        ->and(DB::table('letter_requests')->where('request_code', 'like', 'SEED-REQ-%')->count())->toBe(86);
 
-    expect(DB::table('letter_types')->where('is_online', true)->count())->toBe(74)
+    expect(DB::table('letter_types')->where('is_online', true)->count())->toBe(75)
         ->and(DB::table('letter_types')->where('is_online', true)->whereNull('blade_view')->count())->toBe(0)
-        ->and($this->getJson('/api/public/letter-types')->json('data'))->toHaveCount(74);
+        ->and($this->getJson('/api/public/letter-types')->json('data'))->toHaveCount(75);
 
     expect(DB::table('letter_types')
         ->whereIn('code', ['SKBK', 'SKU', 'SKUM', 'SKD', 'SKTM', 'SKP', 'SKK', 'SKJ', 'SKCK', 'SKDPAK', 'SBP'])
         ->whereNotNull('blade_view')
         ->count())->toBe(11);
 
-    expect(DB::table('letter_types')->whereNotNull('blade_view')->count())->toBe(85);
+    expect(DB::table('letter_types')->whereNotNull('blade_view')->count())->toBe(86);
     expect(DB::table('letter_types')->whereNull('blade_view')->count())->toBe(0);
 
     expect(DB::table('letter_type_fields as fields')
@@ -438,6 +438,34 @@ it('renders the signer position in both Letter C land certificates', function ()
         expect($data['signature']['position'])->not->toBeEmpty()
             ->and($html)->toContain($data['signature']['position']);
     }
+});
+
+it('uses the Lurah kop and fixed Bimomartani village for land price certificates', function () {
+    seedLetterFixtures();
+
+    $letterType = LetterType::with('signer')->where('code', 'SKTH')->firstOrFail();
+    $request = LetterRequest::make([
+        'request_code' => 'TEST-SKTH-KOP',
+        'applicant_name' => 'Pemohon Uji',
+        'applicant_nik' => '3400000000000001',
+        'applicant_address' => 'Bimomartani',
+        'form_data' => [
+            'land_village' => 'Kalurahan Lain',
+            'land_price_min' => '1000000',
+            'land_price_max' => '2000000',
+        ],
+    ]);
+    $request->setRelation('citizen', null);
+    $request->setRelation('letterType', $letterType);
+    $request->setRelation('authorizedSigner', null);
+
+    $data = app(LetterPdfService::class)->viewData($request, 'land-price-certificate-letter');
+
+    expect($data['land']['village'])->toBe('Bimomartani')
+        ->and($data['land']['district'])->toBe('Ngemplak')
+        ->and($data['land']['regency'])->toBe('Sleman')
+        ->and($data['kop']['line3'])->toBe('LURAH BIMOMARTANI')
+        ->and($data['kop']['is_lurah'])->toBeTrue();
 });
 
 it('renders seeded request data without dropping template-specific fields', function () {

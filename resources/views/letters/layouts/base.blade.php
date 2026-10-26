@@ -164,7 +164,7 @@
                 <td class="ttd-spacer"></td>
                 <td class="ttd-content">
                     <div>{{ $signature['city'] }}, @hasSection('date_long'){{ $signature['date_long'] }}@else{{ $signature['date'] }}@endif</div>
-                    @foreach ($signature['prefix'] as $line)
+                    @foreach ((array) ($signature['prefix'] ?? []) as $line)
                         <div>{{ $line }}</div>
                     @endforeach
                     <div>{{ $signature['position'] }}</div>

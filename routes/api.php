@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\FooterSettingController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\LegalProductController;
+use App\Http\Controllers\Api\LegalProductCategoryController;
 use App\Http\Controllers\Api\LetterRequestController;
 use App\Http\Controllers\Api\LetterTypeController;
 use App\Http\Controllers\Api\PermissionController;
@@ -59,6 +60,7 @@ Route::prefix('public')->group(function () {
         Route::get('/letter-types', [PublicLetterController::class, 'types']);
         Route::get('/letter-stats', [PublicLetterController::class, 'stats']);
         Route::post('/citizens/check-nik', [PublicLetterController::class, 'checkNik']);
+        Route::post('/citizens/reusable-documents', [PublicLetterController::class, 'reusableDocuments']);
         Route::post('/letter-requests', [PublicLetterController::class, 'store']);
         Route::post('/letter-requests/lookup', [PublicLetterController::class, 'lookup']);
         Route::post('/letter-requests/{request_code}/pdf', [PublicLetterController::class, 'pdf']);
@@ -201,6 +203,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('complaints/{complaint_id}/attachments', [ComplaintController::class, 'storeAttachment']);
     Route::get('complaints/{complaint_id}/attachments', [ComplaintController::class, 'attachments']);
 
+    Route::get('legal-product-categories', [LegalProductCategoryController::class, 'index']);
+    Route::post('legal-product-categories', [LegalProductCategoryController::class, 'store']);
+    Route::put('legal-product-categories/{category_id}', [LegalProductCategoryController::class, 'update']);
+    Route::delete('legal-product-categories/{category_id}', [LegalProductCategoryController::class, 'destroy']);
     Route::apiResource('feedbacks', FeedbackController::class)
         ->parameters(['feedbacks' => 'feedback_id'])
         ->except(['store']);
@@ -214,6 +220,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->parameters(['book-loans' => 'loan_id']);
 
     // Manajemen akun citizen
+    Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
 

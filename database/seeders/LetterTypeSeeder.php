@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Support\AdditionalLetterTemplateCatalog;
+use App\Support\LetterClassificationIndexCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -217,6 +218,7 @@ class LetterTypeSeeder extends Seeder
                     'description' => "Layanan {$name}.",
                     'blade_view' => $bladeViews[$code] ?? null,
                     'number_prefix' => $code . '/',
+                    'classification_index' => LetterClassificationIndexCatalog::forCode($code),
                     'processing_time' => '1 hari',
                     'signature_method' => $signatureMethod,
                     'signer_id' => $signerId,
@@ -239,6 +241,7 @@ class LetterTypeSeeder extends Seeder
                     'description' => "Layanan {$template['name']}.",
                     'blade_view' => $template['bladeView'],
                     'number_prefix' => $template['code'] . '/',
+                    'classification_index' => LetterClassificationIndexCatalog::forCode($template['code']),
                     'processing_time' => '1 hari',
                     'signature_method' => $template['signatureMethod'],
                     'signer_id' => $signerId,

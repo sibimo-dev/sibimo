@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'letter_request_id',
     'letter_type_document_id',
+    'citizen_document_id',
+    'document_type',
     'file_name',
     'file_path',
 ])]
@@ -46,5 +48,10 @@ class LetterRequestAttachment extends Model
     public function letterTypeDocument()
     {
         return $this->belongsTo(LetterTypeDocument::class, 'letter_type_document_id', 'letter_type_document_id');
+    }
+
+    public function citizenDocument()
+    {
+        return $this->belongsTo(CitizenDocument::class, 'citizen_document_id', 'citizen_document_id');
     }
 }

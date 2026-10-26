@@ -28,6 +28,7 @@ class BookController extends Controller
             'category_id' => ['required','exists:book_categories,category_id'],
             'title' => ['required','string','max:200'],
             'author' => ['nullable','string','max:150'],
+            'publisher' => ['nullable','string','max:150'],
             'isbn' => ['nullable','string','max:20'],
             'stock' => ['integer','min:0']
         ]);
@@ -60,6 +61,7 @@ class BookController extends Controller
             'category_id' => ['sometimes','required','exists:book_categories,category_id'],
             'title' => ['sometimes','required','string','max:200'],
             'author' => ['nullable','string','max:150'],
+            'publisher' => ['nullable','string','max:150'],
             'isbn' => ['nullable','string','max:20'],
             'stock' => ['integer','min:0']
         ]);

@@ -109,12 +109,5 @@
             <td class="purpose-val">{{ $purpose }}</td>
         </tr>
     </table>
-    <table class="purpose-row">
-        <tr>
-            <td class="purpose-lbl">di</td>
-            <td class="purpose-val">{{ $destination }}</td>
-        </tr>
-    </table>
-
     <p class="gap-keterangan">Demikian surat keterangan ini dibuat untuk dipergunakan seperlunya.</p>
 @endsection
