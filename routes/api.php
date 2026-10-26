@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BookCategoryController;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\BookLoanController;
 use App\Http\Controllers\Api\CitizenController;
+use App\Http\Controllers\Api\CitizenDocumentController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DevelopmentController;
 use App\Http\Controllers\Api\FeedbackController;
@@ -216,6 +217,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Manajemen akun citizen
     Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
+    Route::get('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'index']);
+    Route::post('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'store']);
+    Route::get('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'show']);
+    Route::post('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'update']);
+    Route::get('/citizens/{citizen_id}/documents/{document_id}/download', [CitizenDocumentController::class, 'download']);
+    Route::delete('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'destroy']);
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
 
