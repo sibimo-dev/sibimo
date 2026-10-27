@@ -776,6 +776,7 @@ class PublicLetterController extends Controller
                 'religion' => $spouse->religion,
                 'occupation' => $spouse->occupation,
                 'address' => $spouse->address,
+                'marriageCertificateNumber' => $spouse->marriage_certificate_number,
                 'familyRelationship' => $spouse->family_relationship,
             ] : null,
         ];
