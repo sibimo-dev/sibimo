@@ -36,7 +36,7 @@ class VillagePotentialController extends Controller
             $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
         }
         $validated = $request->validate([
-            'category' => ['required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
+            'category' => ['required', Rule::exists('village_potential_categories', 'slug')],
             'title' => ['required','string','max:200'],
             'short_desc' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
@@ -88,7 +88,7 @@ class VillagePotentialController extends Controller
             $request->merge(['extra_info' => json_decode($request->input('extra_info'), true) ?? []]);
         }
         $validated = $request->validate([
-            'category' => ['sometimes','required', Rule::in(['UMKM','Agriculture','Tourism','BUMDes'])],
+            'category' => ['sometimes', Rule::exists('village_potential_categories', 'slug')],            
             'title' => ['sometimes','required','string','max:200'],
             'short_desc' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],

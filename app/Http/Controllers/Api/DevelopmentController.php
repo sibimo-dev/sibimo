@@ -12,13 +12,13 @@ use Illuminate\Validation\Rule;
 
 class DevelopmentController extends Controller
 {
-    private const CATEGORIES = ['infrastruktur', 'kesehatan', 'pendidikan', 'lingkungan', 'sosial'];
     private const STATUSES = ['perencanaan', 'sedang-berjalan', 'sedang_berjalan', 'selesai'];
     private const PROGRESS = [0, 50, 100];
 
     public function index(): JsonResponse
     {
         $items = Development::query()->latest('created_at')->get()->map(fn (Development $item) => $this->present($item));
+        $items = Development::query()->with('categoryRelation')->latest('created_at')->get()->map(fn (Development $item) => $this->present($item));
 
         return response()->json(['success' => true, 'message' => 'Data pembangunan berhasil diambil.', 'data' => $items]);
     }
@@ -57,7 +57,7 @@ class DevelopmentController extends Controller
         $required = fn (array $rules) => $partial ? array_merge(['sometimes'], $rules) : $rules;
         return [
             'name' => $required(['required', 'string', 'max:255']), 'address' => ['nullable', 'string', 'max:255'],
-            'category' => $required(['required', Rule::in(self::CATEGORIES)]), 'status' => $required(['required', Rule::in(self::STATUSES)]),
+            'category' => $required(['required', Rule::exists('development_categories', 'slug')]),            
             'funding_source' => ['nullable', 'string', 'max:100'], 'budget' => ['nullable', 'numeric', 'min:0'],
             'volume' => ['nullable', 'numeric', 'min:0'], 'volume_unit' => ['nullable', 'string', 'max:20'],
             'executor' => ['nullable', 'string', 'max:100'], 'year' => $required(['required', 'integer', 'between:1945,2100']),
@@ -97,6 +97,7 @@ class DevelopmentController extends Controller
         return [
             'development_id' => $item->development_id, 'name' => $item->name, 'slug' => $item->slug, 'address' => $item->address,
             'category' => $item->category, 'status' => str_replace('_', '-', (string) $item->status), 'funding_source' => $item->funding_source,
+            'category_label' => $item->categoryRelation?->category_name ?? $item->category,
             'budget' => $item->budget, 'volume' => $item->volume, 'volume_unit' => $item->volume_unit, 'executor' => $item->executor,
             'year' => $item->year, 'start_date' => $item->start_date?->format('Y-m-d'), 'target_date' => $item->target_date?->format('Y-m-d'),
             'description' => $item->description, 'latitude' => $item->latitude, 'longitude' => $item->longitude,

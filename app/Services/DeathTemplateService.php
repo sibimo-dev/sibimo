@@ -118,8 +118,8 @@ class DeathTemplateService
         $death['deceased'] = [
             // NIK jenazah harus memakai field khusus jenazah terlebih dahulu.
             // NIK pemohon hanya menjadi fallback apabila data jenazah belum diisi.
-            'nik' => $this->value($form, ['nik_jenazah', 'deceased_nik', 'nik']) ?: $request->applicant_nik,
-            'name' => $this->value($form, ['nama_jenazah', 'deceased_name', 'name']) ?: $request->applicant_name,
+            'nik'  => $this->value($form, ['nik_jenazah', 'deceased_nik']),
+            'name' => $this->value($form, ['nama_jenazah', 'deceased_name']),
             'gender' => $this->value($form, ['jenis_kelamin_jenazah', 'deceased_gender', 'gender']),
             'birth_place' => $this->value($form, ['tempat_kelahiran_jenazah', 'deceased_birth_place', 'birth_place']),
             'birth_date' => $this->date($this->value($form, ['tanggal_lahir_jenazah', 'deceased_birth_date', 'birth_date'])),
@@ -128,7 +128,6 @@ class DeathTemplateService
             'religion' => $this->value($form, ['agama_jenazah', 'deceased_religion', 'religion']),
             'occupation' => $this->value($form, ['pekerjaan_jenazah', 'deceased_occupation', 'occupation']),
             'address' => $this->value($form, ['alamat_jenazah', 'deceased_address', 'address']),
-            'birth_order' => $this->value($form, ['anak_ke_jenazah', 'deceased_birth_order', 'deceased_child_order', 'child_order']),
             'death_date' => $this->value($form, ['meninggal_hari_tanggal', 'deceased_death_date', 'death_date']),
             'death_time' => $this->value($form, ['jam_meninggal', 'deceased_death_time', 'death_time']),
             'death_place' => $this->value($form, ['lokasi_meninggal', 'tempat_kematian', 'deceased_death_place', 'death_place']),
@@ -284,7 +283,7 @@ class DeathTemplateService
             'nik' => '', 'name' => '', 'gender' => '', 'birth_place' => '',
             'birth_date' => '', 'birth_place_date' => '', 'age' => '',
             'religion' => '', 'occupation' => '', 'address' => '',
-            'birth_order' => '', 'report_date' => '',
+            'report_date' => '',
         ];
 
         return [

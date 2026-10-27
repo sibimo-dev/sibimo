@@ -9,9 +9,11 @@ use App\Http\Controllers\Api\CitizenController;
 use App\Http\Controllers\Api\CitizenDocumentController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\DevelopmentController;
+use App\Http\Controllers\Api\DevelopmentCategoryController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\FooterSettingController;
 use App\Http\Controllers\Api\GalleryController;
+use App\Http\Controllers\Api\GalleryCategoryController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\LegalProductController;
 use App\Http\Controllers\Api\LegalProductCategoryController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
+use App\Http\Controllers\Api\VillagePotentialCategoryController;
 use App\Http\Controllers\Api\VisionMissionController;
 use App\Services\LetterPdfService;
 use App\Services\DeathTemplateService;
@@ -113,6 +116,7 @@ Route::middleware([
 
 Route::get('/village-potentials', [VillagePotentialController::class, 'index']);
 Route::get('/village-potentials/{potential_id}', [VillagePotentialController::class, 'show']);
+Route::get('/village-potential-categories', [VillagePotentialCategoryController::class, 'index']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service_id}', [ServiceController::class, 'show']);
 Route::get('/developments', [DevelopmentController::class, 'index']);
@@ -124,6 +128,7 @@ Route::get('/agendas', [AgendaController::class, 'index']);
 Route::get('/agendas/{agenda_id}', [AgendaController::class, 'show']);
 Route::get('/galleries', [GalleryController::class, 'index']);
 Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
+Route::get('gallery-categories', [GalleryCategoryController::class, 'index']);
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{news_id}', [NewsController::class, 'show']);
 Route::get('/news-categories', [NewsCategoryController::class, 'index']);
@@ -261,6 +266,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::apiResource('developments', DevelopmentController::class)
             ->parameters(['developments' => 'development_id'])
             ->except(['index', 'show']);
+        Route::get('development-categories', [DevelopmentCategoryController::class, 'index']);
+        Route::post('development-categories', [DevelopmentCategoryController::class, 'store']);
+        Route::put('development-categories/{category_id}', [DevelopmentCategoryController::class, 'update']);
+        Route::delete('development-categories/{category_id}', [DevelopmentCategoryController::class, 'destroy']);
     });
 
     Route::middleware('permission:produk-hukum')->group(function () {
@@ -277,6 +286,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('permission:potensi-kalurahan')->group(function () {
         Route::apiResource('village-potentials', VillagePotentialController::class)
             ->parameters(['village-potentials' => 'potential_id'])->except(['index', 'show']);
+        Route::apiResource('village-potential-categories', VillagePotentialCategoryController::class)
+            ->parameters(['village-potential-categories' => 'category_id'])
+            ->except(['index', 'show']);
     });
 
     Route::middleware('permission:agenda')->group(function () {
@@ -286,7 +298,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::middleware('permission:gallery')->group(function () {
         Route::apiResource('galleries', GalleryController::class)
-            ->parameters(['galleries' => 'gallery_id'])->except(['index', 'show']);
+            ->parameters(['galleries' => 'gallery_id'])
+            ->except(['index', 'show']);
+        Route::apiResource('gallery-categories', GalleryCategoryController::class)
+            ->parameters(['gallery-categories' => 'category_id'])
+            ->except(['index', 'show']);
     });
 
     Route::middleware('permission:berita')->group(function () {

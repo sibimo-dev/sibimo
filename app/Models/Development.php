@@ -25,4 +25,8 @@ class Development extends Model
             'latitude' => 'float', 'longitude' => 'float', 'end_latitude' => 'float', 'end_longitude' => 'float',
         ];
     }
+    public function categoryRelation()
+    {
+        return $this->belongsTo(DevelopmentCategory::class, 'category', 'slug');
+    }
 }

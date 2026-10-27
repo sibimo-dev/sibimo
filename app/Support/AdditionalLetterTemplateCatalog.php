@@ -185,7 +185,6 @@ final class AdditionalLetterTemplateCatalog
             self::field('Agama Jenazah', 'agama_jenazah', 'select', 'Data Jenazah', false, ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Khonghucu']),
             self::field('Pekerjaan Jenazah', 'pekerjaan_jenazah', 'text', 'Data Jenazah'),
             self::field('Alamat Jenazah', 'alamat_jenazah', 'textarea', 'Data Jenazah'),
-            self::field('Anak Ke', 'anak_ke_jenazah', 'text', 'Data Jenazah'),
             self::field('Hari/Tanggal Meninggal', 'meninggal_hari_tanggal', 'text', 'Data Jenazah'),
             self::field('Lokasi Meninggal', 'lokasi_meninggal', 'text', 'Data Jenazah'),
             self::field('Kabupaten/Kota Meninggal', 'kota_tempat_meninggal', 'text', 'Data Jenazah'),
