@@ -2,7 +2,9 @@
 
 @section('title', 'Formulir Permohonan Pindah Datang WNI')
 
-@php($kodeForm = 'F.1-31')
+@php
+    $kodeForm = 'F.1-31';
+@endphp
 
 @section('extra_css')
     @page { margin: 0.5cm 1.6cm 0.4cm 1.6cm; }
@@ -146,17 +148,23 @@
         <tr>
             <th style="width:20pt;">No</th><th>NIK</th><th>Nama</th><th style="width:70pt;">Masa Berlaku KTP</th><th style="width:60pt;">SHDK</th>
         </tr>
-        @php($familyMembers = is_array($form['family_members'] ?? null) ? $form['family_members'] : (is_string($form['family_members'] ?? null) && str_starts_with(trim($form['family_members'] ?? ''), '[') ? (json_decode($form['family_members'], true) ?? []) : []))
-        @forelse ($familyMembers as $i => $row)
+        @php
+            $familyMembers = is_array($form['family_members'] ?? null) ? $form['family_members'] : (is_string($form['family_members'] ?? null) && str_starts_with(trim($form['family_members'] ?? ''), '[') ? (json_decode($form['family_members'], true) ?? []) : []);
+        @endphp
+        {{-- Selalu tampil minimal 5 baris (meski kosong); bila anggota > 5 semua tetap dicetak --}}
+        @php
+            $fmRows = array_values(array_filter($familyMembers, 'is_array'));
+            $fmTotal = max(5, count($fmRows));
+        @endphp
+        @for ($i = 0; $i < $fmTotal; $i++)
+            @php
+                $row = $fmRows[$i] ?? [];
+            @endphp
             <tr>
-                <td>{{ $i + 1 }}</td><td>{{ $row['nik'] ?? '' }}</td><td>{{ $row['name'] ?? '' }}</td>
-                <td>{{ $row['valid_until'] ?? '' }}</td><td>{{ $row['shdk'] ?? '' }}</td>
+                <td style="height:15pt; text-align:center;">{{ $i + 1 }}</td><td>{{ $row['nik'] ?? '' }}</td><td>{{ $row['name'] ?? '' }}</td>
+                <td>{{ $row['valid_until'] ?? $row['validUntil'] ?? '' }}</td><td>{{ $row['shdk'] ?? '' }}</td>
             </tr>
-        @empty
-            @for ($i = 0; $i < 3; $i++)
-                <tr><td>{{ $i + 1 }}</td><td></td><td></td><td></td><td></td></tr>
-            @endfor
-        @endforelse
+        @endfor
     </table>
 
     <table style="width:100%; border-collapse:collapse; margin-top:5pt;">

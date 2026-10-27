@@ -4,7 +4,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ((array) ($region['province_code'] ?? []) as $d)
+                @foreach ($region['province_code'] ?? [] as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -16,7 +16,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ((array) ($region['regency_code'] ?? []) as $d)
+                @foreach ($region['regency_code'] ?? [] as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -28,7 +28,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ((array) ($region['district_code'] ?? []) as $d)
+                @foreach ($region['district_code'] ?? [] as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -40,7 +40,7 @@
         <td class="wg-sep">:</td>
         <td>
             <table class="wg-kode"><tr>
-                @foreach ((array) ($region['village_code'] ?? []) as $d)
+                @foreach ($region['village_code'] ?? [] as $d)
                     <td>{{ $d }}</td>
                 @endforeach
             </tr></table>
@@ -51,7 +51,7 @@
     <tr>
         <td class="wg-label">DUSUN/DUKUH/KAMPUNG</td>
         <td class="wg-sep">:</td>
-        <td colspan="2" class="wg-val">{{ $form['hamlet'] ?? '' }}</td>
+        <td colspan="2" class="wg-val">{{ $hamletValue ?? ($form['hamlet'] ?? '') }}</td>
     </tr>
     @endif
 </table>
