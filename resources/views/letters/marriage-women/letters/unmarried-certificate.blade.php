@@ -31,7 +31,7 @@
 <p style="margin-top:14pt">Saya, yang bertanda tangan di bawah ini :</p>
 @include($pp.'rows', ['bold' => false, 'rows' => [
     'Nama'    => $signer['name'],
-    'Jabatan' => null,
+    'Jabatan' => $signer['position'] ?? null,
 ]])
 
 <p style="margin-top:10pt">dengan ini menerangkan bahwa :</p>
