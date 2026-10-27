@@ -8,7 +8,7 @@
 <table class="legacy-table compact">
     <tr><td style="width:18pt">1.</td><td class="label">NIK</td><td class="colon">:</td><td class="write">{{ $death['deceased']['nik'] ?? '' }}</td></tr>
     <tr><td>2.</td><td>Nama Lengkap</td><td>:</td><td class="write">{{ $death['deceased']['name'] ?? '' }}</td></tr>
-    <tr><td>3.</td><td>Jenis Kelamin</td><td>:</td><td class="write">{{ $death['deceased']['gender'] ?? '' }}</td></tr>
+    <tr><td>3.</td><td>Jenis Kelamin/Anak Ke</td><td>:</td><td class="write">{{ $death['deceased']['gender'] ?? '' }} &nbsp;&nbsp;&nbsp; Anak ke: {{ $death['deceased']['birth_order'] ?? '' }}</td></tr>
     <tr><td>4.</td><td>Tempat dan Tanggal Lahir/Umur</td><td>:</td><td class="write">{{ $death['deceased']['birth_place_date'] ?? '' }} &nbsp;&nbsp; Umur: {{ $death['deceased']['age'] ?? '' }}</td></tr>
     <tr><td>5.</td><td>Agama</td><td>:</td><td class="write">{{ $death['deceased']['religion'] ?? '' }}</td></tr>
     <tr><td>6.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['deceased']['occupation'] ?? '' }}</td></tr>
