@@ -2,10 +2,12 @@
 
 @section('title', 'Surat Pengantar Permohonan Pindah WNI')
 
-@php($kodeForm = 'F.1-25')
+@php
+    $kodeForm = 'F.1-25';
+@endphp
 
 @section('content')
-    @include('letters.region-grid', ['showHamlet' => true, 'hamletValue' => ($form['origin']['hamlet'] ?? ($form['hamlet'] ?? ''))])
+    @include('letters.region-grid', ['showHamlet' => true])
 
 
     <div class="judul-form">Surat Pengantar Permohonan Pindah WNI</div>
@@ -190,30 +192,29 @@
     <div class="sub-heading" style="margin-top:2pt;">6. Keluarga Yang Pindah</div>
     <table style="width:100%; border-collapse:collapse; border:1px solid #000; font-size:9pt; margin-top:4pt; page-break-inside: avoid;">
         <tr>
-            <th style="border:1px solid #000; width:18pt; padding:1pt 2pt; line-height:1.1;">NO</th>
-            <th style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">NIK</th>
-            <th style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">NAMA</th>
-            <th style="border:1px solid #000; width:60pt; padding:1pt 2pt; line-height:1.1;">MASA BERLAKU KTP S/D</th>
-            <th style="border:1px solid #000; width:80pt; padding:1pt 2pt; line-height:1.1;">SHDK</th>
+            <th style="border:1px solid #000; width:18pt; padding:2pt 2pt; line-height:1.1;">NO</th>
+            <th style="border:1px solid #000; padding:2pt 2pt; line-height:1.1;">NIK</th>
+            <th style="border:1px solid #000; padding:2pt 2pt; line-height:1.1;">NAMA</th>
+            <th style="border:1px solid #000; width:60pt; padding:2pt 2pt; line-height:1.1;">MASA BERLAKU KTP S/D</th>
+            <th style="border:1px solid #000; width:55pt; padding:2pt 2pt; line-height:1.1;">SHDK</th>
         </tr>
+        {{-- Selalu tampil minimal 7 baris (meski kosong); bila anggota > 7 semua tetap dicetak --}}
         @php
-            $__famSrc = $form['family_members'] ?? [];
-            if (is_string($__famSrc)) $__famSrc = json_decode($__famSrc, true) ?: [];
-            $__famSrc = array_values(array_filter(is_array($__famSrc) ? $__famSrc : [], fn ($r) => is_array($r) && trim(implode('', array_map(fn ($v) => is_array($v) ? '' : (string) $v, $r))) !== ''));
+            $fmRaw = $form['family_members'] ?? [];
+            if (is_string($fmRaw)) $fmRaw = json_decode($fmRaw, true) ?: [];
+            $fmRows = array_values(array_filter(is_array($fmRaw) ? $fmRaw : [], 'is_array'));
+            $fmTotal = max(7, count($fmRows));
         @endphp
-        @php
-            $__fam = array_values(is_array($__famSrc ?? null) ? $__famSrc : []);
-            $__famTotal = max(7, count($__fam));
-            $__cell = fn ($v) => trim((string) $v) === '' ? '&nbsp;' : e($v);
-        @endphp
-        @for ($i = 0; $i < $__famTotal; $i++)
-            @php($row = $__fam[$i] ?? [])
+        @for ($i = 0; $i < $fmTotal; $i++)
+            @php
+                $row = $fmRows[$i] ?? [];
+            @endphp
             <tr>
-                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
-                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['nik'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['name'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['valid_until'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['shdk'] ?? '') !!}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['nik'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['name'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['valid_until'] ?? $row['validUntil'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['shdk'] ?? '' }}</td>
             </tr>
         @endfor
     </table>
@@ -233,14 +234,14 @@
                 <td width="33%">Pemohon,</td>
             </tr>
             <tr style="page-break-inside: avoid;">
-                <td><div class="ttd-space"></div>{{ $form['registration_officer'] ?? '' }}</td>
+                <td><div class="ttd-space" style="height:42pt;"></div>{{ $form['registration_officer'] ?? '' }}</td>
                 <td>
-                    <div class="ttd-space">
+                    <div class="ttd-space" style="height:42pt;">
                         @include('letters.partials.signature-image')
                     </div>
                     {{ $signature['name'] }}
                 </td>
-                <td><div class="ttd-space"></div>{{ $applicant['name'] ?? '' }}</td>
+                <td><div class="ttd-space" style="height:42pt;"></div>{{ $applicant['name'] ?? '' }}</td>
             </tr>
         </table>
     </div>

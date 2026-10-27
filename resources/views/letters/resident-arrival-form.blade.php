@@ -2,7 +2,9 @@
 
 @section('title', 'Formulir Permohonan Pindah Datang WNI')
 
-@php($kodeForm = 'F.1-31')
+@php
+    $kodeForm = 'F.1-31';
+@endphp
 
 @section('extra_css')
     @page { margin: 0.5cm 1.6cm 0.4cm 1.6cm; }
@@ -20,7 +22,7 @@
 @endsection
 
 @section('content')
-   @include('letters.region-grid', ['showHamlet' => true, 'hamletValue' => ($form['destination']['hamlet'] ?? ($form['hamlet'] ?? ''))])
+   @include('letters.region-grid', ['showHamlet' => true])
 
     <div class="judul-form">Formulir Permohonan Pindah Datang WNI</div>
     <div class="subjudul-form">Antar Kabupaten/Kota Atau Antar Provinsi</div>
@@ -144,224 +146,23 @@
     <div class="sub-heading">6. Keluarga Yang Datang</div>
     <table class="tbl-bordered">
         <tr>
-            <th style="width:20pt;">No</th><th>NIK</th><th>Nama</th><th style="width:70pt;">Masa Berlaku KTP</th><th style="width:85pt;">SHDK</th>
+            <th style="width:20pt;">No</th><th>NIK</th><th>Nama</th><th style="width:70pt;">Masa Berlaku KTP</th><th style="width:60pt;">SHDK</th>
         </tr>
-        @php($familyMembers = is_array($form['family_members'] ?? null) ? $form['family_members'] : (is_string($form['family_members'] ?? null) && str_starts_with(trim($form['family_members'] ?? ''), '[') ? (json_decode($form['family_members'], true) ?? []) : []))
         @php
-            $__famSrc = array_values(array_filter($familyMembers, fn ($r) => is_array($r) && trim(implode('', array_map(fn ($v) => is_array($v) ? '' : (string) $v, $r))) !== ''));
+            $familyMembers = is_array($form['family_members'] ?? null) ? $form['family_members'] : (is_string($form['family_members'] ?? null) && str_starts_with(trim($form['family_members'] ?? ''), '[') ? (json_decode($form['family_members'], true) ?? []) : []);
         @endphp
+        {{-- Selalu tampil minimal 5 baris (meski kosong); bila anggota > 5 semua tetap dicetak --}}
         @php
-            $__fam = array_values(is_array($__famSrc ?? null) ? $__famSrc : []);
-            $__famTotal = max(5, count($__fam));
-            $__cell = fn ($v) => trim((string) $v) === '' ? '&nbsp;' : e($v);
+            $fmRows = array_values(array_filter($familyMembers, 'is_array'));
+            $fmTotal = max(5, count($fmRows));
         @endphp
-        @for ($i = 0; $i < $__famTotal; $i++)
-            @php($row = $__fam[$i] ?? [])
+        @for ($i = 0; $i < $fmTotal; $i++)
+            @php
+                $row = $fmRows[$i] ?? [];
+            @endphp
             <tr>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['nik'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['name'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['valid_until'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['shdk'] ?? '') !!}</td>
-            </tr>
-        @endfor
-    </table>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:5pt;">
-        <tr>
-            <td style="width:34%;"></td>
-            <td style="width:33%;"></td>
-            <td style="width:33%; text-align:right; font-size:9.5pt;">{{ $signature['city'] }} &nbsp;&nbsp; {{ $signature['date'] }}</td>
-        </tr>
-    </table>
-    <table class="ttd-multi">
-        <tr>
-            <td width="34%">Petugas Registrasi</td>
-            <td width="33%">Mengetahui<br>a.n LURAH BIMOMARTANI</td>
-            <td width="33%">Pemohon</td>
-        </tr>
-        <tr>
-            <td><div class="ttd-space"></div><span class="ttd-name">{{ $form['registration_officer'] ?? '' }}</span></td>
-            <td>
-                <div class="ttd-space">
-                    @include('letters.partials.signature-image')
-                </div>
-                <span class="ttd-name">{{ $signature['name'] }}</span>
-            </td>
-            <td><div class="ttd-space"></div><span class="ttd-name">{{ $applicant['name'] ?? '' }}</span></td>
-        </tr>
-    </table>
-
-    <p style="margin-top:5pt; font-size:8.5pt;">
-        Keterangan :<br>
-        *) Diisi Oleh Petugas<br>
-        - Formulir ini diisi di Desa
-    </p>
-@endsection@extends('letters.layouts.form')
-
-@section('title', 'Formulir Permohonan Pindah Datang WNI')
-
-@php($kodeForm = 'F.1-31')
-
-@section('extra_css')
-    @page { margin: 0.5cm 1.6cm 0.4cm 1.6cm; }
-    body { font-size: 8.6pt; line-height: 1.12; }
-    td.f-box { padding: 1pt 3pt; }
-    .sub-heading { margin-top: 1.5pt; font-size: 8.6pt; }
-    table.frow { margin-top: 0.5pt; }
-    table.frow td { font-size: 8.6pt; padding: 0.5pt 0; }
-    .judul-form { margin-top: 1.5pt; font-size: 10pt; }
-    .subjudul-form { font-size: 8.6pt; }
-    table.ttd-multi td { font-size: 8.6pt; vertical-align: top; text-align: center; }
-    table.ttd-multi .ttd-space { height: 40pt; }
-    table.ttd-multi .ttd-space .signature-image { max-width: 100pt; max-height: 36pt; }
-    table.ttd-multi .ttd-name { display: block; margin-top: 3pt; white-space: nowrap; font-size: 7.6pt; }
-@endsection
-
-@section('content')
-   @include('letters.region-grid', ['showHamlet' => true, 'hamletValue' => ($form['destination']['hamlet'] ?? ($form['hamlet'] ?? ''))])
-
-    <div class="judul-form">Formulir Permohonan Pindah Datang WNI</div>
-    <div class="subjudul-form">Antar Kabupaten/Kota Atau Antar Provinsi</div>
-    <div class="subjudul-form">No. {{ $number }}</div>
-
-    <div class="sub-heading">DATA DAERAH ASAL</div>
-    <table class="frow">
-        <tr><td class="f-no">1.</td><td style="width:140pt;">Nomor Kartu keluarga</td><td class="f-box">{{ $form['origin']['kk_number'] ?? '' }}</td></tr>
-        <tr><td class="f-no">2.</td><td>Nama Kepala Keluarga</td><td class="f-box">{{ $form['origin']['head_of_family'] ?? '' }}</td></tr>
-        <tr><td class="f-no">3.</td><td>Alamat</td><td class="f-box">{{ $form['origin']['address'] ?? '' }}</td></tr>
-    </table>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
-        <tr>
-            <td style="width:155pt; text-align:right; font-size:9.5pt; padding-right:6pt;">RT/RW</td>
-            <td style="border:1px solid #000; width:30pt; text-align:center;">{{ $form['origin']['rt'] ?? '' }}</td>
-            <td style="width:6pt;"></td>
-            <td style="border:1px solid #000; width:30pt; text-align:center;">{{ $form['origin']['rw'] ?? '' }}</td>
-            <td></td>
-        </tr>
-    </table>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
-        <tr>
-            <td style="width:155pt; font-size:9.5pt;">a. Desa/Kelurahan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['origin']['village'] ?? '' }}</td>
-            <td style="width:70pt; font-size:9.5pt; padding-left:6pt;">c. Kabupaten</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['origin']['regency'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td style="font-size:9.5pt;">b. Kecamatan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['origin']['district'] ?? '' }}</td>
-            <td style="font-size:9.5pt; padding-left:6pt;">d. Provinsi</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['origin']['province'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td style="width:155pt; font-size:9.5pt;">Kode Pos</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $form['origin']['postal_code'] ?? '' }}</td>
-            <td style="width:70pt; font-size:9.5pt; padding-left:6pt;">Telepon</td>
-            <td>
-                <table class="digit-box-full"><tr>
-                    @for ($i = 0; $i < 15; $i++)
-                        <td>{{ $form['origin']['phone'][$i] ?? '' }}</td>
-                    @endfor
-                </tr></table>
-            </td>
-        </tr>
-    </table>
-
-    <table class="frow">
-        <tr><td class="f-no">4.</td><td style="width:140pt;">NIK Pemohon</td><td class="f-box">{{ $applicant['nik'] ?? '' }}</td></tr>
-        <tr>
-            <td class="f-no">5.</td><td>Tempat/Tanggal Lahir</td>
-            <td class="f-box">
-                @if (!empty($applicant['birth_place']) || !empty($applicant['birth_date']))
-                    {{ $applicant['birth_place'] ?? '' }} &nbsp;&nbsp;&nbsp;&nbsp; {{ $applicant['birth_date'] ?? '' }}
-                @else
-                    {{ $applicant['birth'] ?? '' }}
-                @endif
-            </td>
-        </tr>
-        <tr><td class="f-no">6.</td><td>Nama Lengkap Pemohon</td><td class="f-box">{{ $applicant['name'] ?? '' }}</td></tr>
-    </table>
-
-    <div class="sub-heading">DATA DAERAH TUJUAN</div>
-    <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
-        <tr>
-            <td style="width:15pt; font-size:9.5pt;">1.</td>
-            <td style="width:140pt; font-size:9.5pt;">Status KK Bagi Yang Pindah</td>
-            <td style="border:1px solid #000; padding:3pt 4pt;">
-                <span class="opsi-box">{{ $form['destination_kk_status_code'] ?? '' }}</span>
-                1. Numpang KK &nbsp;&nbsp;&nbsp;2. Membuat KK Baru &nbsp;&nbsp;&nbsp;3. Nomor KK Tetap
-            </td>
-        </tr>
-    </table>
-    <table class="frow">
-        <tr><td class="f-no">2.</td><td style="width:140pt;">Nomor Kartu keluarga</td><td class="f-box">{{ $form['destination']['kk_number'] ?? '' }}</td></tr>
-        <tr><td class="f-no">3.</td><td>NIK Pemohon</td><td class="f-box">{{ $applicant['nik'] ?? '' }}</td></tr>
-        <tr><td class="f-no">4.</td><td>Nama Kepala Keluarga</td><td class="f-box">{{ $form['destination']['head_of_family'] ?? '' }}</td></tr>
-        <tr><td class="f-no">5.</td><td>Tanggal Kedatangan</td><td class="f-box">{{ $form['arrival_date'] ?? '' }}</td></tr>
-        <tr><td class="f-no">6.</td><td>Alamat yang Dituju</td><td class="f-box">{{ $form['destination']['address'] ?? '' }}</td></tr>
-    </table>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
-        <tr>
-            <td style="width:155pt; text-align:right; font-size:9.5pt; padding-right:6pt;">RT</td>
-            <td style="border:1px solid #000; width:30pt; text-align:center;">{{ $form['destination']['rt'] ?? '' }}</td>
-            <td style="width:6pt; text-align:right; font-size:9.5pt;">RW</td>
-            <td style="border:1px solid #000; width:30pt; text-align:center;">{{ $form['destination']['rw'] ?? '' }}</td>
-            <td></td>
-        </tr>
-    </table>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:3pt;">
-        <tr>
-            <td style="width:155pt; font-size:9.5pt;">a. Desa/Kelurahan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['destination']['village'] ?? '' }}</td>
-            <td style="width:70pt; font-size:9.5pt; padding-left:6pt;">c. Kabupaten</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['destination']['regency'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td style="font-size:9.5pt;">b. Kecamatan</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt;">{{ $form['destination']['district'] ?? '' }}</td>
-            <td style="font-size:9.5pt; padding-left:6pt;">d. Provinsi</td>
-            <td style="border:1px solid #000; padding-left:4pt;">{{ $form['destination']['province'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td style="width:155pt; font-size:9.5pt;">Kode Pos</td>
-            <td style="border:1px solid #000; padding-left:4pt; height:11pt; width:80pt;">{{ $form['destination']['postal_code'] ?? '' }}</td>
-            <td style="width:70pt; font-size:9.5pt; padding-left:6pt;">Telepon</td>
-            <td>
-                <table class="digit-box-full"><tr>
-                    @for ($i = 0; $i < 15; $i++)
-                        <td>{{ $form['destination']['phone'][$i] ?? '' }}</td>
-                    @endfor
-                </tr></table>
-            </td>
-        </tr>
-    </table>
-
-    <div class="sub-heading">6. Keluarga Yang Datang</div>
-    <table class="tbl-bordered">
-        <tr>
-            <th style="width:20pt;">No</th><th>NIK</th><th>Nama</th><th style="width:70pt;">Masa Berlaku KTP</th><th style="width:85pt;">SHDK</th>
-        </tr>
-        @php($familyMembers = is_array($form['family_members'] ?? null) ? $form['family_members'] : (is_string($form['family_members'] ?? null) && str_starts_with(trim($form['family_members'] ?? ''), '[') ? (json_decode($form['family_members'], true) ?? []) : []))
-        @php
-            $__famSrc = array_values(array_filter($familyMembers, fn ($r) => is_array($r) && trim(implode('', array_map(fn ($v) => is_array($v) ? '' : (string) $v, $r))) !== ''));
-        @endphp
-        @php
-            $__fam = array_values(is_array($__famSrc ?? null) ? $__famSrc : []);
-            $__famTotal = max(5, count($__fam));
-            $__cell = fn ($v) => trim((string) $v) === '' ? '&nbsp;' : e($v);
-        @endphp
-        @for ($i = 0; $i < $__famTotal; $i++)
-            @php($row = $__fam[$i] ?? [])
-            <tr>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['nik'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['name'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['valid_until'] ?? '') !!}</td>
-                <td style="border:1px solid #000; padding:4pt 3pt; line-height:1.1;">{!! $__cell($row['shdk'] ?? '') !!}</td>
+                <td style="height:15pt; text-align:center;">{{ $i + 1 }}</td><td>{{ $row['nik'] ?? '' }}</td><td>{{ $row['name'] ?? '' }}</td>
+                <td>{{ $row['valid_until'] ?? $row['validUntil'] ?? '' }}</td><td>{{ $row['shdk'] ?? '' }}</td>
             </tr>
         @endfor
     </table>
