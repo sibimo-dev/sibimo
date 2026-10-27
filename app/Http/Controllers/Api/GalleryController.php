@@ -7,6 +7,8 @@ use App\Models\Gallery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
 
 
 class GalleryController extends Controller
@@ -26,7 +28,7 @@ class GalleryController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required','string','max:200'],
-            'category' => ['required', 'in:musyawarah,kegiatan-sosial,pembangunan,budaya'],
+            'category' => ['required', Rule::exists('gallery_categories', 'slug')],
             'location' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
             'image' => ['required','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
@@ -65,7 +67,7 @@ class GalleryController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes','required','string','max:200'],
-            'category' => ['sometimes', 'in:musyawarah,kegiatan-sosial,pembangunan,budaya'],
+            'category' => ['sometimes', Rule::exists('gallery_categories', 'slug')],            
             'location' => ['nullable','string','max:255'],
             'description' => ['nullable','string'],
             'image' => ['sometimes','required','file','mimes:jpg,jpeg,png,webp,gif','max:5120'],
