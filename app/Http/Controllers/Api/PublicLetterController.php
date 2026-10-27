@@ -691,22 +691,24 @@ class PublicLetterController extends Controller
                 })
                 ?->full_name;
 
-            $spouseRelation = preg_match('/istri/i', (string) $citizen->family_relationship) === 1
-                ? 'suami'
-                : (preg_match('/suami/i', (string) $citizen->family_relationship) === 1
-                    ? 'istri'
-                    : (strtolower((string) $citizen->gender) === 'laki-laki' ? 'istri' : 'suami'));
-            $spouse = $familyMembers
-                ->where('citizen_id', '!=', $citizen->citizen_id)
-                ->first(function (Citizen $member) use ($spouseRelation, $citizen): bool {
-                    $relation = strtolower((string) $member->family_relationship);
-                    if ($spouseRelation !== null && str_contains($relation, $spouseRelation)) return true;
+            $spouseRelations = $this->spouseRelationsFor($citizen);
+            if ($spouseRelations !== null && $this->isMarriedStatus($citizen->marital_status)) {
+                $spouse = $familyMembers
+                    ->where('citizen_id', '!=', $citizen->citizen_id)
+                    ->filter(fn (Citizen $member): bool => $this->isMarriedStatus($member->marital_status))
+                    ->first(function (Citizen $member) use ($spouseRelations, $citizen): bool {
+                        $relation = strtolower((string) $member->family_relationship);
+                        $relationMatches = collect($spouseRelations)->contains(
+                            fn (string $allowed): bool => str_contains($relation, $allowed),
+                        );
+                        if (!$relationMatches) return false;
 
-                    $gender = strtolower((string) $citizen->gender);
-                    $memberGender = strtolower((string) $member->gender);
-                    return ($gender === 'laki-laki' && $memberGender === 'perempuan')
-                        || ($gender === 'perempuan' && $memberGender === 'laki-laki');
-                });
+                        $gender = strtolower((string) $citizen->gender);
+                        $memberGender = strtolower((string) $member->gender);
+                        return ($gender === 'laki-laki' && $memberGender === 'perempuan')
+                            || ($gender === 'perempuan' && $memberGender === 'laki-laki');
+                    });
+            }
 
             if ($headOfFamilyName === null) {
                 $headOfFamilyName = $familyMembers
@@ -774,9 +776,31 @@ class PublicLetterController extends Controller
                 'religion' => $spouse->religion,
                 'occupation' => $spouse->occupation,
                 'address' => $spouse->address,
+                'marriageCertificateNumber' => $spouse->marriage_certificate_number,
                 'familyRelationship' => $spouse->family_relationship,
             ] : null,
         ];
+    }
+
+    private function isMarriedStatus(?string $status): bool
+    {
+        $value = strtolower(trim((string) $status));
+        if ($value === '' || preg_match('/belum|cerai|janda|duda|jejaka|perawan/i', $value)) return false;
+
+        return preg_match('/kawin|menikah/i', $value) === 1;
+    }
+
+    private function spouseRelationsFor(Citizen $citizen): ?array
+    {
+        $relation = strtolower(trim((string) $citizen->family_relationship));
+        if ($relation === '' || preg_match('/anak|menantu|cucu|orang ?tua|saudara|famili/i', $relation)) return null;
+        if (str_contains($relation, 'istri')) return ['suami', 'kepala'];
+        if (str_contains($relation, 'suami')) return ['istri', 'kepala'];
+        if (preg_match('/kepala|\bkk\b/i', $relation)) {
+            return strtolower((string) $citizen->gender) === 'laki-laki' ? ['istri'] : ['suami'];
+        }
+
+        return null;
     }
 
     private function formatBirthPlaceDate(Citizen $citizen): ?string
