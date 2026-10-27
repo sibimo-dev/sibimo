@@ -77,9 +77,11 @@ class LetterRequestController extends Controller
         ]);
 
         $letterType = LetterType::findOrFail($validated['letter_type_id']);
-        $validated['form_data'] = $this->normalizeLegacyMarriageStatus(
-            $letterType,
-            $validated['form_data'] ?? [],
+        $validated['form_data'] = $this->normalizeGenderFormData(
+            $this->normalizeLegacyMarriageStatus(
+                $letterType,
+                $validated['form_data'] ?? [],
+            ),
         );
         $this->validateFormData(
             $letterType,
@@ -535,6 +537,35 @@ class LetterRequestController extends Controller
                 'cerai hidup' => 'Janda',
                 'cerai mati' => 'Janda',
             ]);
+        }
+
+        return $formData;
+    }
+
+    /**
+     * Form admin/public dapat menampilkan jenis kelamin dengan nomor ("1.
+     * Laki-laki" / "2. Perempuan"), sedangkan opsi metadata memakai nilai
+     * database tanpa nomor. Normalisasi rekursif menjaga field pasangan, anak,
+     * dan baris berulang tetap valid.
+     */
+    private function normalizeGenderFormData(array $formData): array
+    {
+        foreach ($formData as $key => $value) {
+            if (is_array($value)) {
+                $formData[$key] = $this->normalizeGenderFormData($value);
+                continue;
+            }
+
+            if (! is_string($key) || ! preg_match('/(?:gender|jenis[_-]?kelamin)/i', $key) || ! is_string($value)) {
+                continue;
+            }
+
+            $bare = trim((string) preg_replace('/^\s*\d+\s*[.)\-:]\s*/', '', $value));
+            if (strcasecmp($bare, 'laki-laki') === 0) {
+                $formData[$key] = 'Laki-laki';
+            } elseif (strcasecmp($bare, 'perempuan') === 0) {
+                $formData[$key] = 'Perempuan';
+            }
         }
 
         return $formData;
