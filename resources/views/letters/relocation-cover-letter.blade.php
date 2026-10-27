@@ -5,7 +5,7 @@
 @php($kodeForm = 'F.1-25')
 
 @section('content')
-    @include('letters.region-grid', ['showHamlet' => true])
+    @include('letters.region-grid', ['showHamlet' => true, 'hamletValue' => ($form['origin']['hamlet'] ?? ($form['hamlet'] ?? ''))])
 
 
     <div class="judul-form">Surat Pengantar Permohonan Pindah WNI</div>
@@ -194,27 +194,28 @@
             <th style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">NIK</th>
             <th style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">NAMA</th>
             <th style="border:1px solid #000; width:60pt; padding:1pt 2pt; line-height:1.1;">MASA BERLAKU KTP S/D</th>
-            <th style="border:1px solid #000; width:55pt; padding:1pt 2pt; line-height:1.1;">SHDK</th>
+            <th style="border:1px solid #000; width:80pt; padding:1pt 2pt; line-height:1.1;">SHDK</th>
         </tr>
-        @forelse (($form['family_members'] ?? []) as $i => $row)
+        @php
+            $__famSrc = $form['family_members'] ?? [];
+            if (is_string($__famSrc)) $__famSrc = json_decode($__famSrc, true) ?: [];
+            $__famSrc = array_values(array_filter(is_array($__famSrc) ? $__famSrc : [], fn ($r) => is_array($r) && trim(implode('', array_map(fn ($v) => is_array($v) ? '' : (string) $v, $r))) !== ''));
+        @endphp
+        @php
+            $__fam = array_values(is_array($__famSrc ?? null) ? $__famSrc : []);
+            $__famTotal = max(7, count($__fam));
+            $__cell = fn ($v) => trim((string) $v) === '' ? '&nbsp;' : e($v);
+        @endphp
+        @for ($i = 0; $i < $__famTotal; $i++)
+            @php($row = $__fam[$i] ?? [])
             <tr>
-                <td style="border:1px solid #000; padding:1pt 2pt; height:10pt; line-height:1.1;">{{ $i + 1 }}</td>
-                <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['nik'] ?? '' }}</td>
-                <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['name'] ?? '' }}</td>
-                <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['valid_until'] ?? '' }}</td>
-                <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;">{{ $row['shdk'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
+                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['nik'] ?? '') !!}</td>
+                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['name'] ?? '') !!}</td>
+                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['valid_until'] ?? '') !!}</td>
+                <td style="border:1px solid #000; padding:1.8pt 3pt; line-height:1.1;">{!! $__cell($row['shdk'] ?? '') !!}</td>
             </tr>
-        @empty
-            @for ($i = 0; $i < 7; $i++)
-                <tr>
-                    <td style="border:1px solid #000; padding:1pt 2pt; height:14pt; line-height:1.1;">{{ $i + 1 }}</td>
-                    <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;"></td>
-                    <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;"></td>
-                    <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;"></td>
-                    <td style="border:1px solid #000; padding:1pt 2pt; line-height:1.1;"></td>
-                </tr>
-            @endfor
-        @endforelse
+        @endfor
     </table>
 
     <div style="page-break-inside: avoid;">
