@@ -22,12 +22,11 @@
         <tr><td>6.</td><td>Agama</td><td>:</td><td class="write">{{ $death['deceased']['religion'] ?? '' }}</td></tr>
         <tr><td>7.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['deceased']['occupation'] ?? '' }}</td></tr>
         <tr><td>8.</td><td>Alamat</td><td>:</td><td class="write">{{ $death['deceased']['address'] ?? '' }}</td></tr>
-        <tr><td>9.</td><td>Anak ke (dengan huruf)</td><td>:</td><td class="write">{{ $death['deceased']['birth_order'] ?? '' }}</td></tr>
-        <tr><td>10.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_date'] ?? '' }}</td></tr>
-        <tr><td>11.</td><td>Jam</td><td>:</td><td class="write">{{ $death['deceased']['death_time'] ?? '' }} WIB</td></tr>
-        <tr><td>12.</td><td>Sebab</td><td>:</td><td class="write">{{ $death['deceased']['cause'] ?? '' }}</td></tr>
-        <tr><td>13.</td><td>Tempat Kematian</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }}</td></tr>
-        <tr><td>14.</td><td>Yang Menerangkan</td><td>:</td><td class="write">{{ $death['deceased']['relation'] ?? '' }}</td></tr>
+        <tr><td>9.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_date'] ?? '' }}</td></tr>
+        <tr><td>10.</td><td>Jam</td><td>:</td><td class="write">{{ $death['deceased']['death_time'] ?? '' }} WIB</td></tr>
+        <tr><td>11.</td><td>Sebab</td><td>:</td><td class="write">{{ $death['deceased']['cause'] ?? '' }}</td></tr>
+        <tr><td>12.</td><td>Tempat Kematian</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }}</td></tr>
+        <tr><td>13.</td><td>Yang Menerangkan</td><td>:</td><td class="write">{{ $death['deceased']['relation'] ?? '' }}</td></tr>
     </table>
 </div>
 @foreach ([['key' => 'mother', 'title' => 'IBU'], ['key' => 'father', 'title' => 'AYAH']] as $parent)

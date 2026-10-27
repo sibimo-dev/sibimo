@@ -369,7 +369,6 @@ class LetterRequestSeeder extends Seeder
                 'agama_jenazah' => 'Islam',
                 'pekerjaan_jenazah' => $deceased['occupation'],
                 'alamat_jenazah' => $deceased['address'],
-                'anak_ke_jenazah' => 'Kedua',
                 'meninggal_hari_tanggal' => $date(),
                 'lokasi_meninggal' => 'RSUD Sleman',
                 'kota_tempat_meninggal' => 'Kabupaten Sleman',
