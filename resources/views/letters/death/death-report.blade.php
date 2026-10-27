@@ -22,14 +22,13 @@
     <tr><td>6.</td><td>Agama</td><td>:</td><td class="write">{{ $death['deceased']['religion'] ?? '' }}</td></tr>
     <tr><td>7.</td><td>Pekerjaan</td><td>:</td><td class="write">{{ $death['deceased']['occupation'] ?? '' }}</td></tr>
     <tr><td>8.</td><td>Alamat</td><td>:</td><td class="write">{{ $death['deceased']['address'] ?? '' }}</td></tr>
-    <tr><td>9.</td><td>Anak ke (dengan huruf)</td><td>:</td><td class="write">{{ $death['deceased']['birth_order'] ?? '' }}</td></tr>
-    <tr><td>10.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_date'] ?? '' }}</td></tr>
-    <tr><td>11.</td><td>Jam</td><td>:</td><td class="write">{{ $death['deceased']['death_time'] ?? '' }} WIB</td></tr>
-    <tr><td>12.</td><td>Sebab</td><td>:</td><td class="write">{{ $death['deceased']['cause'] ?? '' }}</td></tr>
-    <tr><td>13.</td><td>Rincian Sebab</td><td>:</td><td class="write"></td></tr>
-    <tr><td>14.</td><td>Yang Menerangkan</td><td>:</td><td class="write">{{ $death['deceased']['relation'] ?? '' }}</td></tr>
-    <tr><td>15.</td><td>Tempat Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }}</td></tr>
-    <tr><td>16.</td><td>Kab/Kota Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_city'] ?? '' }}</td></tr>
+    <tr><td>9.</td><td>Meninggal Hari/Tanggal</td><td>:</td><td class="write">{{ $death['deceased']['death_date'] ?? '' }}</td></tr>
+    <tr><td>10.</td><td>Jam</td><td>:</td><td class="write">{{ $death['deceased']['death_time'] ?? '' }} WIB</td></tr>
+    <tr><td>11.</td><td>Sebab</td><td>:</td><td class="write">{{ $death['deceased']['cause'] ?? '' }}</td></tr>
+    <tr><td>12.</td><td>Rincian Sebab</td><td>:</td><td class="write"></td></tr>
+    <tr><td>13.</td><td>Yang Menerangkan</td><td>:</td><td class="write">{{ $death['deceased']['relation'] ?? '' }}</td></tr>
+    <tr><td>14.</td><td>Tempat Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_place'] ?? '' }}</td></tr>
+    <tr><td>15.</td><td>Kab/Kota Meninggal</td><td>:</td><td class="write">{{ $death['deceased']['death_city'] ?? '' }}</td></tr>
 </table>
 <p style="margin-top:5pt;text-align:justify">Demikian laporan saya ini saya buat dengan sebenar-benarnya dan disertai bukti dan dokumen pendukung pelaporan Kematian, apabila laporan saya ini dikemudian hari diketahui tidak benar maka saya siap dituntut sesuai peraturan perundang-undangan yang berlaku.</p>
 <table class="signature-lines" style="margin-top:6pt"><tr><td>Mengetahui<br>Dukuh<br><div class="space"></div><strong><u>{{ $signers['hamlet_head_name'] ?? $birth['hamlet']['head_name'] ?? '' }}</u></strong></td><td>{{ $signature['city'] ?? 'Bimomartani' }} &nbsp;&nbsp; {{ $signature['date'] ?? '' }}<br>Pelapor<br><div class="space"></div><strong><u>{{ $death['reporter']['name'] ?? '' }}</u></strong></td></tr></table>
