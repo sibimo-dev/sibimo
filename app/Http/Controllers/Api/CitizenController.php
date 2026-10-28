@@ -130,6 +130,115 @@ class CitizenController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
+    public function validateImport(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        $file = $validated['file'];
+        abort_if(
+            strtolower($file->getClientOriginalExtension()) !== 'csv',
+            422,
+            'File import harus berformat CSV.'
+        );
+
+        $handle = fopen($file->getRealPath(), 'rb');
+        abort_if($handle === false, 422, 'File CSV tidak dapat dibaca.');
+
+        try {
+            $firstLine = fgets($handle);
+            abort_if($firstLine === false, 422, 'File CSV tidak berisi header.');
+
+            $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+            rewind($handle);
+
+            $headers = fgetcsv($handle, 0, $delimiter) ?: [];
+            $normalizedHeaders = collect($headers)
+                ->map(fn ($header) => preg_replace('/[^a-z0-9]+/i', '', trim((string) $header)))
+                ->filter()
+                ->values();
+
+            abort_if(
+                !$normalizedHeaders->contains(fn (string $header) => in_array($header, ['nik', 'nationalid'], true))
+                || !$normalizedHeaders->contains(fn (string $header) => in_array($header, ['fullname', 'nama', 'namalengkap'], true)),
+                422,
+                'Header CSV harus memiliki kolom NIK dan Nama Lengkap.'
+            );
+
+            $rowCount = 0;
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                if (collect($row)->every(fn ($value) => trim((string) $value) === '')) {
+                    continue;
+                }
+
+                $rowCount++;
+                abort_if(
+                    $rowCount > 1000,
+                    422,
+                    'Import dibatalkan. File berisi lebih dari 1.000 data warga.'
+                );
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        abort_if($rowCount === 0, 422, 'File CSV tidak berisi data warga.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File CSV siap diimpor.',
+            'data' => ['row_count' => $rowCount, 'max_rows' => 1000],
+        ]);
+    }
+
+    /**
+     * Recalculate the stored age for every citizen in one database operation.
+     * The Citizen model also calculates age dynamically, but this keeps the
+     * persisted age column synchronized for exports and other consumers.
+     */
+    public function refreshAges(): JsonResponse
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            $updatedCount = DB::update(<<<'SQL'
+                UPDATE citizens
+                SET age = CASE
+                    WHEN birth_date IS NULL OR birth_date > CURDATE() THEN NULL
+                    ELSE TIMESTAMPDIFF(YEAR, birth_date, CURDATE())
+                END
+            SQL);
+        } elseif ($driver === 'pgsql') {
+            $updatedCount = DB::update(<<<'SQL'
+                UPDATE citizens
+                SET age = CASE
+                    WHEN birth_date IS NULL OR birth_date > CURRENT_DATE THEN NULL
+                    ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, birth_date))::integer
+                END
+            SQL);
+        } elseif ($driver === 'sqlite') {
+            $updatedCount = DB::update(<<<'SQL'
+                UPDATE citizens
+                SET age = CASE
+                    WHEN birth_date IS NULL OR date(birth_date) > date('now') THEN NULL
+                    ELSE CAST((julianday('now') - julianday(birth_date)) / 365.2425 AS INTEGER)
+                END
+            SQL);
+        } else {
+            abort(422, 'Driver database belum didukung untuk pembaruan umur massal.');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Umur warga berhasil diperbarui.',
+            'data' => [
+                'updated_count' => $updatedCount,
+                'updated_at' => now()->toISOString(),
+            ],
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->normalizeInput($request);

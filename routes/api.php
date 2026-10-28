@@ -227,6 +227,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Manajemen akun citizen
     Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
+    Route::post('/citizens/import/validate', [CitizenController::class, 'validateImport']);
+    Route::post('/citizens/refresh-ages', [CitizenController::class, 'refreshAges']);
     Route::get('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'index']);
     Route::post('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'store']);
     Route::get('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'show']);

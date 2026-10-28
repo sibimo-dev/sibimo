@@ -192,7 +192,9 @@ class PublicLetterController extends Controller
             'is_new_resident' => ['nullable', 'boolean'],
         ]);
 
-        $formData = $this->decodeFormData($validated['form_data']);
+        $formData = $this->normalizeGenderFormData(
+            $this->decodeFormData($validated['form_data']),
+        );
         $letterType = LetterType::query()
             ->where('code', $validated['letter_type_code'])
             ->where('is_active', true)
@@ -848,6 +850,35 @@ class PublicLetterController extends Controller
         }
 
         return $decoded;
+    }
+
+    /**
+     * Dropdown publik menampilkan jenis kelamin dengan nomor ("1. Laki-laki"
+     * / "2. Perempuan"), sedangkan metadata backend menyimpan nilai tanpa
+     * nomor. Normalisasi dilakukan rekursif agar field pasangan/anak/baris
+     * berulang juga tetap kompatibel.
+     */
+    private function normalizeGenderFormData(array $formData): array
+    {
+        foreach ($formData as $key => $value) {
+            if (is_array($value)) {
+                $formData[$key] = $this->normalizeGenderFormData($value);
+                continue;
+            }
+
+            if (! is_string($key) || ! preg_match('/(?:gender|jenis[_-]?kelamin)/i', $key) || ! is_string($value)) {
+                continue;
+            }
+
+            $bare = trim((string) preg_replace('/^\s*\d+\s*[.)\-:]\s*/', '', $value));
+            if (strcasecmp($bare, 'laki-laki') === 0) {
+                $formData[$key] = 'Laki-laki';
+            } elseif (strcasecmp($bare, 'perempuan') === 0) {
+                $formData[$key] = 'Perempuan';
+            }
+        }
+
+        return $formData;
     }
 
     private function validatePublicFormData(LetterType $letterType, array $formData): void
