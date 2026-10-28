@@ -195,14 +195,22 @@
             <th style="border:1px solid #000; width:18pt; padding:2pt 2pt; line-height:1.1;">NO</th>
             <th style="border:1px solid #000; padding:2pt 2pt; line-height:1.1;">NIK</th>
             <th style="border:1px solid #000; padding:2pt 2pt; line-height:1.1;">NAMA</th>
-            <th style="border:1px solid #000; width:60pt; padding:2pt 2pt; line-height:1.1;">MASA BERLAKU KTP S/D</th>
+            <th style="border:1px solid #000; width:74pt; padding:2pt 2pt; line-height:1.1;">MASA BERLAKU KTP S/D</th>
             <th style="border:1px solid #000; width:55pt; padding:2pt 2pt; line-height:1.1;">SHDK</th>
         </tr>
         {{-- Selalu tampil minimal 7 baris (meski kosong); bila anggota > 7 semua tetap dicetak --}}
         @php
-            $fmRaw = $form['family_members'] ?? [];
+            $fmRaw = $form['family_members'] ?? $form['familyMembers'] ?? [];
             if (is_string($fmRaw)) $fmRaw = json_decode($fmRaw, true) ?: [];
-            $fmRows = array_values(array_filter(is_array($fmRaw) ? $fmRaw : [], 'is_array'));
+            // Masa berlaku KTP: terima valid_until / validUntil. Tanggal ISO -> d-m-Y; teks (mis. SEUMUR HIDUP) dicetak apa adanya.
+            $fmDate = function ($v) {
+                $v = trim((string) $v);
+                return preg_match('/^\d{4}-\d{2}-\d{2}/', $v) ? date('d-m-Y', strtotime(substr($v, 0, 10))) : $v;
+            };
+            $fmRows = array_values(array_map(
+                fn ($r) => array_merge($r, ['valid_until' => $fmDate($r['valid_until'] ?? $r['validUntil'] ?? $r['masa_berlaku_ktp'] ?? $r['masa_berlaku'] ?? '')]),
+                array_filter(is_array($fmRaw) ? $fmRaw : [], 'is_array')
+            ));
             $fmTotal = max(7, count($fmRows));
         @endphp
         @for ($i = 0; $i < $fmTotal; $i++)
@@ -213,7 +221,7 @@
                 <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1; text-align:center;">{{ $i + 1 }}</td>
                 <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['nik'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['name'] ?? '' }}</td>
-                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['valid_until'] ?? $row['validUntil'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1; white-space:nowrap; font-size:8.5pt;">{{ $row['valid_until'] ?? '' }}</td>
                 <td style="border:1px solid #000; padding:2pt 3pt; height:15pt; line-height:1.1;">{{ $row['shdk'] ?? '' }}</td>
             </tr>
         @endfor

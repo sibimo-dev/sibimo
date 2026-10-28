@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Models\OrganizationalStructureSetting;
 
 class OrganizationalStructureController extends Controller
 {
@@ -48,6 +49,7 @@ class OrganizationalStructureController extends Controller
     {
         $payload = $this->validated($request);
         $this->replaceStaff($request, $payload['levels']);
+        $this->saveSettings($payload);
 
         return response()->json([
             'success' => true,
@@ -69,7 +71,8 @@ class OrganizationalStructureController extends Controller
 
     private function validated(Request $request): array
     {
-        $this->decodeLevels($request);
+        $this->decodeJsonField($request, 'levels');
+        $this->decodeJsonField($request, 'former_officials');
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'levels' => ['required', 'array'],
@@ -77,6 +80,14 @@ class OrganizationalStructureController extends Controller
             'published_at' => ['nullable', 'date'],
             'photos.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'signatures.*' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'former_officials' => ['nullable', 'array'],
+            'former_officials.*.id' => ['nullable', 'string', 'max:64'],
+            'former_officials.*.jabatan' => ['required', 'string', 'max:150'],
+            'former_officials.*.nama' => ['required', 'string', 'max:150'],
+            'former_officials.*.start_year' => ['required', 'integer', 'between:1900,2100'],
+            'former_officials.*.end_year' => ['required', 'integer', 'between:1900,2100', 'gte:former_officials.*.start_year'],
+            'former_officials.*.desc' => ['nullable', 'string', 'max:500'],
+            'show_former_officials' => ['nullable', 'boolean'],
         ]);
         Validator::make($validated['levels'], [
             '*.level' => ['required', 'string'],
@@ -89,6 +100,8 @@ class OrganizationalStructureController extends Controller
             '*.people.*.desc' => ['nullable', 'string'],
             '*.people.*.photo' => ['nullable', 'string'],
             '*.people.*.signature' => ['nullable', 'string'],
+            '*.people.*.start_year' => ['nullable', 'integer', 'between:1900,2100'],
+            '*.people.*.end_year' => ['nullable', 'integer', 'between:1900,2100'],
         ])->validate();
 
         return $validated;
@@ -121,6 +134,9 @@ class OrganizationalStructureController extends Controller
                         'is_signer' => false,
                         'created_at' => now(),
                         'updated_at' => now(),
+                        'description' => $person['desc'] ?? null,
+                        'start_year' => $person['start_year'] ?? null,
+                        'end_year' => $person['end_year'] ?? null,
                     ];
                 }
             }
@@ -141,6 +157,7 @@ class OrganizationalStructureController extends Controller
 
     private function structurePayload(?string $title = null, ?string $status = null): array
     {
+        $settings = OrganizationalStructureSetting::query()->first();
         $staff = Staff::query()->where('is_signer', false)->orderBy('staff_id')->get();
         $levels = $staff->groupBy('level')->map(function ($people, $level) {
             return [
@@ -152,8 +169,12 @@ class OrganizationalStructureController extends Controller
                     'name' => $person->name,
                     'title' => $person->position,
                     'desc' => $person->description,
+                    'start_year' => $person->start_year,
+                    'end_year' => $person->end_year,
                     'photo' => $person->photo,
                     'signature' => $person->signature_image,
+                'former_officials' => $settings?->former_officials ?? [],
+                'show_former_officials' => (bool) ($settings?->show_former_officials ?? false),
                 ])->values()->all(),
             ];
         })->values()->all();
@@ -162,20 +183,22 @@ class OrganizationalStructureController extends Controller
             'organizational_structure_id' => 1,
             'title' => $title ?? 'Struktur Organisasi Pemerintah Kalurahan',
             'levels' => $levels,
+            'former_officials' => $settings?->former_officials ?? [],
+            'show_former_officials' => (bool) ($settings?->show_former_officials ?? false),
             'status' => $status ?? 'Draft',
             'published_at' => null,
         ];
     }
 
-    private function decodeLevels(Request $request): void
+    private function decodeJsonField(Request $request, string $field): void
     {
-        $levels = $request->input('levels');
-        if (!is_string($levels)) return;
-        $decoded = json_decode($levels, true);
+        $value = $request->input($field);
+        if (!is_string($value)) return;
+        $decoded = json_decode($value, true);
         if (!is_array($decoded)) {
-            throw ValidationException::withMessages(['levels' => 'levels harus berupa JSON array yang valid.']);
+            throw ValidationException::withMessages([$field => "{$field} harus berupa JSON array yang valid."]);
         }
-        $request->merge(['levels' => $decoded]);
+        $request->merge([$field => $decoded]);
     }
 
     private function replacePhotoToken(?string $photo, array $files): ?string
@@ -212,5 +235,19 @@ class OrganizationalStructureController extends Controller
         foreach ($photos as $url) {
             Storage::disk('public')->delete(str_replace('/storage/', '', (string) parse_url($url, PHP_URL_PATH)));
         }
+    }
+
+    private function saveSettings(array $payload): void
+    {
+        $settings = OrganizationalStructureSetting::query()->first() ?? new OrganizationalStructureSetting();
+
+        if (array_key_exists('former_officials', $payload)) {
+            $settings->former_officials = array_values($payload['former_officials'] ?? []);
+        }
+        if (array_key_exists('show_former_officials', $payload)) {
+            $settings->show_former_officials = (bool) $payload['show_former_officials'];
+        }
+
+        $settings->save();
     }
 }

@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
     'photo',
     'signature_image',
     'is_signer',
+    'start_year',
+    'end_year'
 ])]
 class Staff extends Model
 {
