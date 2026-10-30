@@ -5,7 +5,8 @@ namespace Database\Seeders;
 use App\Models\Region;
 use App\Models\Rt;
 use App\Models\Rw;
-use App\Models\Staff;
+use App\Models\StaffAssignment;
+use App\Models\StaffPerson;
 use Illuminate\Database\Seeder;
 
 class RegionAreaSeeder extends Seeder
@@ -23,8 +24,6 @@ class RegionAreaSeeder extends Seeder
         $rwCounter = 0;
 
         foreach ($seed as [$name, $rwCount, $rtCount]) {
-            // Dusun yang sudah ada di tabel regions dipakai ulang (pencocokan nama di MySQL
-            // tidak membedakan huruf besar/kecil, jadi 'Krebet' cocok dengan 'KREBET').
             $region = Region::firstOrCreate(['name' => $name]);
             $rtCounter = 0;
 
@@ -34,8 +33,9 @@ class RegionAreaSeeder extends Seeder
 
                 $rw = Rw::firstOrCreate(
                     ['region_id' => $region->region_id, 'number' => $rwNumber],
-                    ['head_staff_id' => $this->dummyStaff("Ketua RW {$rwNumber} (dummy)", "Ketua RW {$rwNumber}", 'RW')->staff_id],
+                    ['head_name' => "Ketua RW {$rwNumber} (dummy)"],
                 );
+                $this->seedHead('Ketua RW', 'rw_id', $rw->id, $rw->head_name);
 
                 $rtTotal = intdiv($rtCount, $rwCount) + ($i < $rtCount % $rwCount ? 1 : 0);
 
@@ -43,20 +43,37 @@ class RegionAreaSeeder extends Seeder
                     $rtCounter++;
                     $rtNumber = str_pad((string) $rtCounter, 2, '0', STR_PAD_LEFT);
 
-                    // Nomor RT mulai dari 01 lagi di tiap padukuhan, jadi nama dummy memuat padukuhan.
-                    Rt::firstOrCreate(
+                    $rt = Rt::firstOrCreate(
                         ['rw_id' => $rw->id, 'number' => $rtNumber],
-                        ['head_staff_id' => $this->dummyStaff("Ketua RT {$rtNumber} {$name} (dummy)", "Ketua RT {$rtNumber}", 'RT')->staff_id],
+                        ['head_name' => "Ketua RT {$rtNumber} {$name} (dummy)"],
                     );
+                    $this->seedHead('Ketua RT', 'rt_id', $rt->id, $rt->head_name);
                 }
             }
         }
     }
 
-    // Baris staff dummy untuk ketua RT/RW. Bila insert gagal karena ada kolom wajib
-    // di tabel staff, tambahkan nilainya di array kedua.
-    private function dummyStaff(string $name, string $position, string $level): Staff
+    // Buat penugasan ketua hanya kalau wilayah itu belum punya ketua aktif,
+    // supaya data asli dari admin tidak tertimpa dan seeder aman dijalankan ulang.
+    private function seedHead(string $position, string $column, int $id, ?string $name): void
     {
-        return Staff::firstOrCreate(['name' => $name], ['position' => $position, 'level' => $level]);
+        if (blank($name)) {
+            return;
+        }
+
+        $hasActive = StaffAssignment::query()->active()
+            ->where('position', $position)->where($column, $id)->exists();
+        if ($hasActive) {
+            return;
+        }
+
+        $person = StaffPerson::query()->create(['name' => $name]);
+
+        StaffAssignment::query()->create([
+            'staff_id' => $person->id,
+            'position' => $position,
+            $column => $id,
+            'start_date' => today()->toDateString(),
+        ]);
     }
 }
