@@ -922,6 +922,9 @@ class PublicLetterController extends Controller
             'verified_at' => $letterRequest->verified_at,
             'authorized_at' => $letterRequest->authorized_at,
             'completed_at' => $letterRequest->completed_at,
+            'rejection_reason' => $letterRequest->status === 'rejected'
+                ? $letterRequest->notes
+                : null,
             'can_download' => in_array($letterRequest->status, ['authorized', 'completed'], true),
             'letter_type' => [
                 'code' => $letterRequest->letterType?->code,
