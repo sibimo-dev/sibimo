@@ -20,7 +20,7 @@ class FooterSettingSeeder extends Seeder
                     ['platform' => 'YouTube',   'url' => 'https://www.youtube.com/'],
                     ['platform' => 'WhatsApp',  'url' => 'https://wa.me/6281234567890'],
                 ],
-                'address' => 'Dusun Krajan, Bimomartani, Ngemplak, Sleman, D.I. Yogyakarta, 55584.',
+                'address' => 'Jl. Cangkringan No.50, Area Sawah, Bimomartani, Kec. Ngemplak, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55584',
                 'phone' => '0812-3456-7890',
                 'email' => 'desa.bimomartani@slemankab.go.id',
             ],
