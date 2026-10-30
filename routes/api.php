@@ -28,9 +28,11 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PublicLetterController;
 use App\Http\Controllers\Api\OrganizationalStructureController;
 use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\RegionAreaController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SignerController;
+use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VillagePotentialCategoryController;
@@ -140,7 +142,20 @@ Route::get('/organizational-structures', [OrganizationalStructureController::cla
 Route::get('/organizational-structures/{organizational_structure_id}', [OrganizationalStructureController::class, 'show']);
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
-Route::apiResource('regions', RegionController::class)->only(['index','store','update','destroy']);
+
+
+// Publik: hanya baca
+Route::get('/regions', [RegionController::class, 'index']);
+Route::get('/region-areas', [RegionAreaController::class, 'index']);
+
+// Admin: harus login
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
+    Route::apiResource('regions', RegionController::class)->only(['store', 'update', 'destroy']);
+    Route::put('/rws/{id}', [RegionAreaController::class, 'updateRw']);
+    Route::put('/rts/{id}', [RegionAreaController::class, 'updateRt']);
+    Route::get('/staff', [StaffController::class, 'index']);
+});
+
 
 // Konten publik pembangunan dan produk hukum.
 Route::get('/developments', [DevelopmentController::class, 'index']);

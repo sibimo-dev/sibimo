@@ -5,15 +5,43 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Region;
 use Illuminate\Http\Request;
+use App\Models\Citizen;
 
 class RegionController extends Controller
 {
     public function index()
     {
-        return response()->json([
-            'success' => true,
-            'data' => Region::latest()->get(),
-        ]);
+        // Hanya penduduk yang masih hidup dan tinggal di sini (bukan orang luar / pindah / mati).
+        $stats = Citizen::query()
+            ->whereRaw("UPPER(record_type) = 'PENDUDUK'")
+            ->where('status', 'Active')
+            ->whereNotNull('dusun')
+            ->selectRaw("dusun,
+                COUNT(*) AS population,
+                SUM(CASE WHEN gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male_count,
+                SUM(CASE WHEN gender = 'Perempuan' THEN 1 ELSE 0 END) AS female_count,
+                COUNT(DISTINCT NULLIF(family_card_number, '')) AS kk_count")
+            ->groupBy('dusun')
+            ->get()
+            ->keyBy(fn ($row) => mb_strtolower(trim($row->dusun)));
+
+        $regions = Region::with('headStaff')
+            ->withCount(['rws', 'rts'])
+            ->latest()
+            ->get()
+            ->map(function (Region $region) use ($stats) {
+                $s = $stats->get(mb_strtolower(trim($region->name)));
+                $region->rw_count     = $region->rws_count;
+                $region->rt_count     = $region->rts_count;
+                $region->population   = (int) ($s->population ?? 0);
+                $region->male_count   = (int) ($s->male_count ?? 0);
+                $region->female_count = (int) ($s->female_count ?? 0);
+                $region->kk_count     = (int) ($s->kk_count ?? 0);
+
+                return $region;
+            });
+
+        return response()->json(['success' => true, 'data' => $regions]);
     }
 
     public function store(Request $request)
@@ -21,12 +49,7 @@ class RegionController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:150',
             'head_name' => 'nullable|string|max:150',
-            'rw_count' => 'integer|min:0',
-            'rt_count' => 'integer|min:0',
-            'kk_count' => 'integer|min:0',
-            'population' => 'integer|min:0',
-            'male_count' => 'integer|min:0',
-            'female_count' => 'integer|min:0',
+            'head_staff_id' => 'nullable|integer|exists:staff,staff_id',
         ]);
 
         return response()->json([
@@ -41,12 +64,7 @@ class RegionController extends Controller
         $region->update($request->validate([
             'name' => 'sometimes|required|string|max:150',
             'head_name' => 'nullable|string|max:150',
-            'rw_count' => 'integer|min:0',
-            'rt_count' => 'integer|min:0',
-            'kk_count' => 'integer|min:0',
-            'population' => 'integer|min:0',
-            'male_count' => 'integer|min:0',
-            'female_count' => 'integer|min:0',
+            'head_staff_id' => 'nullable|integer|exists:staff,staff_id',
         ]));
 
         return response()->json([
