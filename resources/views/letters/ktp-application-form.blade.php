@@ -112,54 +112,72 @@
         </tr>
     </table>
 
+    @php
+        // Kode & nama wilayah dipatenkan (Bimomartani, Ngemplak, Sleman, DIY); tiap kode 2 kotak.
+        // Dipakai bila $region dari service kosong; kalau $region terisi, nilainya yang dipakai.
+        $rgDefault = [
+            'province' => ['34', 'DAERAH ISTIMEWA YOGYAKARTA'],
+            'regency'  => ['04', 'SLEMAN'],
+            'district' => ['11', 'NGEMPLAK'],
+            'village'  => ['20', 'BIMOMARTANI'],
+        ];
+        $rgCode = function (string $k) use ($region, $rgDefault) {
+            $v = $region[$k . '_code'] ?? '';
+            $v = preg_replace('/\s+/', '', is_array($v) ? implode('', $v) : (string) $v);
+            return str_split($v !== '' ? $v : $rgDefault[$k][0]);
+        };
+        $rgName = fn (string $k) => trim((string) ($region[$k . '_name'] ?? '')) ?: $rgDefault[$k][1];
+    @endphp
+
     <table class="region-grid">
         <tr>
             <td class="region-label">PEMERINTAH PROVINSI</td>
             <td class="region-sep">:</td>
             <td class="region-code-cell">
                 <table class="region-code"><tr>
-                    @foreach ($region['province_code'] as $digit)
+                    @foreach ($rgCode('province') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
             </td>
-            <td class="region-value">{{ $region['province_name'] }}&nbsp;</td>
+            <td class="region-value">{{ $rgName('province') }}&nbsp;</td>
         </tr>
         <tr>
             <td class="region-label">PEMERINTAH KABUPATEN</td>
             <td class="region-sep">:</td>
             <td class="region-code-cell">
                 <table class="region-code"><tr>
-                    @foreach ($region['regency_code'] as $digit)
+                    @foreach ($rgCode('regency') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
             </td>
-            <td class="region-value">{{ $region['regency_name'] }}&nbsp;</td>
+            <td class="region-value">{{ $rgName('regency') }}&nbsp;</td>
         </tr>
         <tr>
             <td class="region-label">KECAMATAN</td>
             <td class="region-sep">:</td>
             <td class="region-code-cell">
                 <table class="region-code"><tr>
-                    @foreach ($region['district_code'] as $digit)
+                    @foreach ($rgCode('district') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
             </td>
-            <td class="region-value">{{ $region['district_name'] }}&nbsp;</td>
+            <td class="region-value">{{ $rgName('district') }}&nbsp;</td>
         </tr>
         <tr>
             <td class="region-label">DESA</td>
             <td class="region-sep">:</td>
             <td class="region-code-cell">
                 <table class="region-code"><tr>
-                    @foreach (array_slice($region['village_code'], -2) as $digit)
+                    {{-- Desa hanya 2 kotak: selalu 20 (Bimomartani), tidak mengikuti $region --}}
+                    @foreach (str_split($rgDefault['village'][0]) as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
             </td>
-            <td class="region-value">{{ $region['village_name'] }}&nbsp;</td>
+            <td class="region-value">{{ $rgName('village') }}&nbsp;</td>
         </tr>
     </table>
 

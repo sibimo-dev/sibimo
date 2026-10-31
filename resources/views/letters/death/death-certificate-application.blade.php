@@ -19,5 +19,17 @@
 <tr><td class="check-box"></td><td>{{ $document }}</td></tr>
 @endforeach
 </table>
-<div class="right" style="margin-top:4pt">Sleman, ____________________<br>Petugas Penerima Berkas,</div>
+@php
+    $receiverName = trim((string) ($signers['receiving_officer_name'] ?? ($verifier['full_name'] ?? $verifier['name'] ?? '')));
+    $receiverDate = trim((string) ($signers['receiving_officer_date'] ?? ($death['reporter']['application_date'] ?? '')));
+    if ($receiverDate === '' && ! empty($verifiedAt)) {
+        $receiverDate = \Carbon\Carbon::parse($verifiedAt)->locale('id')->translatedFormat('j F Y');
+    }
+@endphp
+<div class="right" style="margin-top:4pt">
+    Sleman, {{ $receiverDate !== '' ? $receiverDate : '____________________' }}<br>
+    Petugas Penerima Berkas,
+    <div style="height:34pt"></div>
+    {{ $receiverName !== '' ? $receiverName : '____________________' }}
+</div>
 @endsection
