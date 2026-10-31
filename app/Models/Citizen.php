@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Region;
+use App\Models\Rw;
+use App\Models\Rt;
 
 #[Fillable([
     'record_type',
@@ -17,6 +20,9 @@ use Laravel\Sanctum\HasApiTokens;
     'title_code',
     'national_id',
     'family_card_number',
+    'padukuhan_id',
+    'rw_id',
+    'rt_id',
     'dusun',
     'full_name',
     'birth_place',
@@ -124,6 +130,36 @@ class Citizen extends Authenticatable
      * Auto increment.
      */
     public $incrementing = true;
+
+    public function padukuhan()
+    {
+        return $this->belongsTo(Region::class, 'padukuhan_id', 'region_id');
+    }
+
+    public function rwArea()
+    {
+        return $this->belongsTo(Rw::class, 'rw_id');
+    }
+
+    public function rtArea()
+    {
+        return $this->belongsTo(Rt::class, 'rt_id');
+    }
+
+    public function mother()
+    {
+        return $this->belongsTo(self::class, 'mother_national_id', 'national_id');
+    }
+
+    public function father()
+    {
+        return $this->belongsTo(self::class, 'father_national_id', 'national_id');
+    }
+
+    public function spouse()
+    {
+        return $this->belongsTo(self::class, 'spouse_national_id', 'national_id');
+    }
 
 
     /**

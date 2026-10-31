@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Region;
 
 class StaffAssignment extends Model
 {
@@ -33,6 +34,11 @@ class StaffAssignment extends Model
     public function rw()
     {
         return $this->belongsTo(Rw::class, 'rw_id');
+    }
+
+    public function padukuhan()
+    {
+        return $this->belongsTo(Region::class, 'padukuhan_id', 'region_id');
     }
 
     // Aktif = belum berakhir (end_date kosong atau belum lewat).

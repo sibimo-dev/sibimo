@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Citizen;
+use App\Models\Region;
+use App\Models\Rw;
+use App\Models\Rt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +24,10 @@ class CitizenController extends Controller
     
     public function index(): JsonResponse
     {
-        $citizens = Citizen::query()->latest()->get();
+        $citizens = Citizen::query()
+            ->with(['padukuhan', 'rwArea', 'rtArea'])
+            ->latest()
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -250,6 +256,9 @@ class CitizenController extends Controller
             'title_code' => ['nullable', 'string', 'max:10'],
             'national_id' => ['required','string','size:16','regex:/^\d{16}$/','unique:citizens,national_id'],
             'family_card_number' => ['nullable','string','size:16','regex:/^\d{16}$/'],
+            'padukuhan_id' => ['nullable', 'integer', 'exists:regions,region_id'],
+            'rw_id' => ['nullable', 'integer', 'exists:rws,id'],
+            'rt_id' => ['nullable', 'integer', 'exists:rts,id'],
             'dusun' => ['nullable', 'string', 'max:100'],
             'full_name' => ['required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
@@ -317,6 +326,8 @@ class CitizenController extends Controller
         $validated['record_year'] = (int) now()->year;
         unset($validated['record_event_type']);
 
+        $validated = $this->resolveAreaRelations($validated);
+
         $citizen = Citizen::create($validated);
 
         return response()->json([
@@ -330,7 +341,9 @@ class CitizenController extends Controller
     {
         // Dokumen warga dimuat lewat endpoint CitizenDocumentController sendiri,
         // supaya kegagalan file/penyimpanan tidak membuat form edit warga blank.
-        $citizen = Citizen::query()->findOrFail($citizen_id);
+        $citizen = Citizen::query()
+            ->with(['padukuhan', 'rwArea', 'rtArea', 'mother', 'father', 'spouse'])
+            ->findOrFail($citizen_id);
 
         return response()->json([
             'success' => true,
@@ -353,6 +366,9 @@ class CitizenController extends Controller
             'title_code' => ['sometimes', 'nullable', 'string', 'max:10'],
             'national_id' => ['sometimes','required','string','size:16','regex:/^\d{16}$/', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
             'family_card_number' => ['nullable','string','size:16','regex:/^\d{16}$/'],
+            'padukuhan_id' => ['sometimes', 'nullable', 'integer', 'exists:regions,region_id'],
+            'rw_id' => ['sometimes', 'nullable', 'integer', 'exists:rws,id'],
+            'rt_id' => ['sometimes', 'nullable', 'integer', 'exists:rts,id'],
             'dusun' => ['sometimes', 'nullable', 'string', 'max:100'],
             'full_name' => ['sometimes','required','string','max:100'],
             'birth_place' => ['nullable','string','max:50'],
@@ -425,6 +441,8 @@ class CitizenController extends Controller
         }
         unset($validated['record_event_type']);
 
+        $validated = $this->resolveAreaRelations($validated);
+
         $citizen->update($validated);
 
         return response()->json([
@@ -458,6 +476,67 @@ class CitizenController extends Controller
         if ($birthCertificateStatus !== 'Ada') {
             $request->merge(['birth_certificate_number' => null]);
         }
+    }
+
+    /**
+     * Resolve the canonical area IDs while keeping the old text columns in
+     * sync for existing forms/imports that still send dusun/rw/rt strings.
+     */
+    private function resolveAreaRelations(array $data): array
+    {
+        $rt = !empty($data['rt_id']) ? Rt::with('rw.region')->find($data['rt_id']) : null;
+        $rw = !empty($data['rw_id']) ? Rw::with('region')->find($data['rw_id']) : null;
+        $region = !empty($data['padukuhan_id']) ? Region::find($data['padukuhan_id']) : null;
+
+        if ($rt) {
+            if ($rw && (int) $rt->rw_id !== (int) $rw->id) {
+                abort(422, 'RT yang dipilih tidak berada di RW tersebut.');
+            }
+            $rw ??= $rt->rw;
+            if ($region && (int) $rw->region_id !== (int) $region->region_id) {
+                abort(422, 'RW yang dipilih tidak berada di padukuhan tersebut.');
+            }
+            $region ??= $rw->region;
+        } elseif ($rw) {
+            if ($region && (int) $rw->region_id !== (int) $region->region_id) {
+                abort(422, 'RW yang dipilih tidak berada di padukuhan tersebut.');
+            }
+            $region ??= $rw->region;
+        } elseif ($region) {
+            // Region saja tetap valid untuk data lama yang belum memilih RW/RT.
+        } elseif (array_key_exists('dusun', $data) || array_key_exists('rw', $data) || array_key_exists('rt', $data)) {
+            $region = Region::query()
+                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim((string) ($data['dusun'] ?? '')))])
+                ->first();
+            $rw = $region && filled($data['rw'] ?? null)
+                ? Rw::where('region_id', $region->region_id)->get()->first(fn ($item) => $this->sameAreaNumber($item->number, $data['rw']))
+                : null;
+            $rt = $rw && filled($data['rt'] ?? null)
+                ? Rt::where('rw_id', $rw->id)->get()->first(fn ($item) => $this->sameAreaNumber($item->number, $data['rt']))
+                : null;
+        }
+
+        if ($region) {
+            $data['padukuhan_id'] = $region->region_id;
+            $data['dusun'] = $region->name;
+        }
+        if ($rw) {
+            $data['rw_id'] = $rw->id;
+            $data['rw'] = $rw->number;
+        }
+        if ($rt) {
+            $data['rt_id'] = $rt->id;
+            $data['rt'] = $rt->number;
+        }
+
+        return $data;
+    }
+
+    private function sameAreaNumber(mixed $left, mixed $right): bool
+    {
+        $normalize = static fn ($value) => preg_replace('/^0+/', '', trim((string) $value)) ?: '0';
+
+        return $normalize($left) === $normalize($right);
     }
 
     private function normalizeEventType(?string $value): string
