@@ -14,6 +14,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Models\OrganizationalStructureSetting;
 use App\Models\Region;
+use App\Models\Rt;
+use App\Models\Rw;
 use App\Models\StaffAssignment;
 use App\Models\StaffPerson;
 
@@ -127,6 +129,9 @@ class OrganizationalStructureController extends Controller
             '*.people.*.school_name' => ['nullable', 'string', 'max:150'],
             '*.people.*.graduation_year' => ['nullable', 'integer', 'between:1900,2100'],
             '*.people.*.term_end_date' => ['nullable', 'date'],
+            '*.people.*.rt_number' => ['nullable', 'string', 'max:20'],
+            '*.people.*.rw_number' => ['nullable', 'string', 'max:20'],
+            '*.people.*.padukuhan' => ['nullable', 'string', 'max:150'],
         ])->validate();
 
         return $validated;
@@ -143,7 +148,22 @@ class OrganizationalStructureController extends Controller
         'Carik',
         'Kepala Urusan (Sekretariat & Keuangan)',
         'Kepala Seksi',
+        'Staff Pamong Kalurahan',
         'Dukuh (Kepala Padukuhan)',
+        'Ketua RT & Ketua RW',
+    ];
+
+    // Urutan baku daftar pamong. Jangan bergantung pada ID assignment karena
+    // assignment baru/hasil edit dapat membuat urutan daftar berubah sendiri.
+    private const POSITION_ORDER = [
+        'Lurah',
+        'Carik',
+        'Kaur Danarta',
+        'Kaur Tata Laksana',
+        'Kaur Pangripta',
+        'Kamituwa',
+        'Ulu-Ulu',
+        'Jagabaya',
         'Staff Pamong Kalurahan',
     ];
     
@@ -152,14 +172,46 @@ class OrganizationalStructureController extends Controller
     // Pengelompokan bagan diturunkan dari jabatan, bukan kolom database.
     private function levelOf(string $position): string
     {
+        $position = trim((string) preg_replace('/\s+Kalurahan\s+Bimomartani\s*$/i', '', $position));
+
         return match (true) {
             $position === 'Lurah' => 'Lurah',
             $position === 'Carik' => 'Carik',
             str_starts_with($position, 'Kaur') => 'Kepala Urusan (Sekretariat & Keuangan)',
             in_array($position, ['Kamituwa', 'Ulu-Ulu', 'Jagabaya'], true) => 'Kepala Seksi',
+            in_array($position, ['Ketua RT', 'Ketua RW'], true) => 'Ketua RT & Ketua RW',
             str_starts_with($position, 'Dukuh') => 'Dukuh (Kepala Padukuhan)',
             default => 'Staff Pamong Kalurahan',
         };
+    }
+
+    private function positionSortKey(string $position, int $id = 0): array
+    {
+        $position = trim($position);
+        $dukuhRank = 0;
+        if (preg_match('/^Dukuh\s+([IVXLCDM]+|\d+)/i', $position, $match)) {
+            $value = strtoupper($match[1]);
+            $dukuhRank = ctype_digit($value) ? (int) $value : $this->romanToInt($value);
+            return [8, $dukuhRank, $id];
+        }
+
+        $rank = array_search($position, self::POSITION_ORDER, true);
+
+        return [$rank === false ? 999 : $rank, 0, $id];
+    }
+
+    private function romanToInt(string $value): int
+    {
+        $map = ['I' => 1, 'V' => 5, 'X' => 10, 'L' => 50, 'C' => 100, 'D' => 500, 'M' => 1000];
+        $total = 0;
+        $previous = 0;
+        foreach (array_reverse(str_split($value)) as $letter) {
+            $number = $map[$letter] ?? 0;
+            $total += $number < $previous ? -$number : $number;
+            $previous = max($previous, $number);
+        }
+
+        return $total;
     }
     
     private function nullIfEmpty(mixed $value): mixed
@@ -170,13 +222,93 @@ class OrganizationalStructureController extends Controller
     // "Dukuh I Krebet" -> region_id padukuhan "KREBET".
     private function matchRegionId(string $position): ?int
     {
-        if (!preg_match('/^Dukuh\s+[IVXL]+\s+(.+)$/i', $position, $m)) return null;
+        if (!preg_match('/^Dukuh\s+(?:[IVXLCDM]+|\d+)\s+(.+)$/i', $position, $m)) return null;
         $this->regionCache ??= Region::query()->get(['region_id', 'name']);
         $name = mb_strtolower(trim($m[1]));
         $hit = $this->regionCache->first(fn ($r) => mb_strtolower($r->name) === $name)
             ?? $this->regionCache->first(fn ($r) => str_contains(mb_strtolower($r->name), $name)
                 || str_contains($name, mb_strtolower($r->name)));
         return $hit?->region_id;
+    }
+
+    private function areaAssignment(string $title, array $person, ?StaffAssignment $current = null): array
+    {
+        $isRt = $title === 'Ketua RT';
+        $isRw = $title === 'Ketua RW';
+        $padukuhanId = str_starts_with($title, 'Dukuh')
+            ? $this->matchRegionId($title)
+            : null;
+
+        if (!$isRt && !$isRw) {
+            return [
+                'padukuhan_id' => $padukuhanId ?? $current?->padukuhan_id,
+                'rw_id' => null,
+                'rt_id' => null,
+            ];
+        }
+
+        $padukuhanValue = $person['padukuhan'] ?? '';
+        if (is_array($padukuhanValue)) {
+            $padukuhanValue = $padukuhanValue['value'] ?? $padukuhanValue['label'] ?? '';
+        }
+        $padukuhan = trim((string) $padukuhanValue);
+        $rwNumber = trim((string) ($person['rw_number'] ?? ''));
+        $rtNumber = trim((string) ($person['rt_number'] ?? ''));
+        $region = Region::query()
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($padukuhan)])
+            ->first();
+
+        if (!$region && $current?->padukuhan_id) {
+            $region = Region::find($current->padukuhan_id);
+        }
+
+        if ($current && $rwNumber === '' && $current->rw_id) {
+            $rwNumber = (string) Rw::find($current->rw_id)?->number;
+        }
+        if ($current && $rtNumber === '' && $current->rt_id) {
+            $rtNumber = (string) Rt::find($current->rt_id)?->number;
+        }
+
+        if (!$region || $rwNumber === '' || ($isRt && $rtNumber === '')) {
+            throw ValidationException::withMessages([
+                'levels' => "Wilayah {$title} belum lengkap. Isi padukuhan, nomor RW" . ($isRt ? ', dan nomor RT.' : '.'),
+            ]);
+        }
+
+        $rw = Rw::query()->where('region_id', $region->region_id)->get()
+            ->first(fn (Rw $item) => $this->sameAreaNumber($item->number, $rwNumber));
+        $rw ??= Rw::query()->create([
+            'region_id' => $region->region_id,
+            'number' => $this->normalizeAreaNumber($rwNumber),
+        ]);
+
+        $rt = null;
+        if ($isRt) {
+            $rt = Rt::query()->where('rw_id', $rw->id)->get()
+                ->first(fn (Rt $item) => $this->sameAreaNumber($item->number, $rtNumber));
+            $rt ??= Rt::query()->create([
+                'rw_id' => $rw->id,
+                'number' => $this->normalizeAreaNumber($rtNumber),
+            ]);
+        }
+
+        return [
+            'padukuhan_id' => $region->region_id,
+            'rw_id' => $rw->id,
+            'rt_id' => $rt?->id,
+        ];
+    }
+
+    private function sameAreaNumber(mixed $left, mixed $right): bool
+    {
+        $normalize = static fn ($value) => preg_replace('/^0+/', '', trim((string) $value)) ?: '0';
+
+        return $normalize($left) === $normalize($right);
+    }
+
+    private function normalizeAreaNumber(string $value): string
+    {
+        return ctype_digit($value) ? str_pad((string) ((int) $value), 2, '0', STR_PAD_LEFT) : $value;
     }
     
     private function replaceSkToken(?string $value, array $files): ?string
@@ -212,7 +344,9 @@ class OrganizationalStructureController extends Controller
             $signatureFiles = $request->allFiles()['signatures'] ?? [];
             $skFiles = $request->allFiles()['sk_documents'] ?? [];
     
-            $existing = StaffAssignment::query()->active()->managed()->with('person')->get();
+            // RT/RW juga dikelola dari Struktur Organisasi, sehingga harus
+            // ikut dimuat agar assignment lama diperbarui, bukan dibuat ulang.
+            $existing = StaffAssignment::query()->active()->with('person')->get();
             $claimed = [];
             $seenDukuh = [];
             $obsoleteMedia = [];
@@ -235,6 +369,7 @@ class OrganizationalStructureController extends Controller
                     $signature = $this->replaceSignatureToken($p['signature'] ?? null, $signatureFiles);
     
                     $assignment = $this->findAssignment($existing, $claimed, $p);
+                    $area = $this->areaAssignment($title, $p, $assignment);
                     $person = $assignment?->person
                         ?? (!empty($p['staff_id']) ? StaffPerson::find((int) $p['staff_id']) : null)
                         ?? new StaffPerson();
@@ -275,9 +410,9 @@ class OrganizationalStructureController extends Controller
                     $attributes = [
                         'staff_id' => $person->id,
                         'position' => $title,
-                        'padukuhan_id' => $isDukuh
-                            ? ($this->matchRegionId($title) ?? $assignment?->padukuhan_id)
-                            : null,
+                        'padukuhan_id' => $area['padukuhan_id'],
+                        'rw_id' => $area['rw_id'],
+                        'rt_id' => $area['rt_id'],
                         'description' => $p['desc'] ?? null,
                         'start_date' => $start,
                         'end_date' => $end,
@@ -340,6 +475,9 @@ class OrganizationalStructureController extends Controller
             'sk_document' => $a->sk_document,
             'sk_document_name' => $a->sk_document_name,
             'position_history' => $a->position_history ?? [],
+            'rt_number' => $a->rt?->number,
+            'rw_number' => $a->rw?->number ?? $a->rt?->rw?->number,
+            'padukuhan' => $a->padukuhan?->name ?? $a->rw?->region?->name ?? $a->rt?->rw?->region?->name,
             'assignments' => $p->historyPayload(),
         ] + $p->bioPayload();
     }
@@ -348,8 +486,19 @@ class OrganizationalStructureController extends Controller
     {
         $settings = OrganizationalStructureSetting::query()->first();
     
-        $levels = StaffAssignment::query()->active()->managed()
-            ->with(['person.assignments.rt', 'person.assignments.rw'])
+        $levels = StaffAssignment::query()->active()
+            ->where(fn ($query) => $query
+                ->whereNotIn('position', ['Ketua RT', 'Ketua RW'])
+                ->orWhereNotNull('rw_id')
+                ->orWhereNotNull('rt_id'))
+            ->with([
+                'person.assignments.rt.rw.region',
+                'person.assignments.rw.region',
+                'person.assignments.padukuhan',
+                'rt.rw.region',
+                'rw.region',
+                'padukuhan',
+            ])
             ->orderBy('id')->get()
             ->groupBy(fn (StaffAssignment $a) => $this->levelOf($a->position))
             ->sortBy(fn ($group, $level) => array_search($level, self::LEVEL_ORDER, true))
@@ -358,7 +507,11 @@ class OrganizationalStructureController extends Controller
                 'pimpinan' => $level === 'Lurah',
                 'slider' => str_contains($level, 'Dukuh') || str_contains($level, 'Staff'),
                 'centerOnDesktop' => $level === 'Staff Pamong Kalurahan',
-                'people' => $group->map(fn (StaffAssignment $a) => $this->personPayload($a))->values()->all(),
+                'people' => $group
+                    ->sortBy(fn (StaffAssignment $a) => $this->positionSortKey($a->position, (int) $a->id))
+                    ->map(fn (StaffAssignment $a) => $this->personPayload($a))
+                    ->values()
+                    ->all(),
             ])->values()->all();
     
         return [

@@ -29,14 +29,18 @@
     $f = fn ($key) => $form[$key] ?? '';
     $m = fn ($i, $key) => $members->get($i)[$key] ?? '';
 
-    // Bagian "Diisi Oleh Petugas": DIKOSONGKAN (diisi petugas tulisan tangan).
-    // Hanya terisi kalau $form membawa province_code/province, regency_code/regency, dst.
-    // Untuk mengisi otomatis dengan default service ($region), ganti dengan:
-    //   $rg = $region ?? [];
-    //   $code = fn ($k) => $f($k . '_code') ?: implode('', $rg[$k . '_code'] ?? []);
-    //   $name = fn ($k) => $f($k) ?: ($rg[$k . '_name'] ?? '');
-    $code = fn ($k) => $f($k . '_code');
-    $name = fn ($k) => $f($k);
+    // Bagian "Diisi Oleh Petugas": Provinsi, Kab, Kecamatan, Desa terisi DEFAULT
+    // (Kalurahan Bimomartani, Ngemplak, Sleman, DIY). Kalau $form membawa
+    // province_code/province, regency_code/regency, dst. (hasil edit petugas di admin),
+    // nilai dari $form yang dipakai. Dusun & Nomor KK tidak punya default (beda tiap keluarga).
+    $defaultRegion = [
+        'province' => ['code' => '34',  'name' => 'DAERAH ISTIMEWA YOGYAKARTA'],
+        'regency'  => ['code' => '04',  'name' => 'SLEMAN'],
+        'district' => ['code' => '11',  'name' => 'NGEMPLAK'],
+        'village'  => ['code' => '020', 'name' => 'BIMOMARTANI'],
+    ];
+    $code = fn ($k) => $f($k . '_code') ?: ($defaultRegion[$k]['code'] ?? '');
+    $name = fn ($k) => $f($k) ?: ($defaultRegion[$k]['name'] ?? '');
 
     $fmtDate = function ($v) {
         if (blank($v)) return '';

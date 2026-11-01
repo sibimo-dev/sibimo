@@ -182,7 +182,7 @@
     </table>
 
     <table class="frow">
-        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $form['origin']['hamlet'] ?? '' }}</td></tr>
+        <tr><td class="f-no"></td><td style="width:135pt;">Dusun / Dukuh / Kampung</td><td class="f-box">{{ $form['origin']['hamlet'] ?? ($form['origin_hamlet'] ?? ($form['hamlet'] ?? '')) }}</td></tr>
     </table>
 
     <table style="width:100%; border-collapse:separate; border-spacing:0 2pt; margin-top:1pt;">

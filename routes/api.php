@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\SurveyController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VillagePotentialController;
 use App\Http\Controllers\Api\VillagePotentialCategoryController;
@@ -142,6 +143,10 @@ Route::get('/organizational-structures', [OrganizationalStructureController::cla
 Route::get('/organizational-structures/{organizational_structure_id}', [OrganizationalStructureController::class, 'show']);
 Route::get('/citizen-statistics', [CitizenController::class, 'statistics']);
 Route::post('/feedbacks', [FeedbackController::class, 'store']);
+Route::middleware('throttle:30,1')->group(function () {
+    Route::post('/surveys', [SurveyController::class, 'store']);
+    Route::get('/surveys/summary', [SurveyController::class, 'publicSummary']);
+});
 
 
 // Publik: hanya baca
@@ -231,6 +236,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::apiResource('feedbacks', FeedbackController::class)
         ->parameters(['feedbacks' => 'feedback_id'])
         ->except(['store']);
+    Route::get('/admin/surveys/results', [SurveyController::class, 'adminResults']);
 
     // Perpustakaan
     Route::apiResource('book-categories', BookCategoryController::class)
