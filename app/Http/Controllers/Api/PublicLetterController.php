@@ -9,6 +9,7 @@ use App\Models\CitizenDocument;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterType;
+use App\Models\StaffAssignment;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
 use App\Support\LetterNumberFormatter;
@@ -680,7 +681,9 @@ class PublicLetterController extends Controller
     private function residentPayload(Citizen $citizen): array
     {
         $headOfFamilyName = null;
-        $spouse = null;
+        // Relasi NIK adalah sumber utama; pencarian dalam KK tetap menjadi
+        // fallback untuk data lama yang belum mengisi spouse_national_id.
+        $spouse = $citizen->spouse;
         if (filled($citizen->family_card_number)) {
             $familyMembers = Citizen::query()
                 ->where('family_card_number', $citizen->family_card_number)
@@ -740,8 +743,12 @@ class PublicLetterController extends Controller
             'dusun' => $citizen->dusun,
             'rt' => $citizen->rt,
             'rw' => $citizen->rw,
-            'rtHeadName' => $citizen->rt_head_name,
-            'rwHeadName' => $citizen->rw_head_name,
+            'padukuhanId' => $citizen->padukuhan_id,
+            'rwId' => $citizen->rw_id,
+            'rtId' => $citizen->rt_id,
+            'rtHeadName' => $this->areaHeadName('Ketua RT', 'rt_id', $citizen->rt_id, $citizen->rt_head_name),
+            'rwHeadName' => $this->areaHeadName('Ketua RW', 'rw_id', $citizen->rw_id, $citizen->rw_head_name),
+            'hamletHeadName' => $this->areaHeadName(null, 'padukuhan_id', $citizen->padukuhan_id, $citizen->padukuhan?->head_name),
             'phoneNumber' => $citizen->phone_number,
             'birthCertificateStatus' => $citizen->birth_certificate_status,
             'birthCertificateNumber' => $citizen->birth_certificate_number,
@@ -761,9 +768,11 @@ class PublicLetterController extends Controller
             'religion' => $citizen->religion,
             'beliefOrganization' => $citizen->belief_organization,
             'motherNationalId' => $citizen->mother_national_id,
-            'motherName' => $citizen->mother_name,
+            'motherName' => $citizen->mother?->full_name ?? $citizen->mother_name,
+            'motherPerson' => $this->personPayload($citizen->mother),
             'fatherNationalId' => $citizen->father_national_id,
-            'fatherName' => $citizen->father_name,
+            'fatherName' => $citizen->father?->full_name ?? $citizen->father_name,
+            'fatherPerson' => $this->personPayload($citizen->father),
             'nationality' => $citizen->nationality ?: 'WNI',
             'previousAddress' => $citizen->previous_address,
             'passportNumber' => $citizen->passport_number,
@@ -782,6 +791,32 @@ class PublicLetterController extends Controller
                 'familyRelationship' => $spouse->family_relationship,
             ] : null,
         ];
+    }
+
+    private function personPayload(?Citizen $person): ?array
+    {
+        return $person ? [
+            'nik' => $person->national_id,
+            'fullName' => $person->full_name,
+            'birthPlace' => $person->birth_place,
+            'birthDate' => $person->birth_date?->format('Y-m-d'),
+            'gender' => $person->gender,
+            'religion' => $person->religion,
+            'occupation' => $person->occupation,
+            'nationality' => $person->nationality ?: 'WNI',
+            'address' => $person->address,
+        ] : null;
+    }
+
+    private function areaHeadName(?string $position, string $column, mixed $id, ?string $fallback): ?string
+    {
+        if (!$id) return $fallback;
+
+        $query = StaffAssignment::query()->active()->with('person')->where($column, $id);
+        if ($position) $query->where('position', $position);
+        else $query->whereNotNull('padukuhan_id');
+
+        return $query->first()?->person?->name ?? $fallback;
     }
 
     private function isMarriedStatus(?string $status): bool
