@@ -30,6 +30,23 @@
 
 @section('content')
 @php
+    // Nama & tanggal Petugas Penerima Berkas (kosong = tetap titik-titik untuk ditulis tangan).
+    // Urutan sumber: isian admin "Nama Petugas Penerima Berkas" -> verifikator surat (bila backend mengirim $verifier / $verifiedAt).
+    $receiverName = trim((string) ($signers['receiving_officer_name']
+        ?? $birth['receiving_officer_name']
+        ?? ($verifier['full_name'] ?? $verifier['name'] ?? '')));
+    $receiverDate = trim((string) ($signers['receiving_officer_date']
+        ?? ($r['application_date'] ?? '')));
+    if ($receiverDate === '' && ! empty($verifiedAt)) {
+        $receiverDate = \Carbon\Carbon::parse($verifiedAt)->locale('id')->translatedFormat('j F Y');
+    }
+
+    // Dokumen tercentang: terima array, string "a,b", atau label (bukan hanya key) supaya tidak gagal diam-diam.
+    $ticked = $birth['documents'] ?? [];
+    if (is_string($ticked)) { $ticked = preg_split('/\s*,\s*/', $ticked, -1, PREG_SPLIT_NO_EMPTY); }
+    $ticked = collect((array) $ticked)->flatten()->map(fn ($v) => trim((string) $v))->filter()->values()->all();
+    $isTicked = fn ($key, $label) => in_array($key, $ticked, true) || in_array($label, $ticked, true);
+
     $c = $birth['child'];
     $m = $birth['mother'];
     $f = $birth['father'];
@@ -135,7 +152,7 @@
     <table class="doc-list">
         @foreach ($documents as $key => $label)
             <tr>
-                <td class="doc-box">{{ in_array($key, $birth['documents'], true) ? 'X' : '' }}</td>
+                <td class="doc-box">{{ $isTicked($key, $label) ? 'X' : '' }}</td>
                 <td class="doc-label">{{ $label }}</td>
             </tr>
         @endforeach
@@ -145,10 +162,11 @@
         <tr>
             <td style="width: 58%;"></td>
             <td style="vertical-align: top;">
-                Sleman, <span class="dash-line" style="width: 110pt;">&nbsp;</span><br>
+                Sleman,
+                @if ($receiverDate !== '') {{ $receiverDate }} @else <span class="dash-line" style="width: 110pt;">&nbsp;</span> @endif<br>
                 Petugas Penerima Berkas,
                 <div style="height: 40pt;"></div>
-                <span class="dash-line" style="width: 150pt;">&nbsp;</span>
+                @if ($receiverName !== '') <u>{{ $receiverName }}</u> @else <span class="dash-line" style="width: 150pt;">&nbsp;</span> @endif
             </td>
         </tr>
     </table>
