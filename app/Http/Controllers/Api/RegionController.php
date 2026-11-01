@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Region;
 use Illuminate\Http\Request;
 use App\Models\Citizen;
+use App\Models\StaffAssignment;
 
 class RegionController extends Controller
 {
@@ -75,7 +76,10 @@ class RegionController extends Controller
 
     public function destroy($id)
     {
-        Region::findOrFail($id)->delete();
+        $region = Region::findOrFail($id);
+        StaffAssignment::query()->active()->where('padukuhan_id', $region->region_id)
+            ->update(['end_date' => now()->subDay()->toDateString()]);
+        $region->delete();
 
         return response()->json([
             'success' => true,
