@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->foreignId('complaint_id')->constrained('complaints', 'complaint_id');
             $table->string('file_name', 255);
             $table->string('file_path', 255);
+            $table->string('type', 20)->default('report');
             $table->timestamp('uploaded_at')->nullable();
         });
     }

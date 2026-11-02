@@ -10,11 +10,15 @@ return new class extends Migration
     {
         Schema::create('village_potentials', function (Blueprint $table) {
             $table->id('potential_id');
-            $table->enum('category', ['UMKM', 'Agriculture', 'Tourism', 'BUMDes']);
+            $table->string('category', 100);
             $table->string('title', 200);
+            $table->string('slug', 220)->nullable()->unique();
+            $table->string('short_desc', 255)->nullable();
             $table->longText('description')->nullable();
             $table->string('image', 255)->nullable();
             $table->string('location', 255)->nullable();
+            $table->string('contact', 255)->nullable();
+            $table->json('extra_info')->nullable();
             $table->timestamp('created_at')->nullable();
 
             $table->index('category');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Events\NotificationAvailable;
+use App\Models\Citizen;
 use App\Models\LetterClassificationSequence;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
@@ -343,6 +344,13 @@ class LetterRequestController extends Controller
 
         $letterRequest->update($updateData);
 
+        // Jika permohonan merupakan pendaftaran warga baru (penduduk tetap) dan
+        // diotorisasi, buat catatan warga baru di tabel citizens agar NIK-nya
+        // langsung terdaftar dan bisa dicek pada alur berikutnya.
+        if ($validated['status'] === 'authorized' && $letterRequest->is_new_resident) {
+            $this->registerNewResidentCitizen($letterRequest);
+        }
+
         LetterRequestStatusHistory::create([
             'letter_request_id' => $letterRequest->letter_request_id,
             'status'            => $validated['status'],
@@ -606,5 +614,89 @@ class LetterRequestController extends Controller
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    /**
+     * Daftarkan pemohon sebagai warga baru saat surat pendaftaran penduduk tetap
+     * diotorisasi oleh admin. Data diambil dari kolom applicant_* dan form_data.
+     * firstOrCreate mencegah duplikasi jika endpoint otorisasi terpanggil ulang.
+     */
+    private function registerNewResidentCitizen(LetterRequest $letterRequest): void
+    {
+        $nik = $letterRequest->applicant_nik;
+        if (!$nik) {
+            return;
+        }
+
+        $existing = Citizen::where('national_id', $nik)->first();
+        if ($existing) {
+            if (!$letterRequest->citizen_id) {
+                $letterRequest->update(['citizen_id' => $existing->citizen_id]);
+            }
+            return;
+        }
+
+        $form = is_array($letterRequest->form_data) ? $letterRequest->form_data : [];
+
+        $familyCardNumber = $this->pickFormValue($form, ['nomor_kk', 'family_card_number', 'kk', 'no_kk']);
+        $birthPlace       = $this->pickFormValue($form, ['tempat_lahir', 'birth_place']);
+        $birthDate        = $this->pickFormValue($form, ['tanggal_lahir', 'birth_date']);
+        $genderRaw        = $this->pickFormValue($form, ['jenis_kelamin', 'gender']);
+        $gender           = null;
+        if ($genderRaw) {
+            $gender = stripos((string) $genderRaw, 'perempuan') !== false ? 'Perempuan' : 'Laki-laki';
+        }
+        $bloodType        = $this->pickFormValue($form, ['golongan_darah', 'blood_type']);
+        $religion         = $this->pickFormValue($form, ['agama', 'religion']);
+        $occupation       = $this->pickFormValue($form, ['pekerjaan', 'occupation']);
+        $education        = $this->pickFormValue($form, ['pendidikan', 'education']);
+        $maritalStatus    = $this->pickFormValue($form, ['status_perkawinan', 'status_kawin', 'marital_status']);
+        $rt               = $this->pickFormValue($form, ['rt']);
+
+        // Cari rt_id jika ada nomor RT
+        $rtId = null;
+        if ($rt) {
+            $rtNumber = preg_replace('/^0+/', '', trim((string) $rt)) ?: '0';
+            $rtRecord = \App\Models\Rt::whereRaw('CAST(number AS UNSIGNED) = ?', [(int) $rtNumber])->first();
+            $rtId = $rtRecord?->id;
+        }
+
+        $citizen = Citizen::create([
+            'record_type'                 => 'PENDUDUK',
+            'national_id'                 => $nik,
+            'full_name'                   => $letterRequest->applicant_name,
+            'family_card_number'          => $familyCardNumber ? (string) $familyCardNumber : null,
+            'birth_place'                 => $birthPlace ? (string) $birthPlace : null,
+            'birth_date'                  => $birthDate ?: null,
+            'gender'                      => $gender,
+            'address'                     => $letterRequest->applicant_address,
+            'ktp_address'                 => $letterRequest->applicant_address,
+            'phone_number'                => $letterRequest->applicant_phone,
+            'rt_id'                       => $rtId,
+            'rt'                          => $rt ? (string) $rt : null,
+            'blood_type'                  => $bloodType ? (string) $bloodType : null,
+            'religion'                    => $religion ? (string) $religion : null,
+            'occupation'                  => $occupation ? (string) $occupation : null,
+            'education'                   => $education ? (string) $education : null,
+            'marital_status'              => $maritalStatus ? (string) $maritalStatus : null,
+            'status'                      => 'Active',
+        ]);
+
+        $letterRequest->update(['citizen_id' => $citizen->citizen_id]);
+    }
+
+    /**
+     * Ambil nilai pertama yang ditemukan dari daftar key dalam form_data.
+     */
+    private function pickFormValue(array $form, array $keys): mixed
+    {
+        foreach ($keys as $key) {
+            $value = $form[$key] ?? null;
+            if ($value !== null && trim((string) $value) !== '') {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

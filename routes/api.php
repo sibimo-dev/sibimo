@@ -256,6 +256,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'update']);
     Route::get('/citizens/{citizen_id}/documents/{document_id}/download', [CitizenDocumentController::class, 'download']);
     Route::delete('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'destroy']);
+    Route::get('/citizens/by-nik/{nik}', [CitizenController::class, 'showByNik']);
     Route::apiResource('citizens', CitizenController::class)
         ->parameters(['citizens' => 'citizen_id']);
 

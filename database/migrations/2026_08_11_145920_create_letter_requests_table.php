@@ -10,8 +10,8 @@ return new class extends Migration {
             $table->id('letter_request_id');
             $table->string('request_code', 30)->nullable()->unique();
             $table->foreignId('citizen_id')->nullable()->constrained('citizens', 'citizen_id');
-            $table->string('applicant_name', 100);
-            $table->string('applicant_nik', 16);
+            $table->string('applicant_name', 100)->nullable();
+            $table->string('applicant_nik', 16)->nullable();
             $table->string('applicant_phone', 15)->nullable();
             $table->text('applicant_address')->nullable();
             $table->foreignId('letter_type_id')->constrained('letter_types', 'letter_type_id');
@@ -23,12 +23,14 @@ return new class extends Migration {
             $table->foreignId('authorized_by_signer_id')->nullable()->constrained('staff', 'staff_id');
             $table->enum('source', ['Online', 'Manual (Kelurahan)'])->default('Manual (Kelurahan)');
             $table->text('notes')->nullable();
-            $table->foreignId('authorized_by')->nullable()->constrained('users', 'user_id');            $table->timestamp('submitted_at')->nullable();
+            $table->foreignId('authorized_by')->nullable()->constrained('users', 'user_id');
+            $table->timestamp('submitted_at')->nullable();
             $table->timestamp('verified_at')->nullable();
             $table->timestamp('authorized_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->string('result_file_path', 100)->nullable();
             $table->text('remarks')->nullable();
+            $table->boolean('is_new_resident')->default(false);
 
             $table->index('status');
             $table->index('submitted_at');

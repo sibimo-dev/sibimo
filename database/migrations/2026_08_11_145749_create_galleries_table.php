@@ -10,6 +10,9 @@ return new class extends Migration {
         Schema::create('galleries', function (Blueprint $table) {
             $table->id('gallery_id');
             $table->string('title', 200);
+            $table->string('category', 120)->default('kegiatan-sosial');
+            $table->string('location', 255)->nullable();
+            $table->date('event_date')->nullable();
             $table->text('description')->nullable();
             $table->string('image', 255);
             $table->foreignId('uploaded_by')->constrained('users', 'user_id');
