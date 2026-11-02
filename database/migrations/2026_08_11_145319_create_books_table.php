@@ -9,12 +9,13 @@ return new class extends Migration {
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id('book_id');
+            $table->foreignId('category_id')->constrained('book_categories', 'category_id');
             $table->string('title', 200);
             $table->string('author', 150)->nullable();
+            $table->string('publisher', 150)->nullable();
             $table->string('isbn', 20)->nullable();
             $table->integer('stock')->default(0);
             $table->timestamps();
-            $table->foreignId('category_id')->constrained('book_categories', 'category_id');
 
             $table->index('title');
             $table->index('isbn');

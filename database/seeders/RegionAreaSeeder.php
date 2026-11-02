@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use App\Models\Region;
 use App\Models\Rt;
 use App\Models\Rw;
-use App\Models\StaffAssignment;
-use App\Models\StaffPerson;
 use Illuminate\Database\Seeder;
 
 class RegionAreaSeeder extends Seeder
@@ -33,9 +31,8 @@ class RegionAreaSeeder extends Seeder
 
                 $rw = Rw::firstOrCreate(
                     ['region_id' => $region->region_id, 'number' => $rwNumber],
-                    ['head_name' => "Ketua RW {$rwNumber} (dummy)"],
+                    ['head_name' => null],
                 );
-                $this->seedHead('Ketua RW', 'rw_id', $rw->id, $rw->head_name);
 
                 $rtTotal = intdiv($rtCount, $rwCount) + ($i < $rtCount % $rwCount ? 1 : 0);
 
@@ -45,35 +42,10 @@ class RegionAreaSeeder extends Seeder
 
                     $rt = Rt::firstOrCreate(
                         ['rw_id' => $rw->id, 'number' => $rtNumber],
-                        ['head_name' => "Ketua RT {$rtNumber} {$name} (dummy)"],
+                        ['head_name' => null],
                     );
-                    $this->seedHead('Ketua RT', 'rt_id', $rt->id, $rt->head_name);
                 }
             }
         }
-    }
-
-    // Buat penugasan ketua hanya kalau wilayah itu belum punya ketua aktif,
-    // supaya data asli dari admin tidak tertimpa dan seeder aman dijalankan ulang.
-    private function seedHead(string $position, string $column, int $id, ?string $name): void
-    {
-        if (blank($name)) {
-            return;
-        }
-
-        $hasActive = StaffAssignment::query()->active()
-            ->where('position', $position)->where($column, $id)->exists();
-        if ($hasActive) {
-            return;
-        }
-
-        $person = StaffPerson::query()->create(['name' => $name]);
-
-        StaffAssignment::query()->create([
-            'staff_id' => $person->id,
-            'position' => $position,
-            $column => $id,
-            'start_date' => today()->toDateString(),
-        ]);
     }
 }

@@ -31,6 +31,7 @@ return new class extends Migration
             $table->string('sk_issuer', 150)->nullable();
             $table->string('sk_document')->nullable();
             $table->string('sk_document_name')->nullable();
+            $table->json('position_history')->nullable();
             $table->timestamps();
             $table->index(['position', 'end_date']);
         });

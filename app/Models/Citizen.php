@@ -9,31 +9,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\Region;
-use App\Models\Rw;
-use App\Models\Rt;
 
 #[Fillable([
     'record_type',
-    'record_event',
-    'record_year',
-    'title_code',
     'national_id',
     'family_card_number',
-    'padukuhan_id',
-    'rw_id',
-    'rt_id',
-    'dusun',
     'full_name',
     'birth_place',
     'birth_date',
     'age',
     'gender',
     'address',
-    'rt',
-    'rw',
-    'rt_head_name',
-    'rw_head_name',
+    'rt_id',          // FK utama ke rts.id
+    'rt',             // nomor RT teks (backward-compat)
     'phone_number',
     'birth_certificate_status',
     'birth_certificate_number',
@@ -49,35 +37,16 @@ use App\Models\Rt;
     'divorce_date',
     'family_relationship',
     'physical_disability',
-    'disability_status',
     'disability_type',
+    'disability_status',
     'religion',
     'belief_organization',
+    'nationality',
     'mother_national_id',
     'mother_name',
-    'mother_birth_place',
-    'mother_birth_date',
-    'mother_occupation',
-    'mother_religion',
-    'mother_nationality',
-    'mother_address',
     'father_national_id',
     'father_name',
-    'father_birth_place',
-    'father_birth_date',
-    'father_occupation',
-    'father_religion',
-    'father_nationality',
-    'father_address',
     'spouse_national_id',
-    'spouse_name',
-    'spouse_birth_place',
-    'spouse_birth_date',
-    'spouse_occupation',
-    'spouse_religion',
-    'spouse_nationality',
-    'spouse_address',
-    'nationality',
     'ktp_address',
     'previous_address',
     'passport_number',
@@ -108,43 +77,54 @@ class Citizen extends Authenticatable
             $citizen->age = $birthDate->isFuture()
                 ? null
                 : $birthDate->age;
+
+            // Sinkronisasi kolom rt teks dari relasi rt_id bila rt_id diisi
+            // tetapi rt string belum diisi.
+            if ($citizen->rt_id && !$citizen->rt) {
+                $rtModel = Rt::find($citizen->rt_id);
+                if ($rtModel) {
+                    $citizen->rt = $rtModel->number;
+                }
+            }
         });
     }
 
-    /**
-     * Table name.
-     */
     protected $table = 'citizens';
-
-    /**
-     * Primary key.
-     */
     protected $primaryKey = 'citizen_id';
-
-    /**
-     * Primary key type.
-     */
     protected $keyType = 'int';
-
-    /**
-     * Auto increment.
-     */
     public $incrementing = true;
 
-    public function padukuhan()
-    {
-        return $this->belongsTo(Region::class, 'padukuhan_id', 'region_id');
-    }
+    /* ------------------------------------------------------------------ */
+    /* Relasi wilayah: rt_id → rts → rws → regions (padukuhan)            */
+    /* ------------------------------------------------------------------ */
 
-    public function rwArea()
+    public function rt()
     {
-        return $this->belongsTo(Rw::class, 'rw_id');
+        return $this->belongsTo(Rt::class, 'rt_id');
     }
 
     public function rtArea()
     {
         return $this->belongsTo(Rt::class, 'rt_id');
     }
+
+    public function getRtModel(): ?Rt
+    {
+        if ($this->relationLoaded('rtArea')) {
+            $rel = $this->getRelation('rtArea');
+            if ($rel instanceof Rt) return $rel;
+        }
+        if ($this->relationLoaded('rt')) {
+            $rel = $this->getRelation('rt');
+            if ($rel instanceof Rt) return $rel;
+        }
+
+        return $this->rt_id ? Rt::with('rw.region')->find($this->rt_id) : null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Relasi keluarga via NIK                                              */
+    /* ------------------------------------------------------------------ */
 
     public function mother()
     {
@@ -161,22 +141,161 @@ class Citizen extends Authenticatable
         return $this->belongsTo(self::class, 'spouse_national_id', 'national_id');
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Accessor — nama orang tua & pasangan dari relasi NIK                */
+    /* Menjaga kompatibilitas persuratan & kode lama tanpa kolom fisik.    */
+    /* ------------------------------------------------------------------ */
 
-    /**
-     * Cast attributes.
-     */
+    protected $appends = [
+        'dusun',
+        'rw',
+        'father_name',
+        'mother_name',
+        'spouse_name',
+    ];
+
+    public function getFatherNameAttribute(): ?string
+    {
+        return $this->father?->full_name 
+            ?? (!empty($this->attributes['father_name']) ? $this->attributes['father_name'] : null);
+    }
+
+    public function getFatherBirthPlaceAttribute(): ?string
+    {
+        return $this->father?->birth_place;
+    }
+
+    public function getFatherBirthDateAttribute(): mixed
+    {
+        return $this->father?->birth_date;
+    }
+
+    public function getFatherOccupationAttribute(): ?string
+    {
+        return $this->father?->occupation;
+    }
+
+    public function getFatherReligionAttribute(): ?string
+    {
+        return $this->father?->religion;
+    }
+
+    public function getFatherNationalityAttribute(): ?string
+    {
+        return $this->father?->nationality;
+    }
+
+    public function getFatherAddressAttribute(): ?string
+    {
+        return $this->father?->ktp_address ?? $this->father?->address;
+    }
+
+    public function getMotherNameAttribute(): ?string
+    {
+        return $this->mother?->full_name 
+            ?? (!empty($this->attributes['mother_name']) ? $this->attributes['mother_name'] : null);
+    }
+
+    public function getMotherBirthPlaceAttribute(): ?string
+    {
+        return $this->mother?->birth_place;
+    }
+
+    public function getMotherBirthDateAttribute(): mixed
+    {
+        return $this->mother?->birth_date;
+    }
+
+    public function getMotherOccupationAttribute(): ?string
+    {
+        return $this->mother?->occupation;
+    }
+
+    public function getMotherReligionAttribute(): ?string
+    {
+        return $this->mother?->religion;
+    }
+
+    public function getMotherNationalityAttribute(): ?string
+    {
+        return $this->mother?->nationality;
+    }
+
+    public function getMotherAddressAttribute(): ?string
+    {
+        return $this->mother?->ktp_address ?? $this->mother?->address;
+    }
+
+    public function getSpouseNameAttribute(): ?string
+    {
+        return $this->spouse?->full_name;
+    }
+
+    public function getSpouseBirthPlaceAttribute(): ?string
+    {
+        return $this->spouse?->birth_place;
+    }
+
+    public function getSpouseBirthDateAttribute(): mixed
+    {
+        return $this->spouse?->birth_date;
+    }
+
+    public function getSpouseOccupationAttribute(): ?string
+    {
+        return $this->spouse?->occupation;
+    }
+
+    public function getSpouseReligionAttribute(): ?string
+    {
+        return $this->spouse?->religion;
+    }
+
+    public function getSpouseNationalityAttribute(): ?string
+    {
+        return $this->spouse?->nationality;
+    }
+
+    public function getSpouseAddressAttribute(): ?string
+    {
+        return $this->spouse?->ktp_address ?? $this->spouse?->address;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Accessor wilayah — derive dari rt_id jika string lama kosong        */
+    /* ------------------------------------------------------------------ */
+
+    public function getRtAttribute($value = null): ?string
+    {
+        if ($value !== null && $value !== '') return (string) $value;
+        return $this->getRtModel()?->number;
+    }
+
+    public function getRwAttribute($value = null): ?string
+    {
+        if ($value !== null && $value !== '') return (string) $value;
+        return $this->getRtModel()?->rw?->number;
+    }
+
+    public function getDusunAttribute($value = null): ?string
+    {
+        if ($value !== null && $value !== '') return (string) $value;
+        return $this->getRtModel()?->rw?->region?->name;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Casts                                                                */
+    /* ------------------------------------------------------------------ */
+
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
-            'birth_date' => 'date',
-            'marriage_date' => 'date',
-            'divorce_date' => 'date',
-            'passport_expiry_date' => 'date',
-            'father_birth_date' => 'date',
-            'mother_birth_date' => 'date',
-            'spouse_birth_date' => 'date',
-            'age' => 'integer',
+            'password'            => 'hashed',
+            'birth_date'          => 'date',
+            'marriage_date'       => 'date',
+            'divorce_date'        => 'date',
+            'passport_expiry_date'=> 'date',
+            'age'                 => 'integer',
         ];
     }
 
@@ -185,7 +304,7 @@ class Citizen extends Authenticatable
      */
     public function getAgeAttribute($value): ?int
     {
-        $birthDate = $this->getAttribute('birth_date');
+        $birthDate = $this->getAttributes()['birth_date'] ?? null;
 
         if (!$birthDate) {
             return null;
@@ -197,6 +316,10 @@ class Citizen extends Authenticatable
 
         return $birthDate->isFuture() ? null : $birthDate->age;
     }
+
+    /* ------------------------------------------------------------------ */
+    /* Relasi lainnya                                                       */
+    /* ------------------------------------------------------------------ */
 
     public function letterRequests()
     {

@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
     'verified_at',
     'authorized_at',
     'completed_at',
+    'is_new_resident',
 ])]
 class LetterRequest extends Model
 {
@@ -41,6 +42,7 @@ class LetterRequest extends Model
     {
         return [
             'form_data' => 'array',
+            'is_new_resident' => 'boolean',
             'submitted_at' => 'datetime',
             'verified_at' => 'datetime',
             'authorized_at' => 'datetime',

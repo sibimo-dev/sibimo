@@ -13,7 +13,10 @@ return new class extends Migration {
             $table->string('position', 100);
             $table->string('level', 150)->nullable();
             $table->text('description')->nullable();
+            $table->unsignedSmallInteger('start_year')->nullable();
+            $table->unsignedSmallInteger('end_year')->nullable();
             $table->string('photo', 255)->nullable();
+            $table->string('signature_image', 255)->nullable();
             $table->boolean('is_signer')->default(false);
             $table->timestamps();
 

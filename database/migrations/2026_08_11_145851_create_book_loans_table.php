@@ -10,7 +10,8 @@ return new class extends Migration {
         Schema::create('book_loans', function (Blueprint $table) {
             $table->id('loan_id');
             $table->foreignId('book_id')->constrained('books', 'book_id');
-            $table->foreignId('citizen_id')->constrained('citizens', 'citizen_id');
+            $table->foreignId('citizen_id')->nullable()->constrained('citizens', 'citizen_id');
+            $table->string('borrower_name', 150)->nullable();
             $table->date('borrowed_at');
             $table->date('due_date');
             $table->date('returned_at')->nullable();

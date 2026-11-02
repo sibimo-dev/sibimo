@@ -13,7 +13,11 @@ return new class extends Migration {
             $table->enum('category', ['Infrastructure', 'Public Service', 'Environment', 'Security', 'Other']);
             $table->string('title', 200);
             $table->longText('description');
+            $table->string('location', 255)->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->enum('status', ['Submitted', 'In Progress', 'Resolved', 'Rejected'])->default('Submitted');
+            $table->text('resolution_description')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('resolved_at')->nullable();
 
