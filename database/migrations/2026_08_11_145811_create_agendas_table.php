@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->time('start_time')->nullable();
             $table->time('end_time')->nullable();
             $table->string('location', 255)->nullable();
+            $table->string('attendee', 255)->nullable();
             $table->foreignId('created_by')->constrained('users', 'user_id');
             $table->timestamp('created_at')->nullable();
 

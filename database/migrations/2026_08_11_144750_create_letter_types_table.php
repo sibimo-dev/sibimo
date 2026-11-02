@@ -15,13 +15,17 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->string('blade_view', 225)->nullable();
             $table->string('number_prefix', 50)->nullable();
+            $table->string('classification_index', 20)->nullable();
             $table->string('processing_time', 50)->nullable();
             $table->enum('signature_method', ['digital', 'manual'])->nullable();
+            $table->boolean('is_online')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->foreignId('signer_id')->nullable()->constrained('staff', 'staff_id')->onDelete('set null');
 
             $table->index(['category', 'is_active']);
+            $table->index(['is_online', 'is_active']);
+            $table->index('classification_index');
         });
     }
 

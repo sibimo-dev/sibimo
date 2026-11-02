@@ -12,32 +12,34 @@ class RegionController extends Controller
 {
     public function index()
     {
-        // Hanya penduduk yang masih hidup dan tinggal di sini (bukan orang luar / pindah / mati).
+        // Hitung statistik kependudukan per padukuhan (region) melalui relasi
+        // citizens.rt_id -> rts.rw_id -> rws.region_id.
         $stats = Citizen::query()
-            ->whereRaw("UPPER(record_type) = 'PENDUDUK'")
-            ->where('status', 'Active')
-            ->whereNotNull('dusun')
-            ->selectRaw("dusun,
+            ->join('rts', 'citizens.rt_id', '=', 'rts.id')
+            ->join('rws', 'rts.rw_id', '=', 'rws.id')
+            ->whereRaw("UPPER(citizens.record_type) = 'PENDUDUK'")
+            ->where('citizens.status', 'Active')
+            ->selectRaw("rws.region_id,
                 COUNT(*) AS population,
-                SUM(CASE WHEN gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male_count,
-                SUM(CASE WHEN gender = 'Perempuan' THEN 1 ELSE 0 END) AS female_count,
-                COUNT(DISTINCT NULLIF(family_card_number, '')) AS kk_count")
-            ->groupBy('dusun')
+                SUM(CASE WHEN citizens.gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male_count,
+                SUM(CASE WHEN citizens.gender = 'Perempuan' THEN 1 ELSE 0 END) AS female_count,
+                COUNT(DISTINCT NULLIF(citizens.family_card_number, '')) AS kk_count")
+            ->groupBy('rws.region_id')
             ->get()
-            ->keyBy(fn ($row) => mb_strtolower(trim($row->dusun)));
+            ->keyBy('region_id');
 
         $regions = Region::with('headStaff')
             ->withCount(['rws', 'rts'])
             ->latest()
             ->get()
             ->map(function (Region $region) use ($stats) {
-                $s = $stats->get(mb_strtolower(trim($region->name)));
+                $s = $stats->get($region->region_id);
                 $region->rw_count     = $region->rws_count;
                 $region->rt_count     = $region->rts_count;
-                $region->population   = (int) ($s->population ?? 0);
-                $region->male_count   = (int) ($s->male_count ?? 0);
-                $region->female_count = (int) ($s->female_count ?? 0);
-                $region->kk_count     = (int) ($s->kk_count ?? 0);
+                $region->population   = (int) ($s?->population ?? 0);
+                $region->male_count   = (int) ($s?->male_count ?? 0);
+                $region->female_count = (int) ($s?->female_count ?? 0);
+                $region->kk_count     = (int) ($s?->kk_count ?? 0);
 
                 return $region;
             });

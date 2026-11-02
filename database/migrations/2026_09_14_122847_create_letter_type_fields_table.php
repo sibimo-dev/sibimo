@@ -9,6 +9,7 @@ return new class extends Migration {
         Schema::create('letter_type_fields', function (Blueprint $table) {
             $table->id('field_id');
             $table->foreignId('letter_type_id')->constrained('letter_types', 'letter_type_id')->onDelete('cascade');
+            $table->string('section_name', 100)->nullable();
             $table->string('field_label', 150);
             $table->string('field_key', 100);
             $table->enum('field_type', ['text', 'textarea', 'number', 'date', 'select'])->default('text');

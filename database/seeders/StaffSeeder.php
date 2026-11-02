@@ -41,13 +41,45 @@ class StaffSeeder extends Seeder
             ['Riyanto', 'Staf Pamong Kalurahan', 'Staff Pamong Kalurahan', 'Membantu tugas administrasi dan pelayanan kalurahan.', 'riyanto.jpg'],
         ];
 
+        $regions = \App\Models\Region::all();
+
         foreach ($staff as [$name, $position, $level, $description, $filename]) {
+            $photoPath = $filename ? $photo($filename) : null;
+
             Staff::updateOrCreate(
                 ['name' => $name, 'position' => $position, 'is_signer' => false],
                 [
                     'level' => $level,
                     'description' => $description,
-                    'photo' => $filename ? $photo($filename) : null,
+                    'photo' => $photoPath,
+                    'is_signer' => false,
+                ],
+            );
+
+            $person = \App\Models\StaffPerson::updateOrCreate(
+                ['name' => $name],
+                [
+                    'photo' => $photoPath,
+                ],
+            );
+
+            $padukuhanId = null;
+            if (preg_match('/^Dukuh\s+[IVXL]+\s+(.+)$/i', $position, $m)) {
+                $dukuhName = mb_strtolower(trim($m[1]));
+                $hit = $regions->first(fn ($r) => mb_strtolower($r->name) === $dukuhName)
+                    ?? $regions->first(fn ($r) => str_contains(mb_strtolower($r->name), $dukuhName)
+                        || str_contains($dukuhName, mb_strtolower($r->name)));
+                $padukuhanId = $hit?->region_id;
+            }
+
+            \App\Models\StaffAssignment::updateOrCreate(
+                [
+                    'staff_id' => $person->id,
+                    'position' => $position,
+                ],
+                [
+                    'padukuhan_id' => $padukuhanId,
+                    'description' => $description,
                     'is_signer' => false,
                 ],
             );
