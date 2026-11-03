@@ -75,6 +75,95 @@ class RegionAreaController extends Controller
         ]);
     }
 
+    public function storeRw(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'region_id' => ['required', 'integer', 'exists:regions,region_id'],
+            'number'    => ['required', 'max:10'],
+        ]);
+        // Pastikan number selalu string sebelum diteruskan ke normalizer
+        $validated['number'] = (string) $validated['number'];
+
+        // Pastikan nomor RW belum ada di padukuhan yang sama
+        $exists = Rw::query()
+            ->where('region_id', $validated['region_id'])
+            ->get()
+            ->first(fn (Rw $r) => $this->sameAreaNumber($r->number, $validated['number']));
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor RW sudah ada di padukuhan ini.',
+            ], 422);
+        }
+
+        $rw = Rw::query()->create([
+            'region_id' => $validated['region_id'],
+            'number'    => $this->normalizeAreaNumber($validated['number']),
+        ]);
+
+        return response()->json(['success' => true, 'data' => $rw], 201);
+    }
+
+    public function destroyRw(int $id): JsonResponse
+    {
+        $rw = Rw::findOrFail($id);
+
+        // Tutup penugasan Ketua RW aktif
+        StaffAssignment::query()->active()->where('rw_id', $rw->id)
+            ->update(['end_date' => now()->subDay()->toDateString()]);
+
+        $rw->rts()->each(function (Rt $rt) {
+            StaffAssignment::query()->active()->where('rt_id', $rt->id)
+                ->update(['end_date' => now()->subDay()->toDateString()]);
+            $rt->delete();
+        });
+
+        $rw->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function storeRt(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'rw_id'  => ['required', 'integer', 'exists:rws,id'],
+            'number' => ['required', 'max:10'],
+        ]);
+        $validated['number'] = (string) $validated['number'];
+
+        $exists = Rt::query()
+            ->where('rw_id', $validated['rw_id'])
+            ->get()
+            ->first(fn (Rt $r) => $this->sameAreaNumber($r->number, $validated['number']));
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor RT sudah ada di RW ini.',
+            ], 422);
+        }
+
+        $rt = Rt::query()->create([
+            'rw_id'  => $validated['rw_id'],
+            'number' => $this->normalizeAreaNumber($validated['number']),
+        ]);
+
+        return response()->json(['success' => true, 'data' => $rt], 201);
+    }
+
+    public function destroyRt(int $id): JsonResponse
+    {
+        $rt = Rt::findOrFail($id);
+
+        StaffAssignment::query()->active()->where('rt_id', $rt->id)
+            ->update(['end_date' => now()->subDay()->toDateString()]);
+
+        $rt->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     private function headRules(): array
     {
         return [
@@ -114,6 +203,17 @@ class RegionAreaController extends Controller
         $this->syncHead('Ketua RT', 'rt_id', $rt->id, $validated);
 
         return response()->json(['success' => true, 'data' => $rt]);
+    }
+
+    private function sameAreaNumber(mixed $left, mixed $right): bool
+    {
+        $normalize = static fn ($value) => preg_replace('/^0+/', '', trim((string) $value)) ?: '0';
+        return $normalize($left) === $normalize($right);
+    }
+
+    private function normalizeAreaNumber(string $value): string
+    {
+        return ctype_digit($value) ? str_pad((string) ((int) $value), 2, '0', STR_PAD_LEFT) : $value;
     }
 
     private function syncHead(string $position, string $column, int $id, array $data): void
