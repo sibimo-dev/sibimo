@@ -167,7 +167,7 @@ class CitizenController extends Controller
                 !$normalizedHeaders->contains(fn (string $header) => in_array($header, ['nik', 'nationalid'], true))
                 || !$normalizedHeaders->contains(fn (string $header) => in_array($header, ['fullname', 'nama', 'namalengkap'], true)),
                 422,
-                'Header CSV harus memiliki kolom NIK dan Nama Lengkap.'
+                'Header file harus memiliki kolom NIK dan Nama Lengkap.'
             );
 
             $rowCount = 0;
@@ -187,11 +187,11 @@ class CitizenController extends Controller
             fclose($handle);
         }
 
-        abort_if($rowCount === 0, 422, 'File CSV tidak berisi data warga.');
+        abort_if($rowCount === 0, 422, 'File tidak berisi data warga.');
 
         return response()->json([
             'success' => true,
-            'message' => 'File CSV siap diimpor.',
+            'message' => 'File siap diimpor.',
             'data' => ['row_count' => $rowCount, 'max_rows' => 1000],
         ]);
     }
