@@ -279,8 +279,6 @@ class LetterRequestController extends Controller
 
             // Gabung semua halaman menggunakan FPDI
             $fpdi = new \setasign\Fpdi\Fpdi();
-            $fpdi->setPrintHeader(false);
-            $fpdi->setPrintFooter(false);
 
             foreach ($tmpPaths as $path) {
                 $pageCount = $fpdi->setSourceFile($path);
@@ -295,7 +293,15 @@ class LetterRequestController extends Controller
 
             $mergedContent = $fpdi->Output('S'); // S = return as string
 
-            $filename = 'paket-surat-' . now()->format('YmdHis') . '.pdf';
+            $customName = trim((string) $request->query('filename', ''));
+            if ($customName !== '') {
+                $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/', '-', $customName);
+                if (! str_ends_with(strtolower($filename), '.pdf')) {
+                    $filename .= '.pdf';
+                }
+            } else {
+                $filename = 'paket-surat-' . now()->format('YmdHis') . '.pdf';
+            }
 
             return $request->boolean('download')
                 ? response($mergedContent, 200, [

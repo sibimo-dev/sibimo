@@ -211,14 +211,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     });
 
     Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
-        'letter-requests/{letterRequest_id}/pdf',
-        [LetterRequestController::class, 'pdf'],
-    );
-
-    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
         'letter-requests/bundle/pdf',
         [LetterRequestController::class, 'bundlePdf'],
     );
+
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/{letterRequest_id}/pdf',
+        [LetterRequestController::class, 'pdf'],
+    )->whereNumber('letterRequest_id');
 
     Route::middleware('permission:verifikasi-surat')->post(
         'letter-requests/{letterRequest_id}/verify',
