@@ -197,6 +197,125 @@ class LetterRequestController extends Controller
             : $pdf->stream($filename);
     }
 
+    /**
+     * Gabungkan beberapa surat menjadi satu file PDF.
+     * Query param: ids (wajib) – daftar letter_request_id dipisah koma, mis. ?ids=1,2,3
+     *              download (opsional, 0/1) – stream default, download bila 1.
+     *
+     * Setiap surat di-render satu per satu menggunakan template Blade + DomPDF,
+     * kemudian halaman-halamannya digabung berurutan via FPDI (setasign/fpdi).
+     */
+    public function bundlePdf(
+        Request $request,
+        LetterPdfService $pdfService,
+        DeathTemplateService $deathTemplateService,
+    ) {
+        $idsParam = $request->query('ids', '');
+        $ids = array_filter(array_map('trim', explode(',', (string) $idsParam)));
+
+        if (empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'Parameter ids wajib diisi.'], 422);
+        }
+
+        if (count($ids) > 20) {
+            return response()->json(['success' => false, 'message' => 'Maksimal 20 surat dapat digabung sekaligus.'], 422);
+        }
+
+        // Render tiap surat ke file PDF sementara, kumpulkan path-nya.
+        $tmpPaths = [];
+        try {
+            foreach ($ids as $id) {
+                if (! ctype_digit((string) $id)) {
+                    return response()->json(['success' => false, 'message' => "ID surat '$id' tidak valid."], 422);
+                }
+
+                $letterRequest = LetterRequest::query()
+                    ->with(['citizen', 'letterType.signer', 'verifier', 'authorizedSigner'])
+                    ->find((int) $id);
+
+                if (! $letterRequest) {
+                    return response()->json(['success' => false, 'message' => "Surat dengan ID $id tidak ditemukan."], 404);
+                }
+
+                // Render satu surat ke tmp
+                $code      = strtoupper((string) ($letterRequest->letterType?->code ?? ''));
+                $bladeView = (string) ($letterRequest->letterType?->blade_view ?? '');
+
+                if ($code === 'SKKM' || str_starts_with($bladeView, 'letters.death.')) {
+                    $deathTemplate = $code === 'SKKM'
+                        ? 'death-certificate'
+                        : str($bladeView)->afterLast('.')->toString();
+
+                    if (! $deathTemplateService->hasTemplate($deathTemplate)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Template kematian surat #$id belum tersedia.",
+                        ], 422);
+                    }
+
+                    $renderedPdf = $deathTemplateService->pdf(
+                        $deathTemplate,
+                        $deathTemplateService->dataForRequest($letterRequest, $deathTemplate),
+                    );
+                } else {
+                    $template = $pdfService->resolveTemplate($letterRequest);
+                    if (! $template) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Template PDF surat #$id belum tersedia.",
+                        ], 422);
+                    }
+                    $renderedPdf = $pdfService->pdf(
+                        $pdfService->viewName($template),
+                        $pdfService->viewData($letterRequest, $template),
+                    );
+                }
+
+                // Simpan ke file tmp; nama unik agar aman bila request paralel
+                $tmpPath = tempnam(sys_get_temp_dir(), "sibimo_pdf_{$id}_");
+                file_put_contents($tmpPath, $renderedPdf->output());
+                $tmpPaths[] = $tmpPath;
+            }
+
+            // Gabung semua halaman menggunakan FPDI
+            $fpdi = new \setasign\Fpdi\Fpdi();
+            $fpdi->setPrintHeader(false);
+            $fpdi->setPrintFooter(false);
+
+            foreach ($tmpPaths as $path) {
+                $pageCount = $fpdi->setSourceFile($path);
+                for ($i = 1; $i <= $pageCount; $i++) {
+                    $tpl = $fpdi->importPage($i);
+                    $size = $fpdi->getTemplateSize($tpl);
+                    $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
+                    $fpdi->addPage($orientation, [$size['width'], $size['height']]);
+                    $fpdi->useTemplate($tpl);
+                }
+            }
+
+            $mergedContent = $fpdi->Output('S'); // S = return as string
+
+            $filename = 'paket-surat-' . now()->format('YmdHis') . '.pdf';
+
+            return $request->boolean('download')
+                ? response($mergedContent, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                ])
+                : response($mergedContent, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                ]);
+        } finally {
+            // Selalu bersihkan file tmp meski terjadi error
+            foreach ($tmpPaths as $path) {
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+        }
+    }
+
     public function update(Request $request, int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);

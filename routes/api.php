@@ -215,6 +215,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         [LetterRequestController::class, 'pdf'],
     );
 
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/bundle/pdf',
+        [LetterRequestController::class, 'bundlePdf'],
+    );
+
     Route::middleware('permission:verifikasi-surat')->post(
         'letter-requests/{letterRequest_id}/verify',
         [LetterRequestController::class, 'verify'],
