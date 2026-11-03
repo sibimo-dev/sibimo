@@ -58,7 +58,11 @@ class ImportCitizens extends Command
         'NAMA LENGKAP IBU' => 'NAMA LENGKAP IBU',
         'NIK AYAH' => 'NIK AYAH',
         'NAMA LENGKAP AYAH' => 'NAMA LENGKAP AYAH',
+        'NIK PASANGAN' => 'NIK PASANGAN',
         'KEWARGANEGARAAN' => 'KEWARGANEGARAAN',
+        'STATUS' => 'STATUS',
+        'JENIS CACAT' => 'PENYANDANG CACAT',
+        'JENIS KECACATAN' => 'PENYANDANG CACAT',
     ];
 
     public function handle(): int
@@ -317,9 +321,26 @@ class ImportCitizens extends Command
             return [null, $errors];
         }
 
+        $rawStatus = strtoupper(trim((string) ($value('STATUS') ?? '')));
+        $status = match ($rawStatus) {
+            'PINDAH' => 'Pindah',
+            'MATI', 'MENINGGAL' => 'Mati',
+            'ACTIVE', 'HIDUP' => 'Active',
+            default => str_contains(strtoupper((string) $value('RECORD TYPE')), 'PINDAH') ? 'Pindah'
+                : (str_contains(strtoupper((string) $value('RECORD TYPE')), 'MATI') ? 'Mati' : 'Active'),
+        };
+
+        $recordType = strtoupper(trim((string) ($value('RECORD TYPE') ?? '')));
+        $recordType = str_contains($recordType, 'ORANG LUAR') ? 'ORANG LUAR' : 'PENDUDUK';
+
+        $disabilityStatus = $value('KELAINAN FISIK');
+        $disabilityType = $value('PENYANDANG CACAT');
+        if (empty($disabilityStatus) && !empty($disabilityType) && $disabilityType !== 'Tidak Ada') {
+            $disabilityStatus = 'Ada';
+        }
+
         return [[
-            'record_type' => $value('RECORD TYPE'),
-            'record_event' => $value('RECORD EVENT'),
+            'record_type' => $recordType,
             'national_id' => $nik,
             'family_card_number' => $familyCardNumber,
             'dusun' => $value('DUSUN'),
@@ -345,16 +366,18 @@ class ImportCitizens extends Command
             'divorce_certificate_number' => $value('NOMOR AKTA CERAI'),
             'divorce_date' => $divorceDate,
             'family_relationship' => $value('STATUS HUB DLM KELUARGA'),
-            'physical_disability' => $value('KELAINAN FISIK'),
-            'disability_status' => $value('PENYANDANG CACAT'),
+            'physical_disability' => null,
+            'disability_status' => $disabilityStatus,
+            'disability_type' => $disabilityType,
             'religion' => $value('AGAMA'),
             'mother_national_id' => $this->normalizeIdentifier($value('NIK IBU')),
             'mother_name' => trim((string)$value('NAMA LENGKAP IBU'), " \t\n\r\0\x0B'") ?: null,
             'father_national_id' => $this->normalizeIdentifier($value('NIK AYAH')),
             'father_name' => trim((string)$value('NAMA LENGKAP AYAH'), " \t\n\r\0\x0B'") ?: null,
-            'nationality' => $value('KEWARGANEGARAAN'),
+            'spouse_national_id' => $this->normalizeIdentifier($value('NIK PASANGAN')),
+            'nationality' => $value('KEWARGANEGARAAN') ?: 'WNI',
             'ktp_address' => null,
-            'status' => 'Active',
+            'status' => $status,
         ], []];
     }
 
