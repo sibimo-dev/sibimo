@@ -25,7 +25,7 @@ class CitizenController extends Controller
     public function index(): JsonResponse
     {
         $citizens = Citizen::query()
-            ->with(['padukuhan', 'rwArea', 'rtArea'])
+            ->with(['rtArea.rw.region', 'father', 'mother', 'spouse'])
             ->latest()
             ->get();
 
@@ -44,7 +44,7 @@ class CitizenController extends Controller
     {
         $citizens = Citizen::query()
             ->where('status', 'Active')
-            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion', 'blood_type', 'dusun']);
+            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion', 'blood_type']);
 
         $ageGroups = [
             '0–4', '5–9', '10–14', '15–19', '20–24', '25–29', '30–34', '35–39',
@@ -104,9 +104,7 @@ class CitizenController extends Controller
                     'religion' => $aggregate(fn (Citizen $citizen) => $citizen->religion),
                     'blood_type' => $aggregate(fn (Citizen $citizen) => $citizen->blood_type, $bloodTypeRows),
                 ],
-                // Statistik wilayah dihitung dari dusun pada data warga aktif,
-                // sehingga hasil import citizens langsung tercermin di public.
-                'regions' => $aggregate(fn (Citizen $citizen) => $citizen->dusun),
+                'regions' => [],
             ],
         ]);
     }
@@ -249,106 +247,93 @@ class CitizenController extends Controller
     {
         $this->normalizeInput($request);
         $validated = $request->validate([
-            'record_type' => ['nullable', 'string', 'max:100'],
-            'record_event' => ['nullable', 'string', 'max:100'],
-            'record_event_type' => ['nullable', 'string', 'max:20'],
-            'record_year' => ['nullable', 'integer', 'between:2000,2200'],
-            'title_code' => ['nullable', 'string', 'max:10'],
-            'national_id' => ['required','string','size:16','regex:/^\d{16}$/','unique:citizens,national_id'],
-            'family_card_number' => ['nullable','string','size:16','regex:/^\d{16}$/'],
-            'padukuhan_id' => ['nullable', 'integer', 'exists:regions,region_id'],
-            'rw_id' => ['nullable', 'integer', 'exists:rws,id'],
-            'rt_id' => ['nullable', 'integer', 'exists:rts,id'],
-            'dusun' => ['nullable', 'string', 'max:100'],
-            'full_name' => ['required','string','max:100'],
-            'birth_place' => ['nullable','string','max:50'],
-            'birth_date' => ['nullable','date'],
-            'age' => ['nullable', 'integer', 'min:0', 'max:150'],
-            'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
-            'address' => ['nullable','string'],
-            'rt' => ['nullable', 'string', 'max:20'],
-            'rw' => ['nullable', 'string', 'max:20'],
-            'rt_head_name' => ['nullable', 'string', 'max:100'],
-            'rw_head_name' => ['nullable', 'string', 'max:100'],
-            'phone_number' => ['nullable','string','max:15'],
-            'birth_certificate_status' => ['nullable', 'string', 'max:50'],
-            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
-            'blood_type' => ['nullable', 'string', 'max:10'],
-            'occupation' => ['nullable', 'string', 'max:100'],
-            'education' => ['nullable', 'string', 'max:50'],
-            'marital_status' => ['nullable', 'string', 'max:30'],
-            'marriage_certificate_status' => ['nullable', 'string', 'max:50'],
-            'marriage_certificate_number' => ['nullable', 'string', 'max:50'],
-            'marriage_date' => ['nullable', 'date'],
-            'divorce_certificate_status' => ['nullable', 'string', 'max:50'],
-            'divorce_certificate_number' => ['nullable', 'string', 'max:50'],
-            'divorce_date' => ['nullable', 'date'],
-            'family_relationship' => ['nullable', 'string', 'max:100'],
-            'physical_disability' => ['nullable', 'string', 'max:100'],
-            'disability_status' => ['nullable', 'string', 'max:100'],
-            'disability_type' => ['nullable', 'string', 'max:100'],
-            'religion' => ['nullable', 'string', 'max:100'],
-            'belief_organization' => ['nullable', 'string', 'max:150'],
-            'mother_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'mother_name' => ['nullable', 'string', 'max:100'],
-            'mother_birth_place' => ['nullable', 'string', 'max:50'],
-            'mother_birth_date' => ['nullable', 'date'],
-            'mother_occupation' => ['nullable', 'string', 'max:100'],
-            'mother_religion' => ['nullable', 'string', 'max:100'],
-            'mother_nationality' => ['nullable', 'string', 'max:50'],
-            'mother_address' => ['nullable', 'string'],
-            'father_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'father_name' => ['nullable', 'string', 'max:100'],
-            'father_birth_place' => ['nullable', 'string', 'max:50'],
-            'father_birth_date' => ['nullable', 'date'],
-            'father_occupation' => ['nullable', 'string', 'max:100'],
-            'father_religion' => ['nullable', 'string', 'max:100'],
-            'father_nationality' => ['nullable', 'string', 'max:50'],
-            'father_address' => ['nullable', 'string'],
-            'spouse_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'spouse_name' => ['nullable', 'string', 'max:100'],
-            'spouse_birth_place' => ['nullable', 'string', 'max:50'],
-            'spouse_birth_date' => ['nullable', 'date'],
-            'spouse_occupation' => ['nullable', 'string', 'max:100'],
-            'spouse_religion' => ['nullable', 'string', 'max:100'],
-            'spouse_nationality' => ['nullable', 'string', 'max:50'],
-            'spouse_address' => ['nullable', 'string'],
-            'nationality' => ['nullable', 'string', 'max:50'],
-            'ktp_address' => ['nullable', 'string'],
-            'previous_address' => ['nullable', 'string'],
-            'passport_number' => ['nullable', 'string', 'max:50'],
-            'passport_expiry_date' => ['nullable', 'date'],
-            'status' => ['nullable', Rule::in(['Active', 'Pindah', 'Mati'])],
+            'record_type'                  => ['nullable', 'string', 'max:100'],
+            'national_id'                  => ['required','string','size:16','regex:/^\d{16}$/','unique:citizens,national_id'],
+            'family_card_number'           => ['nullable','string','size:16','regex:/^\d{16}$/'],
+            'full_name'                    => ['required','string','max:100'],
+            'birth_place'                  => ['nullable','string','max:50'],
+            'birth_date'                   => ['nullable','date'],
+            'age'                          => ['nullable', 'integer', 'min:0', 'max:150'],
+            'gender'                       => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
+            'address'                      => ['nullable','string'],
+            // Wilayah — rt_id adalah FK utama; rt string adalah fallback teks lama.
+            'rt_id'                        => ['nullable', 'integer', Rule::exists('rts', 'id')],
+            'rt'                           => ['nullable', 'string', 'max:20'],
+            'phone_number'                 => ['nullable','string','max:15'],
+            'birth_certificate_status'     => ['nullable', 'string', 'max:50'],
+            'birth_certificate_number'     => ['nullable', 'string', 'max:50'],
+            'blood_type'                   => ['nullable', 'string', 'max:10'],
+            'occupation'                   => ['nullable', 'string', 'max:100'],
+            'education'                    => ['nullable', 'string', 'max:50'],
+            'marital_status'               => ['nullable', 'string', 'max:30'],
+            'marriage_certificate_status'  => ['nullable', 'string', 'max:50'],
+            'marriage_certificate_number'  => ['nullable', 'string', 'max:50'],
+            'marriage_date'                => ['nullable', 'date'],
+            'divorce_certificate_status'   => ['nullable', 'string', 'max:50'],
+            'divorce_certificate_number'   => ['nullable', 'string', 'max:50'],
+            'divorce_date'                 => ['nullable', 'date'],
+            'family_relationship'          => ['nullable', 'string', 'max:100'],
+            'physical_disability'          => ['nullable', 'string', 'max:100'],
+            'disability_status'            => ['nullable', 'string', 'max:100'],
+            'disability_type'              => ['nullable', 'string', 'max:100'],
+            'religion'                     => ['nullable', 'string', 'max:100'],
+            'belief_organization'          => ['nullable', 'string', 'max:150'],
+            // NIK keluarga wajib sudah terdaftar di data warga (boleh dikosongkan).
+            'mother_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'mother_name'                  => ['nullable', 'string', 'max:150'],
+            'father_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'father_name'                  => ['nullable', 'string', 'max:150'],
+            'spouse_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'nationality'                  => ['nullable', 'string', 'max:50'],
+            'ktp_address'                  => ['nullable', 'string'],
+            'previous_address'             => ['nullable', 'string'],
+            'passport_number'              => ['nullable', 'string', 'max:50'],
+            'passport_expiry_date'         => ['nullable', 'date'],
+            'status'                       => ['nullable', Rule::in(['Active', 'Pindah', 'Mati'])],
         ]);
 
-        $eventType = $this->normalizeEventType($request->input('record_event_type') ?: $request->input('record_event'));
-        $validated['record_event'] = $this->allocateRecordEvent($eventType, (int) now()->year);
-        $validated['record_year'] = (int) now()->year;
-        unset($validated['record_event_type']);
-
         $validated = $this->resolveAreaRelations($validated);
-
         $citizen = Citizen::create($validated);
+        $citizen->load('rtArea.rw.region');
 
         return response()->json([
             'success' => true,
             'message' => 'Citizen berhasil dibuat.',
-            'data' => $citizen,
+            'data'    => $this->appendAreaData($citizen),
         ], 201);
     }
 
     public function show(int $citizen_id): JsonResponse
     {
-        // Dokumen warga dimuat lewat endpoint CitizenDocumentController sendiri,
-        // supaya kegagalan file/penyimpanan tidak membuat form edit warga blank.
         $citizen = Citizen::query()
-            ->with(['padukuhan', 'rwArea', 'rtArea', 'mother', 'father', 'spouse'])
+            ->with(['mother', 'father', 'spouse', 'rtArea.rw.region'])
             ->findOrFail($citizen_id);
 
         return response()->json([
             'success' => true,
             'message' => 'Detail citizen berhasil diambil.',
-            'data' => $citizen,
+            'data'    => $this->appendAreaData($citizen),
+        ]);
+    }
+
+    public function showByNik(string $nik): JsonResponse
+    {
+        $citizen = Citizen::query()
+            ->with(['mother', 'father', 'spouse', 'rtArea.rw.region'])
+            ->where('national_id', $nik)
+            ->first();
+
+        if (! $citizen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data warga tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data citizen berhasil diambil.',
+            'data'    => $this->appendAreaData($citizen),
         ]);
     }
 
@@ -359,96 +344,57 @@ class CitizenController extends Controller
         $this->normalizeInput($request);
 
         $validated = $request->validate([
-            'record_type' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'record_event' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'record_event_type' => ['sometimes', 'nullable', 'string', 'max:20'],
-            'record_year' => ['sometimes', 'nullable', 'integer', 'between:2000,2200'],
-            'title_code' => ['sometimes', 'nullable', 'string', 'max:10'],
-            'national_id' => ['sometimes','required','string','size:16','regex:/^\d{16}$/', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
-            'family_card_number' => ['nullable','string','size:16','regex:/^\d{16}$/'],
-            'padukuhan_id' => ['sometimes', 'nullable', 'integer', 'exists:regions,region_id'],
-            'rw_id' => ['sometimes', 'nullable', 'integer', 'exists:rws,id'],
-            'rt_id' => ['sometimes', 'nullable', 'integer', 'exists:rts,id'],
-            'dusun' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'full_name' => ['sometimes','required','string','max:100'],
-            'birth_place' => ['nullable','string','max:50'],
-            'birth_date' => ['nullable','date'],
-            'age' => ['nullable', 'integer', 'min:0', 'max:150'],
-            'gender' => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
-            'address' => ['nullable','string'],
-            'rt' => ['nullable', 'string', 'max:20'],
-            'rw' => ['nullable', 'string', 'max:20'],
-            'rt_head_name' => ['nullable', 'string', 'max:100'],
-            'rw_head_name' => ['nullable', 'string', 'max:100'],
-            'phone_number' => ['nullable','string','max:15'],
-            'birth_certificate_status' => ['nullable', 'string', 'max:50'],
-            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
-            'blood_type' => ['nullable', 'string', 'max:10'],
-            'occupation' => ['nullable', 'string', 'max:100'],
-            'education' => ['nullable', 'string', 'max:50'],
-            'marital_status' => ['nullable', 'string', 'max:30'],
-            'marriage_certificate_status' => ['nullable', 'string', 'max:50'],
-            'marriage_certificate_number' => ['nullable', 'string', 'max:50'],
-            'marriage_date' => ['nullable', 'date'],
-            'divorce_certificate_status' => ['nullable', 'string', 'max:50'],
-            'divorce_certificate_number' => ['nullable', 'string', 'max:50'],
-            'divorce_date' => ['nullable', 'date'],
-            'family_relationship' => ['nullable', 'string', 'max:100'],
-            'physical_disability' => ['nullable', 'string', 'max:100'],
-            'disability_status' => ['nullable', 'string', 'max:100'],
-            'disability_type' => ['nullable', 'string', 'max:100'],
-            'religion' => ['nullable', 'string', 'max:100'],
-            'belief_organization' => ['nullable', 'string', 'max:150'],
-            'mother_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'mother_name' => ['nullable', 'string', 'max:100'],
-            'mother_birth_place' => ['nullable', 'string', 'max:50'],
-            'mother_birth_date' => ['nullable', 'date'],
-            'mother_occupation' => ['nullable', 'string', 'max:100'],
-            'mother_religion' => ['nullable', 'string', 'max:100'],
-            'mother_nationality' => ['nullable', 'string', 'max:50'],
-            'mother_address' => ['nullable', 'string'],
-            'father_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'father_name' => ['nullable', 'string', 'max:100'],
-            'father_birth_place' => ['nullable', 'string', 'max:50'],
-            'father_birth_date' => ['nullable', 'date'],
-            'father_occupation' => ['nullable', 'string', 'max:100'],
-            'father_religion' => ['nullable', 'string', 'max:100'],
-            'father_nationality' => ['nullable', 'string', 'max:50'],
-            'father_address' => ['nullable', 'string'],
-            'spouse_national_id' => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
-            'spouse_name' => ['nullable', 'string', 'max:100'],
-            'spouse_birth_place' => ['nullable', 'string', 'max:50'],
-            'spouse_birth_date' => ['nullable', 'date'],
-            'spouse_occupation' => ['nullable', 'string', 'max:100'],
-            'spouse_religion' => ['nullable', 'string', 'max:100'],
-            'spouse_nationality' => ['nullable', 'string', 'max:50'],
-            'spouse_address' => ['nullable', 'string'],
-            'nationality' => ['nullable', 'string', 'max:50'],
-            'ktp_address' => ['nullable', 'string'],
-            'previous_address' => ['nullable', 'string'],
-            'passport_number' => ['nullable', 'string', 'max:50'],
-            'passport_expiry_date' => ['nullable', 'date'],
-            'status' => ['nullable', Rule::in(['Active', 'Pindah', 'Mati'])],
+            'record_type'                  => ['sometimes', 'nullable', 'string', 'max:100'],
+            'national_id'                  => ['sometimes','required','string','size:16','regex:/^\d{16}$/', Rule::unique('citizens','national_id')->ignore($citizen_id, 'citizen_id')],
+            'family_card_number'           => ['nullable','string','size:16','regex:/^\d{16}$/'],
+            'full_name'                    => ['sometimes','required','string','max:100'],
+            'birth_place'                  => ['nullable','string','max:50'],
+            'birth_date'                   => ['nullable','date'],
+            'age'                          => ['nullable', 'integer', 'min:0', 'max:150'],
+            'gender'                       => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
+            'address'                      => ['nullable','string'],
+            'rt_id'                        => ['nullable', 'integer', Rule::exists('rts', 'id')],
+            'rt'                           => ['nullable', 'string', 'max:20'],
+            'phone_number'                 => ['nullable','string','max:15'],
+            'birth_certificate_status'     => ['nullable', 'string', 'max:50'],
+            'birth_certificate_number'     => ['nullable', 'string', 'max:50'],
+            'blood_type'                   => ['nullable', 'string', 'max:10'],
+            'occupation'                   => ['nullable', 'string', 'max:100'],
+            'education'                    => ['nullable', 'string', 'max:50'],
+            'marital_status'               => ['nullable', 'string', 'max:30'],
+            'marriage_certificate_status'  => ['nullable', 'string', 'max:50'],
+            'marriage_certificate_number'  => ['nullable', 'string', 'max:50'],
+            'marriage_date'                => ['nullable', 'date'],
+            'divorce_certificate_status'   => ['nullable', 'string', 'max:50'],
+            'divorce_certificate_number'   => ['nullable', 'string', 'max:50'],
+            'divorce_date'                 => ['nullable', 'date'],
+            'family_relationship'          => ['nullable', 'string', 'max:100'],
+            'physical_disability'          => ['nullable', 'string', 'max:100'],
+            'disability_status'            => ['nullable', 'string', 'max:100'],
+            'disability_type'              => ['nullable', 'string', 'max:100'],
+            'religion'                     => ['nullable', 'string', 'max:100'],
+            'belief_organization'          => ['nullable', 'string', 'max:150'],
+            'mother_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'mother_name'                  => ['nullable', 'string', 'max:150'],
+            'father_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'father_name'                  => ['nullable', 'string', 'max:150'],
+            'spouse_national_id'           => ['nullable', 'string', 'size:16', 'regex:/^\d{16}$/', Rule::exists('citizens', 'national_id')],
+            'nationality'                  => ['nullable', 'string', 'max:50'],
+            'ktp_address'                  => ['nullable', 'string'],
+            'previous_address'             => ['nullable', 'string'],
+            'passport_number'              => ['nullable', 'string', 'max:50'],
+            'passport_expiry_date'         => ['nullable', 'date'],
+            'status'                       => ['nullable', Rule::in(['Active', 'Pindah', 'Mati'])],
         ]);
 
-        if ($request->filled('record_event_type')) {
-            $requestedType = $this->normalizeEventType($request->input('record_event_type'));
-            $currentType = $this->normalizeEventType($citizen->record_event);
-            if (!$citizen->record_event || $requestedType !== $currentType) {
-                $validated['record_event'] = $this->allocateRecordEvent($requestedType, (int) now()->year);
-                $validated['record_year'] = (int) now()->year;
-            }
-        }
-        unset($validated['record_event_type']);
-
         $validated = $this->resolveAreaRelations($validated);
-
         $citizen->update($validated);
+        $citizen->load('rtArea.rw.region');
 
         return response()->json([
             'success' => true,
             'message' => 'Citizen berhasil diperbarui.',
-            'data' => $citizen,
+            'data'    => $this->appendAreaData($citizen),
         ]);
     }
 
@@ -479,8 +425,37 @@ class CitizenController extends Controller
     }
 
     /**
+     * Tambahkan field wilayah turunan (rw, dusun, padukuhan_id, rw_id) ke
+     * response citizen dengan menelusuri rantai rt_id → rts → rws → regions.
+     */
+    private function appendAreaData(\App\Models\Citizen $citizen): array
+    {
+        $data = $citizen->toArray();
+
+        $rt = $citizen->getRtModel();
+        if ($rt) {
+            $rw     = $rt->rw;
+            $region = $rw?->region;
+
+            // Selalu ekspos nomor RT/RW dari FK; kolom string lama sebagai fallback.
+            $data['rt']          = $citizen->getAttribute('rt') ?? $rt->number;
+            $data['rw']          = $rw?->number;
+            $data['dusun']       = $region?->name;
+            $data['rt_id']       = $rt->id;
+            $data['rw_id']       = $rw?->id;
+            $data['padukuhan_id']= $region?->region_id;
+            $data['rt_head_name']  = $rt->head_name;
+            $data['rw_head_name']  = $rw?->head_name;
+            $data['hamlet_head_name'] = $region?->head_name;
+        }
+
+        return $data;
+    }
+
+    /**
      * Resolve the canonical area IDs while keeping the old text columns in
      * sync for existing forms/imports that still send dusun/rw/rt strings.
+     * Juga sinkronisasi rt string dari rt_id jika hanya rt_id yang dikirim.
      */
     private function resolveAreaRelations(array $data): array
     {

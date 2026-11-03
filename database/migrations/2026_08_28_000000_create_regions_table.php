@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id('region_id');
             $table->string('name');
             $table->string('head_name')->nullable();
+            $table->foreignId('head_staff_id')->nullable()->constrained('staff', 'staff_id')->nullOnDelete();
             $table->unsignedInteger('rw_count')->default(0);
             $table->unsignedInteger('rt_count')->default(0);
             $table->unsignedInteger('kk_count')->default(0);
