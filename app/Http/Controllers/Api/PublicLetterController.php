@@ -292,6 +292,7 @@ class PublicLetterController extends Controller
                 $files,
                 $documentIds,
                 $reusedDocuments,
+                $isAllowedNewResidentRegistration,
                 &$storedPaths,
             ): LetterRequest {
                 $letterRequest = LetterRequest::create([
