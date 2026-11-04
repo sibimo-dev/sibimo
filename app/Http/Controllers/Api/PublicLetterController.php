@@ -292,6 +292,7 @@ class PublicLetterController extends Controller
                 $files,
                 $documentIds,
                 $reusedDocuments,
+                $isAllowedNewResidentRegistration,
                 &$storedPaths,
             ): LetterRequest {
                 $letterRequest = LetterRequest::create([
@@ -351,12 +352,14 @@ class PublicLetterController extends Controller
             throw $exception;
         }
 
-        event(new NotificationAvailable(
-            'letter',
-            (int) $letterRequest->letter_request_id,
-            'created',
-            now()->toISOString(),
-        ));
+        dispatch(function () use ($letterRequest) {
+            rescue(fn () => event(new NotificationAvailable(
+                'letter',
+                (int) $letterRequest->letter_request_id,
+                'created',
+                now()->toISOString(),
+            )));
+        })->afterResponse();
 
         return response()->json([
             'success' => true,

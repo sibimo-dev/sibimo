@@ -312,7 +312,7 @@ class CitizenController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Detail citizen berhasil diambil.',
-            'data'    => $this->appendAreaData($citizen),
+            'data'    => $this->enrichCitizenRelations($citizen),
         ]);
     }
 
@@ -333,7 +333,7 @@ class CitizenController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data citizen berhasil diambil.',
-            'data'    => $this->appendAreaData($citizen),
+            'data'    => $this->enrichCitizenRelations($citizen),
         ]);
     }
 
@@ -447,6 +447,82 @@ class CitizenController extends Controller
             $data['rt_head_name']  = $rt->head_name;
             $data['rw_head_name']  = $rw?->head_name;
             $data['hamlet_head_name'] = $region?->head_name;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Lengkapi relasi keluarga (father, mother, spouse, family_members)
+     * jika NIK orang tua/pasangan belum tersimpan secara eksplisit di kolom foreign key.
+     */
+    private function enrichCitizenRelations(\App\Models\Citizen $citizen): array
+    {
+        $familyMembers = collect();
+        if (!empty($citizen->family_card_number)) {
+            $familyMembers = Citizen::query()
+                ->with(['rtArea.rw.region'])
+                ->where('family_card_number', $citizen->family_card_number)
+                ->get();
+        }
+
+        // Jika relasi father belum terhubung via father_national_id, cari dari nama ayah di dalam KK
+        if (!$citizen->father && !empty($citizen->father_name) && $familyMembers->isNotEmpty()) {
+            $matchedFather = $familyMembers->first(function ($c) use ($citizen) {
+                return $c->gender === 'Laki-laki' &&
+                    (strcasecmp(trim($c->full_name), trim($citizen->father_name)) === 0 ||
+                     stripos($c->family_relationship ?? '', 'Kepala') !== false);
+            });
+            if (!$matchedFather && !empty($citizen->father_national_id)) {
+                $matchedFather = Citizen::where('national_id', $citizen->father_national_id)->first();
+            }
+            if ($matchedFather) {
+                $citizen->setRelation('father', $matchedFather);
+            }
+        }
+
+        // Jika relasi mother belum terhubung via mother_national_id, cari dari nama ibu di dalam KK
+        if (!$citizen->mother && !empty($citizen->mother_name) && $familyMembers->isNotEmpty()) {
+            $matchedMother = $familyMembers->first(function ($c) use ($citizen) {
+                return $c->gender === 'Perempuan' &&
+                    (strcasecmp(trim($c->full_name), trim($citizen->mother_name)) === 0 ||
+                     stripos($c->family_relationship ?? '', 'Istri') !== false);
+            });
+            if (!$matchedMother && !empty($citizen->mother_national_id)) {
+                $matchedMother = Citizen::where('national_id', $citizen->mother_national_id)->first();
+            }
+            if ($matchedMother) {
+                $citizen->setRelation('mother', $matchedMother);
+            }
+        }
+
+        // Jika relasi spouse belum terhubung via spouse_national_id
+        if (!$citizen->spouse && $familyMembers->isNotEmpty()) {
+            $oppositeGender = $citizen->gender === 'Laki-laki' ? 'Perempuan' : 'Laki-laki';
+            $matchedSpouse = $familyMembers->first(function ($c) use ($oppositeGender, $citizen) {
+                return $c->citizen_id !== $citizen->citizen_id &&
+                    $c->gender === $oppositeGender &&
+                    (stripos($c->family_relationship ?? '', 'Istri') !== false ||
+                     stripos($c->family_relationship ?? '', 'Suami') !== false ||
+                     stripos($c->family_relationship ?? '', 'Kepala') !== false);
+            });
+            if ($matchedSpouse) {
+                $citizen->setRelation('spouse', $matchedSpouse);
+            }
+        }
+
+        $data = $this->appendAreaData($citizen);
+        if ($citizen->relationLoaded('father') && $citizen->father) {
+            $data['father'] = $this->appendAreaData($citizen->father);
+        }
+        if ($citizen->relationLoaded('mother') && $citizen->mother) {
+            $data['mother'] = $this->appendAreaData($citizen->mother);
+        }
+        if ($citizen->relationLoaded('spouse') && $citizen->spouse) {
+            $data['spouse'] = $this->appendAreaData($citizen->spouse);
+        }
+        if ($familyMembers->isNotEmpty()) {
+            $data['family_members'] = $familyMembers->map(fn ($m) => $this->appendAreaData($m))->values()->all();
         }
 
         return $data;
