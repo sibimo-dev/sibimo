@@ -156,8 +156,12 @@ Route::get('/region-areas', [RegionAreaController::class, 'index']);
 // Admin: harus login
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::apiResource('regions', RegionController::class)->only(['store', 'update', 'destroy']);
+    Route::post('/rws', [RegionAreaController::class, 'storeRw']);
     Route::put('/rws/{id}', [RegionAreaController::class, 'updateRw']);
+    Route::delete('/rws/{id}', [RegionAreaController::class, 'destroyRw']);
+    Route::post('/rts', [RegionAreaController::class, 'storeRt']);
     Route::put('/rts/{id}', [RegionAreaController::class, 'updateRt']);
+    Route::delete('/rts/{id}', [RegionAreaController::class, 'destroyRt']);
     Route::get('/staff', [StaffController::class, 'index']);
 });
 
@@ -207,9 +211,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     });
 
     Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
+        'letter-requests/bundle/pdf',
+        [LetterRequestController::class, 'bundlePdf'],
+    );
+
+    Route::middleware('permission:pengelolaan-surat|verifikasi-surat|otorisasi-surat')->get(
         'letter-requests/{letterRequest_id}/pdf',
         [LetterRequestController::class, 'pdf'],
-    );
+    )->whereNumber('letterRequest_id');
 
     Route::middleware('permission:verifikasi-surat')->post(
         'letter-requests/{letterRequest_id}/verify',
