@@ -24,6 +24,7 @@ class RolePermissionSeeder extends Seeder
                 'otorisasi-surat',
                 'tipe-surat',
                 'profil-kalurahan',
+                'data-warga',
                 'sejarah',
                 'visi-misi',
                 'struktur-organisasi',
