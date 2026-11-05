@@ -18,6 +18,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'Berita & Pengumuman', 'slug' => 'berita', 'description' => 'Mengelola berita dan pengumuman desa.'],
             ['name' => 'Layanan Desa', 'slug' => 'layanan-desa', 'description' => 'Mengelola layanan desa.'],
             ['name' => 'Potensi Kalurahan', 'slug' => 'potensi-kalurahan', 'description' => 'Mengelola data potensi kalurahan.'],
+            ['name' => 'Data Warga', 'slug' => 'data-warga', 'description' => 'Mengelola data kependudukan warga kalurahan.'],
             ['name' => 'Agenda', 'slug' => 'agenda', 'description' => 'Mengelola agenda dan kegiatan desa.'],
             ['name' => 'Gallery', 'slug' => 'gallery', 'description' => 'Mengelola gallery desa.'],
             ['name' => 'Pengaduan', 'slug' => 'pengaduan', 'description' => 'Mengelola pengaduan masyarakat.'],
