@@ -256,18 +256,22 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         ->parameters(['book-loans' => 'loan_id']);
 
     // Manajemen akun citizen
-    Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
-    Route::post('/citizens/import/validate', [CitizenController::class, 'validateImport']);
-    Route::post('/citizens/refresh-ages', [CitizenController::class, 'refreshAges']);
-    Route::get('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'index']);
-    Route::post('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'store']);
-    Route::get('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'show']);
-    Route::post('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'update']);
-    Route::get('/citizens/{citizen_id}/documents/{document_id}/download', [CitizenDocumentController::class, 'download']);
-    Route::delete('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'destroy']);
-    Route::get('/citizens/by-nik/{nik}', [CitizenController::class, 'showByNik']);
-    Route::apiResource('citizens', CitizenController::class)
-        ->parameters(['citizens' => 'citizen_id']);
+    Route::middleware('permission:data-warga')->group(function () {
+        Route::get('/citizens/record-event-counters', [CitizenController::class, 'eventCounters']);
+        Route::post('/citizens/import/validate', [CitizenController::class, 'validateImport']);
+        Route::post('/citizens/import/relations', [CitizenController::class, 'updateImportRelations']);
+        Route::post('/citizens/refresh-ages', [CitizenController::class, 'refreshAges']);
+        Route::get('/citizens/national-ids', [CitizenController::class, 'nationalIds']);
+        Route::get('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'index']);
+        Route::post('/citizens/{citizen_id}/documents', [CitizenDocumentController::class, 'store']);
+        Route::get('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'show']);
+        Route::post('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'update']);
+        Route::get('/citizens/{citizen_id}/documents/{document_id}/download', [CitizenDocumentController::class, 'download']);
+        Route::delete('/citizens/{citizen_id}/documents/{document_id}', [CitizenDocumentController::class, 'destroy']);
+        Route::get('/citizens/by-nik/{nik}', [CitizenController::class, 'showByNik']);
+        Route::apiResource('citizens', CitizenController::class)
+            ->parameters(['citizens' => 'citizen_id']);
+    });
 
     //Signers
     Route::apiResource('signers', SignerController::class)
