@@ -22,17 +22,52 @@ class CitizenController extends Controller
         'MATI' => 'Mati',
     ];
     
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $citizens = Citizen::query()
+        $perPage = (int) $request->query('per_page', 10);
+        $perPage = min(max($perPage, 1), 100);
+        $search = trim((string) $request->query('search', ''));
+
+        $paginator = Citizen::query()
             ->with(['rtArea.rw.region', 'father', 'mother', 'spouse'])
-            ->latest()
-            ->get();
+            ->when($search !== '', function ($query) use ($search): void {
+                $like = '%' . $search . '%';
+                $query->where(function ($nested) use ($like): void {
+                    $nested->where('full_name', 'like', $like)
+                        ->orWhere('national_id', 'like', $like)
+                        ->orWhere('family_card_number', 'like', $like)
+                        ->orWhere('address', 'like', $like)
+                        ->orWhere('phone_number', 'like', $like)
+                        ->orWhere('dusun', 'like', $like)
+                        ->orWhere('rt', 'like', $like)
+                        ->orWhere('rw', 'like', $like);
+                });
+            })
+            ->latest('citizen_id')
+            ->paginate($perPage);
+
+        $citizens = $paginator->getCollection()
+            ->map(fn (Citizen $citizen) => $this->appendAreaData($citizen))
+            ->values();
 
         return response()->json([
             'success' => true,
             'message' => 'Data citizen berhasil diambil.',
             'data' => $citizens,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ]);
+    }
+
+    public function nationalIds(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => Citizen::query()->orderBy('citizen_id')->pluck('national_id'),
         ]);
     }
 
@@ -159,7 +194,10 @@ class CitizenController extends Controller
 
             $headers = fgetcsv($handle, 0, $delimiter) ?: [];
             $normalizedHeaders = collect($headers)
-                ->map(fn ($header) => preg_replace('/[^a-z0-9]+/i', '', trim((string) $header)))
+                // Header template menggunakan huruf kapital (mis. NIK dan NAMA LENGKAP),
+                // sedangkan pengecekan memakai alias huruf kecil. Samakan case agar
+                // validasi tidak menolak file template yang sebenarnya benar.
+                ->map(fn ($header) => strtolower((string) preg_replace('/[^a-z0-9]+/i', '', trim((string) $header))))
                 ->filter()
                 ->values();
 
@@ -193,6 +231,61 @@ class CitizenController extends Controller
             'success' => true,
             'message' => 'File siap diimpor.',
             'data' => ['row_count' => $rowCount, 'max_rows' => 1000],
+        ]);
+    }
+
+    public function updateImportRelations(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'relations' => ['required', 'array', 'max:1000'],
+            'relations.*.citizen_id' => ['required', 'integer', 'distinct', Rule::exists('citizens', 'citizen_id')],
+            'relations.*.mother_national_id' => ['sometimes', 'nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
+            'relations.*.father_national_id' => ['sometimes', 'nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
+            'relations.*.spouse_national_id' => ['sometimes', 'nullable', 'string', 'size:16', 'regex:/^\d{16}$/'],
+        ]);
+
+        $relationFields = ['mother_national_id', 'father_national_id', 'spouse_national_id'];
+        $relationNiks = collect($validated['relations'])
+            ->flatMap(fn (array $row) => collect($relationFields)->map(fn (string $field) => $row[$field] ?? null))
+            ->filter()
+            ->unique()
+            ->values();
+        $citizensByNik = $relationNiks->isEmpty()
+            ? collect()
+            : Citizen::query()->whereIn('national_id', $relationNiks)->pluck('national_id', 'national_id');
+
+        $updatedCount = 0;
+        $unresolvedCount = 0;
+
+        DB::transaction(function () use ($validated, $relationFields, $citizensByNik, &$updatedCount, &$unresolvedCount): void {
+            foreach ($validated['relations'] as $row) {
+                $changes = [];
+                foreach ($relationFields as $field) {
+                    if (!array_key_exists($field, $row)) continue;
+                    $nik = trim((string) ($row[$field] ?? ''));
+                    if ($nik === '') {
+                        $changes[$field] = null;
+                    } elseif ($citizensByNik->has($nik)) {
+                        $changes[$field] = $nik;
+                    } else {
+                        $unresolvedCount++;
+                    }
+                }
+
+                if ($changes !== []) {
+                    Citizen::where('citizen_id', $row['citizen_id'])->update($changes);
+                    $updatedCount++;
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Relasi keluarga berhasil diproses.',
+            'data' => [
+                'updated_count' => $updatedCount,
+                'unresolved_count' => $unresolvedCount,
+            ],
         ]);
     }
 
