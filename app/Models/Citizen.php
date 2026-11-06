@@ -70,11 +70,18 @@ class Citizen extends Authenticatable
                 return;
             }
 
-            $birthDate = $birthDate instanceof Carbon
-                ? $birthDate
-                : Carbon::parse($birthDate);
+            try {
+                $birthDate = $birthDate instanceof Carbon
+                    ? $birthDate
+                    : Carbon::parse($birthDate);
+            } catch (\Throwable) {
+                $citizen->age = null;
+                return;
+            }
 
-            $citizen->age = $birthDate->isFuture()
+            // Tanggal tahun pendek yang lolos dari sumber lama tidak boleh
+            // menghasilkan umur ribuan tahun dan merusak insert unsignedTinyInteger.
+            $citizen->age = $birthDate->year < 1900 || $birthDate->isFuture()
                 ? null
                 : $birthDate->age;
 
@@ -310,11 +317,17 @@ class Citizen extends Authenticatable
             return null;
         }
 
-        $birthDate = $birthDate instanceof Carbon
-            ? $birthDate
-            : Carbon::parse($birthDate);
+        try {
+            $birthDate = $birthDate instanceof Carbon
+                ? $birthDate
+                : Carbon::parse($birthDate);
+        } catch (\Throwable) {
+            return null;
+        }
 
-        return $birthDate->isFuture() ? null : $birthDate->age;
+        return $birthDate->year < 1900 || $birthDate->isFuture()
+            ? null
+            : $birthDate->age;
     }
 
     /* ------------------------------------------------------------------ */
