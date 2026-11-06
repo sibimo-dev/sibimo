@@ -28,26 +28,69 @@ class CitizenController extends Controller
         $perPage = min(max($perPage, 1), 100);
         $search = trim((string) $request->query('search', ''));
 
-        $paginator = Citizen::query()
-            ->with(['rtArea.rw.region', 'father', 'mother', 'spouse'])
+        // Endpoint ini dipakai oleh tabel/pagination admin. Gunakan join
+        // ringan untuk wilayah dan jangan memuat relasi keluarga/accessor
+        // untuk setiap baris. Detail warga tetap memuat relasi melalui show().
+        // Tidak ada batas total record; hanya jumlah baris per halaman yang
+        // dibatasi agar response tetap kecil.
+        $citizenFields = [
+            'citizen_id', 'record_type', 'national_id', 'family_card_number', 'full_name',
+            'birth_place', 'birth_date', 'age', 'gender', 'address', 'rt_id', 'rt',
+            'phone_number', 'birth_certificate_status', 'birth_certificate_number',
+            'blood_type', 'occupation', 'education', 'marital_status',
+            'marriage_certificate_status', 'marriage_certificate_number', 'marriage_date',
+            'divorce_certificate_status', 'divorce_certificate_number', 'divorce_date',
+            'family_relationship', 'physical_disability', 'disability_type',
+            'disability_status', 'religion', 'belief_organization', 'nationality',
+            'mother_national_id', 'mother_name', 'father_national_id', 'father_name',
+            'spouse_national_id', 'ktp_address', 'previous_address', 'passport_number',
+            'passport_expiry_date', 'status', 'created_at', 'updated_at',
+        ];
+
+        $selects = collect($citizenFields)
+            ->map(fn (string $field) => 'citizens.' . $field)
+            ->all();
+        $selects[] = 'rt_area.number as area_rt_number';
+        $selects[] = 'rt_area.head_name as rt_head_name';
+        $selects[] = 'rw_area.number as area_rw_number';
+        $selects[] = 'rw_area.head_name as rw_head_name';
+        $selects[] = 'region_area.name as area_dusun';
+        $selects[] = 'region_area.head_name as hamlet_head_name';
+
+        $paginator = DB::table('citizens')
+            ->leftJoin('rts as rt_area', 'rt_area.id', '=', 'citizens.rt_id')
+            ->leftJoin('rws as rw_area', 'rw_area.id', '=', 'rt_area.rw_id')
+            ->leftJoin('regions as region_area', 'region_area.region_id', '=', 'rw_area.region_id')
+            ->select($selects)
             ->when($search !== '', function ($query) use ($search): void {
                 $like = '%' . $search . '%';
                 $query->where(function ($nested) use ($like): void {
-                    $nested->where('full_name', 'like', $like)
-                        ->orWhere('national_id', 'like', $like)
-                        ->orWhere('family_card_number', 'like', $like)
-                        ->orWhere('address', 'like', $like)
-                        ->orWhere('phone_number', 'like', $like)
-                        ->orWhere('dusun', 'like', $like)
-                        ->orWhere('rt', 'like', $like)
-                        ->orWhere('rw', 'like', $like);
+                    $nested->where('citizens.full_name', 'like', $like)
+                        ->orWhere('citizens.national_id', 'like', $like)
+                        ->orWhere('citizens.family_card_number', 'like', $like)
+                        ->orWhere('citizens.address', 'like', $like)
+                        ->orWhere('citizens.phone_number', 'like', $like)
+                        ->orWhere('citizens.rt', 'like', $like)
+                        ->orWhere('rt_area.number', 'like', $like)
+                        ->orWhere('rw_area.number', 'like', $like)
+                        ->orWhere('region_area.name', 'like', $like);
                 });
             })
-            ->latest('citizen_id')
+            ->orderByDesc('citizens.citizen_id')
             ->paginate($perPage);
 
         $citizens = $paginator->getCollection()
-            ->map(fn (Citizen $citizen) => $this->appendAreaData($citizen))
+            ->map(function (object $row): array {
+                $data = (array) $row;
+                $data['rt'] = $data['rt'] ?? $data['area_rt_number'];
+                $data['rw'] = $data['area_rw_number'];
+                $data['dusun'] = $data['area_dusun'];
+                $data['rt_head_name'] = $data['rt_head_name'];
+                $data['rw_head_name'] = $data['rw_head_name'];
+                $data['hamlet_head_name'] = $data['hamlet_head_name'];
+                unset($data['area_rt_number'], $data['area_rw_number'], $data['area_dusun']);
+                return $data;
+            })
             ->values();
 
         return response()->json([
@@ -59,6 +102,9 @@ class CitizenController extends Controller
                 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
+                // Dashboard memakai pagination yang sama. Kirim jumlah aktif
+                // dari database, bukan menghitung hanya dari 10 baris halaman 1.
+                'active_total' => DB::table('citizens')->where('status', 'Active')->count(),
             ],
         ]);
     }
@@ -79,7 +125,16 @@ class CitizenController extends Controller
     {
         $citizens = Citizen::query()
             ->where('status', 'Active')
-            ->get(['family_card_number', 'birth_date', 'gender', 'education', 'occupation', 'religion', 'blood_type']);
+            ->get([
+                'family_card_number',
+                'birth_date',
+                'gender',
+                'education',
+                'occupation',
+                'religion',
+                'blood_type',
+                'rt_id',
+            ]);
 
         $ageGroups = [
             '0–4', '5–9', '10–14', '15–19', '20–24', '25–29', '30–34', '35–39',
@@ -104,6 +159,7 @@ class CitizenController extends Controller
 
         $ageLabel = function (Citizen $citizen) use ($ageGroups): string {
             if (!$citizen->birth_date) return 'Tidak diisi';
+            if ($citizen->birth_date->year < 1900 || $citizen->birth_date->isFuture()) return 'Tidak diisi';
             $age = $citizen->birth_date->age;
             if ($age < 5) return $ageGroups[0];
             if ($age >= 75) return '75+';
@@ -122,6 +178,40 @@ class CitizenController extends Controller
         $maleCount = $citizens->where('gender', 'Laki-laki')->count();
         $femaleCount = $citizens->where('gender', 'Perempuan')->count();
 
+        // Statistik wilayah memakai JOIN langsung agar tidak bentrok dengan kolom
+        // legacy `citizens.rt` yang berupa nomor RT teks:
+        // citizens.rt_id → rts.rw_id → rws.region_id → regions.region_id.
+        $regionRows = Citizen::query()
+            ->where('citizens.status', 'Active')
+            ->leftJoin('rts', 'citizens.rt_id', '=', 'rts.id')
+            ->leftJoin('rws', 'rts.rw_id', '=', 'rws.id')
+            ->leftJoin('regions', 'rws.region_id', '=', 'regions.region_id')
+            // Data import lama menyimpan nama dusun di kolom address karena
+            // kolom dusun memang tidak tersedia di tabel citizens. Pakai
+            // address sebagai fallback hanya jika nilainya sama persis dengan
+            // nama padukuhan, sehingga alamat jalan biasa tidak salah dihitung.
+            ->leftJoin('regions as legacy_regions', function ($join): void {
+                $join->whereRaw('LOWER(TRIM(legacy_regions.name)) = LOWER(TRIM(citizens.address))');
+            })
+            ->selectRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi') AS `group`")
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw("SUM(CASE WHEN citizens.gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male")
+            ->selectRaw("SUM(CASE WHEN citizens.gender = 'Perempuan' THEN 1 ELSE 0 END) AS female")
+            // Group berdasarkan nama dusun agar data lama yang sudah punya
+            // rt_id dan data lama yang memakai fallback address bergabung ke
+            // satu baris dusun yang sama.
+            ->groupByRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi')")
+            ->orderByRaw("CASE WHEN `group` = 'Tidak diisi' THEN 1 ELSE 0 END, `group`")
+            ->get()
+            ->map(fn ($row) => [
+                'group' => $row->group,
+                'total' => (int) $row->total,
+                'male' => (int) $row->male,
+                'female' => (int) $row->female,
+            ])
+            ->values()
+            ->all();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -139,7 +229,7 @@ class CitizenController extends Controller
                     'religion' => $aggregate(fn (Citizen $citizen) => $citizen->religion),
                     'blood_type' => $aggregate(fn (Citizen $citizen) => $citizen->blood_type, $bloodTypeRows),
                 ],
-                'regions' => [],
+                'regions' => array_values($regionRows),
             ],
         ]);
     }
@@ -171,6 +261,11 @@ class CitizenController extends Controller
 
     public function validateImport(Request $request): JsonResponse
     {
+        // Berkas dibatasi 1.000 baris, tetapi pembacaan CSV di server tetap
+        // diberi ruang waktu yang cukup pada hosting dengan max_execution_time
+        // bawaan yang terlalu pendek.
+        set_time_limit(300);
+
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:10240'],
         ]);
@@ -236,6 +331,10 @@ class CitizenController extends Controller
 
     public function updateImportRelations(Request $request): JsonResponse
     {
+        // Satu batch relasi dapat berisi sampai 1.000 warga dan melakukan
+        // validasi serta pembaruan dalam satu transaksi.
+        set_time_limit(300);
+
         $validated = $request->validate([
             'relations' => ['required', 'array', 'max:1000'],
             'relations.*.citizen_id' => ['required', 'integer', 'distinct', Rule::exists('citizens', 'citizen_id')],
@@ -302,7 +401,7 @@ class CitizenController extends Controller
             $updatedCount = DB::update(<<<'SQL'
                 UPDATE citizens
                 SET age = CASE
-                    WHEN birth_date IS NULL OR birth_date > CURDATE() THEN NULL
+                    WHEN birth_date IS NULL OR birth_date < '1900-01-01' OR birth_date > CURDATE() THEN NULL
                     ELSE TIMESTAMPDIFF(YEAR, birth_date, CURDATE())
                 END
             SQL);
@@ -310,7 +409,7 @@ class CitizenController extends Controller
             $updatedCount = DB::update(<<<'SQL'
                 UPDATE citizens
                 SET age = CASE
-                    WHEN birth_date IS NULL OR birth_date > CURRENT_DATE THEN NULL
+                    WHEN birth_date IS NULL OR birth_date < DATE '1900-01-01' OR birth_date > CURRENT_DATE THEN NULL
                     ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, birth_date))::integer
                 END
             SQL);
@@ -318,7 +417,7 @@ class CitizenController extends Controller
             $updatedCount = DB::update(<<<'SQL'
                 UPDATE citizens
                 SET age = CASE
-                    WHEN birth_date IS NULL OR date(birth_date) > date('now') THEN NULL
+                    WHEN birth_date IS NULL OR date(birth_date) < date('1900-01-01') OR date(birth_date) > date('now') THEN NULL
                     ELSE CAST((julianday('now') - julianday(birth_date)) / 365.2425 AS INTEGER)
                 END
             SQL);
@@ -345,7 +444,7 @@ class CitizenController extends Controller
             'family_card_number'           => ['nullable','string','size:16','regex:/^\d{16}$/'],
             'full_name'                    => ['required','string','max:100'],
             'birth_place'                  => ['nullable','string','max:50'],
-            'birth_date'                   => ['nullable','date'],
+            'birth_date'                   => ['nullable', 'date', 'after_or_equal:1900-01-01', 'before_or_equal:today'],
             'age'                          => ['nullable', 'integer', 'min:0', 'max:150'],
             'gender'                       => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address'                      => ['nullable','string'],
@@ -386,7 +485,11 @@ class CitizenController extends Controller
         ]);
 
         $validated = $this->resolveAreaRelations($validated);
-        $citizen = Citizen::create($validated);
+        // Umur adalah nilai turunan dari birth_date. Jangan gunakan angka
+        // umur mentah dari file/form karena dapat melampaui tipe kolom DB;
+        // event saving pada model akan menghitungnya kembali.
+        $validated['age'] = null;
+        $citizen = Citizen::create($this->orderCitizenAttributes($validated));
         $citizen->load('rtArea.rw.region');
 
         return response()->json([
@@ -442,7 +545,7 @@ class CitizenController extends Controller
             'family_card_number'           => ['nullable','string','size:16','regex:/^\d{16}$/'],
             'full_name'                    => ['sometimes','required','string','max:100'],
             'birth_place'                  => ['nullable','string','max:50'],
-            'birth_date'                   => ['nullable','date'],
+            'birth_date'                   => ['nullable', 'date', 'after_or_equal:1900-01-01', 'before_or_equal:today'],
             'age'                          => ['nullable', 'integer', 'min:0', 'max:150'],
             'gender'                       => ['nullable', Rule::in(['Laki-laki','Perempuan'])],
             'address'                      => ['nullable','string'],
@@ -481,7 +584,7 @@ class CitizenController extends Controller
         ]);
 
         $validated = $this->resolveAreaRelations($validated);
-        $citizen->update($validated);
+        $citizen->update($this->orderCitizenAttributes($validated));
         $citizen->load('rtArea.rw.region');
 
         return response()->json([
@@ -504,6 +607,33 @@ class CitizenController extends Controller
 
     private function normalizeInput(Request $request): void
     {
+        $birthDate = trim((string) $request->input('birth_date', ''));
+        if ($birthDate !== '') {
+            // Lindungi API dari client lama yang masih mengirim tahun pendek
+            // hasil parsing CSV, misalnya 0020-12-11 untuk 11 Desember 2020.
+            // Terima juga format lama dengan jam, misalnya 0083-08-02
+            // 00:00:00. Parser lama menghasilkan tahun 00xx dan harus
+            // dikembalikan ke abad yang benar sebelum validasi tanggal.
+            if (preg_match('/^0*(\d{1,4})[-\/]?(\d{2})[-\/]?(\d{2})(?:\s.*)?$/', $birthDate, $matches)) {
+                $year = (int) $matches[1];
+                if ($year < 100) {
+                    $year += $year >= 30 ? 1900 : 2000;
+                }
+                $month = (int) $matches[2];
+                $day = (int) $matches[3];
+                $birthDate = checkdate($month, $day, $year)
+                    ? sprintf('%04d-%02d-%02d', $year, $month, $day)
+                    : '';
+            }
+
+            $request->merge(['birth_date' => $birthDate !== '' ? $birthDate : null]);
+        }
+
+        $age = $request->input('age');
+        if ($age !== null && $age !== '' && (!is_numeric($age) || (int) $age < 0 || (int) $age > 150)) {
+            $request->merge(['age' => null]);
+        }
+
         $gender = trim((string) $request->input('gender', ''));
         if ($gender !== '') {
             $request->merge([
@@ -518,11 +648,73 @@ class CitizenController extends Controller
     }
 
     /**
+     * Eloquent biasanya mempertahankan urutan atribut dari request. Import
+     * Excel dapat mengirim gender sebelum birth_place, sedangkan beberapa
+     * driver/versi model membangun SQL berdasarkan urutan atribut model.
+     * Susun ulang secara eksplisit agar setiap nilai selalu sejajar dengan
+     * kolom citizens yang benar.
+     */
+    private function orderCitizenAttributes(array $data): array
+    {
+        $fields = [
+            'record_type',
+            'national_id',
+            'family_card_number',
+            'full_name',
+            'birth_place',
+            'birth_date',
+            'age',
+            'gender',
+            'address',
+            'rt_id',
+            'rt',
+            'phone_number',
+            'birth_certificate_status',
+            'birth_certificate_number',
+            'blood_type',
+            'occupation',
+            'education',
+            'marital_status',
+            'marriage_certificate_status',
+            'marriage_certificate_number',
+            'marriage_date',
+            'divorce_certificate_status',
+            'divorce_certificate_number',
+            'divorce_date',
+            'family_relationship',
+            'physical_disability',
+            'disability_type',
+            'disability_status',
+            'religion',
+            'belief_organization',
+            'nationality',
+            'mother_national_id',
+            'mother_name',
+            'father_national_id',
+            'father_name',
+            'spouse_national_id',
+            'ktp_address',
+            'previous_address',
+            'passport_number',
+            'passport_expiry_date',
+            'status',
+        ];
+
+        return collect($fields)
+            ->filter(fn (string $field) => array_key_exists($field, $data))
+            ->mapWithKeys(fn (string $field) => [$field => $data[$field]])
+            ->all();
+    }
+
+    /**
      * Tambahkan field wilayah turunan (rw, dusun, padukuhan_id, rw_id) ke
      * response citizen dengan menelusuri rantai rt_id → rts → rws → regions.
      */
-    private function appendAreaData(\App\Models\Citizen $citizen): array
+    private function appendAreaData(\App\Models\Citizen $citizen, bool $includeAppends = true): array
     {
+        if (!$includeAppends) {
+            $citizen->setAppends([]);
+        }
         $data = $citizen->toArray();
 
         $rt = $citizen->getRtModel();
@@ -649,8 +841,15 @@ class CitizenController extends Controller
         } elseif ($region) {
             // Region saja tetap valid untuk data lama yang belum memilih RW/RT.
         } elseif (array_key_exists('dusun', $data) || array_key_exists('rw', $data) || array_key_exists('rt', $data)) {
+            $dusun = trim((string) ($data['dusun'] ?? ''));
+            // Fallback untuk template/data lama yang menyimpan nama dusun
+            // pada kolom ALAMAT. Hanya dipakai jika cocok persis dengan master
+            // regions, bukan untuk alamat jalan bebas.
+            if ($dusun === '' && filled($data['address'] ?? null)) {
+                $dusun = trim((string) $data['address']);
+            }
             $region = Region::query()
-                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim((string) ($data['dusun'] ?? '')))])
+                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($dusun)])
                 ->first();
             $rw = $region && filled($data['rw'] ?? null)
                 ? Rw::where('region_id', $region->region_id)->get()->first(fn ($item) => $this->sameAreaNumber($item->number, $data['rw']))
