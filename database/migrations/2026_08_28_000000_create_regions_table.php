@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -21,6 +22,14 @@ return new class extends Migration
             $table->unsignedInteger('female_count')->default(0);
             $table->timestamps();
         });
+
+        // Data master awal. Koroulon Lor tetap dipertahankan; Purwobinangun
+        // merupakan padukuhan tambahan yang dipakai struktur organisasi.
+        DB::table('regions')->insert([
+            'name' => 'PURWOBINANGUN',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     public function down(): void
