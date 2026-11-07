@@ -181,27 +181,70 @@ class CitizenController extends Controller
         // Statistik wilayah memakai JOIN langsung agar tidak bentrok dengan kolom
         // legacy `citizens.rt` yang berupa nomor RT teks:
         // citizens.rt_id → rts.rw_id → rws.region_id → regions.region_id.
+        // $regionRows = Citizen::query()
+        //     ->where('citizens.status', 'Active')
+        //     ->leftJoin('rts', 'citizens.rt_id', '=', 'rts.id')
+        //     ->leftJoin('rws', 'rts.rw_id', '=', 'rws.id')
+        //     ->leftJoin('regions', 'rws.region_id', '=', 'regions.region_id')
+        //     // Data import lama menyimpan nama dusun di kolom address karena
+        //     // kolom dusun memang tidak tersedia di tabel citizens. Pakai
+        //     // address sebagai fallback hanya jika nilainya sama persis dengan
+        //     // nama padukuhan, sehingga alamat jalan biasa tidak salah dihitung.
+        //     ->leftJoin('regions as legacy_regions', function ($join): void {
+        //         $join->whereRaw('LOWER(TRIM(legacy_regions.name)) = LOWER(TRIM(citizens.address))');
+        //     })
+        //     ->selectRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi') AS `group`")
+        //     ->selectRaw('COUNT(*) AS total')
+        //     ->selectRaw("SUM(CASE WHEN citizens.gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male")
+        //     ->selectRaw("SUM(CASE WHEN citizens.gender = 'Perempuan' THEN 1 ELSE 0 END) AS female")
+        //     // Group berdasarkan nama dusun agar data lama yang sudah punya
+        //     // rt_id dan data lama yang memakai fallback address bergabung ke
+        //     // satu baris dusun yang sama.
+        //     ->groupByRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi')")
+        //     ->orderByRaw("CASE WHEN `group` = 'Tidak diisi' THEN 1 ELSE 0 END, `group`")
+        //     ->get()
+        //     ->map(fn ($row) => [
+        //         'group' => $row->group,
+        //         'total' => (int) $row->total,
+        //         'male' => (int) $row->male,
+        //         'female' => (int) $row->female,
+        //     ])
+        //     ->values()
+        //     ->all();
+
         $regionRows = Citizen::query()
             ->where('citizens.status', 'Active')
             ->leftJoin('rts', 'citizens.rt_id', '=', 'rts.id')
             ->leftJoin('rws', 'rts.rw_id', '=', 'rws.id')
             ->leftJoin('regions', 'rws.region_id', '=', 'regions.region_id')
-            // Data import lama menyimpan nama dusun di kolom address karena
-            // kolom dusun memang tidak tersedia di tabel citizens. Pakai
-            // address sebagai fallback hanya jika nilainya sama persis dengan
-            // nama padukuhan, sehingga alamat jalan biasa tidak salah dihitung.
             ->leftJoin('regions as legacy_regions', function ($join): void {
-                $join->whereRaw('LOWER(TRIM(legacy_regions.name)) = LOWER(TRIM(citizens.address))');
+                $join->whereRaw(
+                    'LOWER(TRIM(legacy_regions.name)) = LOWER(TRIM(citizens.address))'
+                );
             })
-            ->selectRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi') AS `group`")
-            ->selectRaw('COUNT(*) AS total')
-            ->selectRaw("SUM(CASE WHEN citizens.gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male")
-            ->selectRaw("SUM(CASE WHEN citizens.gender = 'Perempuan' THEN 1 ELSE 0 END) AS female")
-            // Group berdasarkan nama dusun agar data lama yang sudah punya
-            // rt_id dan data lama yang memakai fallback address bergabung ke
-            // satu baris dusun yang sama.
-            ->groupByRaw("COALESCE(NULLIF(regions.name, ''), legacy_regions.name, 'Tidak diisi')")
-            ->orderByRaw("CASE WHEN `group` = 'Tidak diisi' THEN 1 ELSE 0 END, `group`")
+            ->selectRaw("
+                COALESCE(
+                    NULLIF(regions.name, ''),
+                    legacy_regions.name,
+                    'Tidak diisi'
+                ) AS region_name,
+                citizens.gender
+            ")
+            ->toBase();
+
+        $regionRows = DB::query()
+            ->fromSub($regionRows, 'citizen_regions')
+            ->selectRaw("
+                region_name AS `group`,
+                COUNT(*) AS total,
+                SUM(CASE WHEN gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male,
+                SUM(CASE WHEN gender = 'Perempuan' THEN 1 ELSE 0 END) AS female
+            ")
+            ->groupBy('region_name')
+            ->orderByRaw("
+                CASE WHEN region_name = 'Tidak diisi' THEN 1 ELSE 0 END,
+                region_name
+            ")
             ->get()
             ->map(fn ($row) => [
                 'group' => $row->group,
