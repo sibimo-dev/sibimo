@@ -338,13 +338,15 @@ class OrganizationalStructureController extends Controller
                 foreach ($level['people'] as $p) {
                     $title = $p['title'];
                     $isDukuh = str_starts_with($title, 'Dukuh');
+                    $padukuhanKey = mb_strtolower(trim((string) ($p['padukuhan'] ?? '')));
     
                     // Satu wilayah + jabatan hanya satu penugasan aktif.
                     if ($isDukuh) {
-                        if (isset($seenDukuh[$title])) {
-                            throw ValidationException::withMessages(['levels' => "Jabatan {$title} hanya boleh punya satu penugasan aktif."]);
+                        $dukuhKey = $padukuhanKey !== '' ? $padukuhanKey : mb_strtolower($title);
+                        if (isset($seenDukuh[$dukuhKey])) {
+                            throw ValidationException::withMessages(['levels' => "Jabatan Dukuh di padukuhan tersebut hanya boleh punya satu penugasan aktif."]);
                         }
-                        $seenDukuh[$title] = true;
+                        $seenDukuh[$dukuhKey] = true;
                     }
     
                     $photo = $this->replacePhotoToken($p['photo'] ?? null, $photoFiles);
