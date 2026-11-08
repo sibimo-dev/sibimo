@@ -17,6 +17,8 @@ class RegionAreaSeeder extends Seeder
             ['Krebet', 2, 5], ['Rogobangsan', 2, 5], ['Kalibulus', 2, 4], ['Macanan', 2, 4],
             ['Cokrogaten', 3, 6], ['Koroulon Lor', 2, 5], ['Pondok Suruh', 3, 7], ['Balong', 2, 6],
             ['Banjarharjo', 3, 6], ['Kragilan', 2, 4], ['Sorasan', 2, 5], ['Koroulon Kidul', 2, 4],
+            // Nomor RW/RT Purwobinangun diisi setelah data resmi tersedia.
+            ['Purwobinangun', 0, 0],
         ];
 
         $rwCounter = 0;

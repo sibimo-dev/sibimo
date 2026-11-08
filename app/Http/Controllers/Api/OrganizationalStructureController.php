@@ -188,43 +188,25 @@ class OrganizationalStructureController extends Controller
     private function positionSortKey(string $position, int $id = 0): array
     {
         $position = trim($position);
-        $dukuhRank = 0;
-        if (preg_match('/^Dukuh\s+([IVXLCDM]+|\d+)/i', $position, $match)) {
-            $value = strtoupper($match[1]);
-            $dukuhRank = ctype_digit($value) ? (int) $value : $this->romanToInt($value);
-            return [8, $dukuhRank, $id];
-        }
-
         $rank = array_search($position, self::POSITION_ORDER, true);
 
         return [$rank === false ? 999 : $rank, 0, $id];
     }
 
-    private function romanToInt(string $value): int
-    {
-        $map = ['I' => 1, 'V' => 5, 'X' => 10, 'L' => 50, 'C' => 100, 'D' => 500, 'M' => 1000];
-        $total = 0;
-        $previous = 0;
-        foreach (array_reverse(str_split($value)) as $letter) {
-            $number = $map[$letter] ?? 0;
-            $total += $number < $previous ? -$number : $number;
-            $previous = max($previous, $number);
-        }
-
-        return $total;
-    }
-    
     private function nullIfEmpty(mixed $value): mixed
     {
         return ($value === '' || $value === null) ? null : $value;
     }
     
-    // "Dukuh I Krebet" -> region_id padukuhan "KREBET".
-    private function matchRegionId(string $position): ?int
+    // Resolve padukuhan hanya dari field relasi yang diisi user.
+    // Nomor Romawi pada jabatan bersifat manual dan tidak dipakai untuk lookup.
+    private function matchRegionId(?string $padukuhan = null): ?int
     {
-        if (!preg_match('/^Dukuh\s+(?:[IVXLCDM]+|\d+)\s+(.+)$/i', $position, $m)) return null;
+        $name = trim((string) $padukuhan);
+        if ($name === '') return null;
+
         $this->regionCache ??= Region::query()->get(['region_id', 'name']);
-        $name = mb_strtolower(trim($m[1]));
+        $name = mb_strtolower($name);
         $hit = $this->regionCache->first(fn ($r) => mb_strtolower($r->name) === $name)
             ?? $this->regionCache->first(fn ($r) => str_contains(mb_strtolower($r->name), $name)
                 || str_contains($name, mb_strtolower($r->name)));
@@ -235,8 +217,13 @@ class OrganizationalStructureController extends Controller
     {
         $isRt = $title === 'Ketua RT';
         $isRw = $title === 'Ketua RW';
+        $padukuhanValue = $person['padukuhan'] ?? '';
+        if (is_array($padukuhanValue)) {
+            $padukuhanValue = $padukuhanValue['value'] ?? $padukuhanValue['label'] ?? '';
+        }
+        $padukuhan = trim((string) $padukuhanValue);
         $padukuhanId = str_starts_with($title, 'Dukuh')
-            ? $this->matchRegionId($title)
+            ? $this->matchRegionId($padukuhan)
             : null;
 
         if (!$isRt && !$isRw) {
@@ -247,11 +234,6 @@ class OrganizationalStructureController extends Controller
             ];
         }
 
-        $padukuhanValue = $person['padukuhan'] ?? '';
-        if (is_array($padukuhanValue)) {
-            $padukuhanValue = $padukuhanValue['value'] ?? $padukuhanValue['label'] ?? '';
-        }
-        $padukuhan = trim((string) $padukuhanValue);
         $rwNumber = trim((string) ($person['rw_number'] ?? ''));
         $rtNumber = trim((string) ($person['rt_number'] ?? ''));
         $region = Region::query()
