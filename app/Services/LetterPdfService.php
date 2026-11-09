@@ -969,7 +969,8 @@ class LetterPdfService
             ]);
 
             if ($templateSlug === 'marriage-lodging-certificate-letter') {
-                $data['applicant']['bin_or_binti'] = $form['bin_or_binti'] ?? $form['applicant_bin'] ?? null;
+                $data['applicant']['bin_or_binti'] = $form['bin_or_binti'] ?? $form['applicant_bin']
+                    ?? $form['groom_bin'] ?? null;
             }
 
             if ($templateSlug === 'general-certificate-letter') {
@@ -981,19 +982,46 @@ class LetterPdfService
                 ]);
             }
 
-            $data['spouse'] = array_merge($data['spouse'], [
-                'full_name_alias' => $form['spouse_name'] ?? $data['spouse']['name'],
-                'bin' => $form['spouse_bin'] ?? null,
-                'binti' => $form['spouse_binti'] ?? null,
-                'nik' => $form['spouse_nik'] ?? null,
-                'nationality' => $form['spouse_nationality']
-                    ?? ($templateSlug === 'death-certificate-for-marriage-letter' ? ($form['nationality'] ?? 'WNI') : 'WNI'),
-                'religion' => $form['spouse_religion'] ?? null,
-                'birth_place_date' => $data['spouse']['birth'],
-            ]);
+            // Surat Numpang Nikah (bundle laki-laki & perempuan): data mempelai wanita dikumpulkan
+            // dengan prefix bride_*, sedangkan $data['spouse'] hanya membaca spouse_*.
+            // Fallback ke bride_* supaya kolom pasangan terisi dari bundle nikah perempuan.
+            // Fallback ke $data['bride'] (hasil marriedLetterData/personBlock) untuk bundle laki-laki.
+            $brideNames = [
+                'full_name_alias' => ['spouse_name', 'bride_name', 'nama_mempelai_wanita'],
+                'binti'           => ['spouse_binti', 'bride_binti', 'binti_mempelai_wanita'],
+                'bin'             => ['spouse_bin', 'bride_bin'],
+                'nik'             => ['spouse_nik', 'bride_nik', 'nik_mempelai_wanita'],
+                'birth_place_date'=> ['spouse_birth', 'bride_birth'],
+                'nationality'     => ['spouse_nationality', 'bride_nationality', 'kewarganegaraan_mempelai_wanita'],
+                'religion'        => ['spouse_religion', 'bride_religion', 'agama_mempelai_wanita'],
+                'occupation'      => ['spouse_occupation', 'bride_occupation', 'pekerjaan_mempelai_wanita'],
+                'address'         => ['spouse_address', 'bride_address', 'alamat_mempelai_wanita'],
+            ];
+            $pickFirst = static function (array $keys) use ($form, $data) {
+                foreach ($keys as $k) {
+                    if (isset($form[$k]) && $form[$k] !== null && $form[$k] !== '') return $form[$k];
+                }
+                return null;
+            };
+            // $data['bride'] sudah diisi oleh marriedLetterData()/personBlock() dari bride_birth_place + bride_birth_date.
+            // Pakai sebagai fallback utama untuk bundle laki-laki yang tidak punya spouse_birth/bride_birth mentah.
+            $brideParsed = $data['bride'] ?? [];
+            $spouseFull = [
+                'full_name_alias' => $pickFirst($brideNames['full_name_alias']) ?? $brideParsed['full_name_alias'] ?? $data['spouse']['name'],
+                'bin'             => $pickFirst($brideNames['bin']),
+                'binti'           => $pickFirst($brideNames['binti']),
+                'nik'             => $pickFirst($brideNames['nik']) ?? $brideParsed['nik'] ?? null,
+                'birth_place_date'=> $pickFirst($brideNames['birth_place_date']) ?? $brideParsed['birth_place_date'] ?? $data['spouse']['birth'],
+                'nationality'     => $pickFirst($brideNames['nationality']) ?? $brideParsed['nationality'] ?? 'WNI',
+                'religion'        => $pickFirst($brideNames['religion']) ?? $brideParsed['religion'] ?? null,
+                'occupation'      => $pickFirst($brideNames['occupation']) ?? $brideParsed['occupation'] ?? null,
+                'address'         => $pickFirst($brideNames['address']) ?? $brideParsed['address'] ?? null,
+            ];
+            $data['spouse'] = array_merge($data['spouse'], $spouseFull);
 
             if ($templateSlug === 'marriage-lodging-certificate-letter') {
-                $data['spouse']['binti'] = $form['spouse_binti'] ?? $form['spouse_bin'] ?? null;
+                $data['spouse']['binti'] = $pickFirst(['spouse_binti', 'bride_binti', 'binti_mempelai_wanita',
+                    'spouse_bin', 'bride_bin']);
             }
 
             // Pada Model N6, bagian B adalah pasangan yang masih hidup dan pemohon.
@@ -3249,19 +3277,22 @@ class LetterPdfService
     private function marriagePerson(array $form, string $prefix): array
     {
         $f = fn (string $key) => $form["{$prefix}_{$key}"] ?? null;
+        $place = $f('birth_place') ?? $form["{$prefix}BirthPlace"] ?? null;
+        $date  = $f('birth_date') ?? $form["{$prefix}BirthDate"] ?? null;
+        $raw   = $f('birth') ?? $form["{$prefix}Birth"] ?? $form["ttl_{$prefix}"] ?? null;
 
         return [
-            'name'        => $f('name'),
-            'bin'         => $f('bin') ?? $f('binti'),
-            'nik'         => $f('nik'),
-            'gender'      => $f('gender'),
-            'birth'       => $this->birthLong($f('birth_place'), $f('birth_date')) ?: ($f('birth') ?? null),
-            'citizenship' => $f('citizenship') ?? $f('nationality') ?? 'WNI',
-            'religion'    => $f('religion'),
-            'occupation'  => $f('occupation'),
-            'education'   => $f('education'),
-            'address'     => $f('address'), // sengaja TIDAK pakai fullAddress()
-            'status'      => $f('status'),
+            'name'        => $f('name') ?? $form["{$prefix}Name"] ?? null,
+            'bin'         => $f('bin') ?? $f('binti') ?? $form["{$prefix}Bin"] ?? $form["{$prefix}Binti"] ?? null,
+            'nik'         => $f('nik') ?? $form["{$prefix}Nik"] ?? null,
+            'gender'      => $f('gender') ?? $form["{$prefix}Gender"] ?? null,
+            'birth'       => $this->birthLong($place, $date) ?: $raw,
+            'citizenship' => $f('citizenship') ?? $f('nationality') ?? $form["{$prefix}Nationality"] ?? 'WNI',
+            'religion'    => $f('religion') ?? $form["{$prefix}Religion"] ?? null,
+            'occupation'  => $f('occupation') ?? $form["{$prefix}Occupation"] ?? null,
+            'education'   => $f('education') ?? $form["{$prefix}Education"] ?? null,
+            'address'     => $f('address') ?? $form["{$prefix}Address"] ?? null, // sengaja TIDAK pakai fullAddress()
+            'status'      => $f('status') ?? $form["{$prefix}Status"] ?? null,
         ];
     }
 
