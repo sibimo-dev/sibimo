@@ -113,13 +113,14 @@
     </table>
 
     @php
-        // Kode & nama wilayah dipatenkan (Bimomartani, Ngemplak, Sleman, DIY); tiap kode 2 kotak.
+        // Kode & nama wilayah dipatenkan (Bimomartani, Ngemplak, Sleman, DIY) sesuai kode Kemendagri 34.04.11.2002.
+        // Provinsi/kabupaten/kecamatan: 2 kotak per kode; desa: 4 kotak (2002).
         // Dipakai bila $region dari service kosong; kalau $region terisi, nilainya yang dipakai.
         $rgDefault = [
             'province' => ['34', 'DAERAH ISTIMEWA YOGYAKARTA'],
             'regency'  => ['04', 'SLEMAN'],
             'district' => ['11', 'NGEMPLAK'],
-            'village'  => ['20', 'BIMOMARTANI'],
+            'village'  => ['2002', 'BIMOMARTANI'],
         ];
         $rgCode = function (string $k) use ($region, $rgDefault) {
             $v = $region[$k . '_code'] ?? '';
@@ -171,7 +172,7 @@
             <td class="region-sep">:</td>
             <td class="region-code-cell">
                 <table class="region-code"><tr>
-                    {{-- Desa hanya 2 kotak: selalu 20 (Bimomartani), tidak mengikuti $region --}}
+                    {{-- Desa 4 kotak: selalu 2002 (Bimomartani), tidak mengikuti $region --}}
                     @foreach (str_split($rgDefault['village'][0]) as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
@@ -229,7 +230,7 @@
             <td class="rt-rw-label">RT</td>
             <td>
                 <table class="digit-box"><tr>
-                    @foreach (array_pad(str_split((string) $applicant['rt']), 2, '') as $digit)
+                    @foreach (array_pad(str_split((string) $applicant['rt']), 3, '') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
@@ -238,7 +239,16 @@
             <td class="rt-rw-label">RW</td>
             <td>
                 <table class="digit-box"><tr>
-                    @foreach (array_pad(str_split((string) $applicant['rw']), 5, '') as $digit)
+                    @foreach (array_pad(str_split((string) $applicant['rw']), 3, '') as $digit)
+                        <td>{{ $digit }}</td>
+                    @endforeach
+                </tr></table>
+            </td>
+            <td style="width:20pt;"></td>
+            <td class="rt-rw-label">Kode Pos</td>
+            <td>
+                <table class="digit-box"><tr>
+                    @foreach (array_pad(str_split((string) ($applicant['postal_code'] ?? '')), 5, '') as $digit)
                         <td>{{ $digit }}</td>
                     @endforeach
                 </tr></table>
@@ -309,14 +319,6 @@
                         <td style="text-align:left;">{{ $signers['hamlet_head_name'] ?? '' }}</td>
                         <td style="text-align:right;">{{ $signers['applicant_name'] ?? '' }}</td>
                     </tr>
-                    <tr>
-                        <td style="text-align:left; padding-top:4pt;">Nomor: {{ $signers['hamlet_head_number'] ?? ($number ?? '') }}</td>
-                        <td style="text-align:right; padding-top:4pt;">Nomor: {{ $number ?? '' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:left;">Tanggal: {{ $signers['hamlet_head_date'] ?? ($signature['date'] ?? '') }}</td>
-                        <td style="text-align:right;">Tanggal: {{ $signature['date'] ?? '' }}</td>
-                    </tr>
                 </table>
             </td>
         </tr>
@@ -332,8 +334,6 @@
                             Camat
                             <div style="height:40pt;"></div>
                             <div style="margin-top:3pt;">{{ $signers['district_head_name'] ?? '' }}</div>
-                            <div style="margin-top:4pt;">Nomor: {{ $signers['district_head_number'] ?? ($number ?? '') }}</div>
-                            <div>Tanggal: {{ $signers['district_head_date'] ?? ($signature['date'] ?? '') }}</div>
                         </td>
                         <td style="text-align:right; vertical-align:top; line-height:1.2;">
                             Mengetahui Lurah
