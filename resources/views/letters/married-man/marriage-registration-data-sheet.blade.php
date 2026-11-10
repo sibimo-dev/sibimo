@@ -58,16 +58,16 @@
         <tr><td class="lbl">Status</td><td class="sep">:</td><td class="val">{{ $groom['status'] ?? '' }}</td></tr>
         <tr><td class="lbl">Jika Duda, Nama Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_name'] ?? '' }}</td></tr>
         <tr><td class="lbl">Jika Duda MATI, Data Istri Terdahulu</td><td class="sep">:</td><td class="val">&nbsp;</td></tr>
-        <tr><td class="lbl">Nama Istri/Suami/Nama Orangtua</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_parent_name'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Bin Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_bin'] ?? '' }}</td></tr>
-        <tr><td class="lbl">NIK Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_nik'] ?? '' }}</td></tr>
-        <tr><td class="lbl">TTL Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_birth_place_date'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Kewarganegaraan Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_nationality'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Agama Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_religion'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Pekerjaan Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_occupation'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Alamat Dunia Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_address'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Meninggal Dunia Pada</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_death_date'] ?? '' }}</td></tr>
-        <tr><td class="lbl">Meninggal Di</td><td class="sep">:</td><td class="val">{{ $groom['previous_spouse_death_place'] ?? '' }}</td></tr>
+        <tr><td class="lbl">Nama Istri/Suami/Nama Orangtua</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_parent_name'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Bin Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_bin'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">NIK Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_nik'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">TTL Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_birth_place_date'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Kewarganegaraan Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_nationality'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Agama Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_religion'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Pekerjaan Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_occupation'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Alamat Dunia Istri Terdahulu</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_address'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Meninggal Dunia Pada</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_death_date'] ?? '') : '' }}</td></tr>
+        <tr><td class="lbl">Meninggal Di</td><td class="sep">:</td><td class="val">{{ filled($groom['previous_spouse_name'] ?? null) ? ($groom['previous_spouse_death_place'] ?? '') : '' }}</td></tr>
     </table>
 
     <div class="section-title">DATA AYAH CATIN PUTRA</div>

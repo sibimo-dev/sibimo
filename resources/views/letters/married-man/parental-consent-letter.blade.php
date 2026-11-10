@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <title>Parental Consent Letter</title>
     <style>
-        @page { margin: 1.0cm 1.6cm 0.7cm 1.6cm; }
+        @page { margin: 0.8cm 1.6cm 0.5cm 1.6cm; }
         body { margin:0; font-family: Helvetica, Arial, sans-serif; font-size: 9.0pt; line-height: 1.05; color:#000; }
         p { margin: 0; }
         .form-ref { text-align:right; font-size: 8.5pt; line-height: 1.2; }
-        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 8pt; margin-bottom: 6pt; }
+        .title { text-align:center; font-weight:bold; text-decoration:underline; margin-top: 5pt; margin-bottom: 4pt; }
         .party-title { font-weight:bold; margin-top: 4pt; margin-bottom: 1pt; }
         table.data { width:100%; border-collapse:collapse; margin-top: 1pt; }
         table.data td { padding: 0.55pt 0; vertical-align:top; }
@@ -25,12 +25,12 @@
         td.lbl { width: 165pt; }
         td.sep { width: 12pt; }
         td.val { padding-left: 3pt; height: 9pt; }
-        p.gap-top { margin-top: 5pt; }
-        .signature-heading { text-align:left; margin-top: 7pt; margin-left: 60%; }
+        p.gap-top { margin-top: 3pt; }
+        .signature-heading { text-align:left; margin-top: 5pt; margin-left: 60%; }
         table.sig-cols { width:100%; border-collapse:collapse; margin-top: 2pt; }
         table.sig-cols td { width:50%; vertical-align:top; }
         table.sig-cols td.sig-right { padding-left: 50pt; }
-        .sig-space { height: 20pt; }
+        .sig-space { height: 50pt; }
     </style>
 </head>
 <body>
@@ -107,8 +107,8 @@
             <td class="sig-right"><div class="sig-space">&nbsp;</div></td>
         </tr>
         <tr>
-            <td>{{ $father['full_name_alias'] ?? '' }}</td>
-            <td class="sig-right">{{ $mother['full_name_alias'] ?? '' }}</td>
+            <td><b>{{ $father['full_name_alias'] ?? '' }}</b></td>
+            <td class="sig-right"><b>{{ $mother['full_name_alias'] ?? '' }}</b></td>
         </tr>
     </table>
 

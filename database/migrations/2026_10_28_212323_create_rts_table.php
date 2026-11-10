@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Region;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -25,6 +27,31 @@ return new class extends Migration
         Schema::table('citizens', function (Blueprint $table) {
             $table->foreign('rt_id')->references('id')->on('rts')->nullOnDelete();
         });
+
+        // Sinkronkan citizens.rt_id untuk data yang sudah ada berdasarkan nama padukuhan (address) dan nomor RT.
+        if (Schema::hasTable('regions') && Schema::hasTable('rws') && Schema::hasTable('rts') && Schema::hasTable('citizens')) {
+            $regions = Region::with(['rws.rts'])->get();
+
+            foreach ($regions as $region) {
+                $rtMap = [];
+                foreach ($region->rws as $rw) {
+                    foreach ($rw->rts as $rt) {
+                        $num = (int) $rt->number;
+                        if (!isset($rtMap[$num])) {
+                            $rtMap[$num] = $rt->id;
+                        }
+                    }
+                }
+
+                foreach ($rtMap as $rtNum => $rtId) {
+                    DB::table('citizens')
+                        ->whereNull('rt_id')
+                        ->whereRaw('LOWER(TRIM(address)) = ?', [mb_strtolower(trim($region->name))])
+                        ->whereRaw('CAST(rt AS UNSIGNED) = ?', [$rtNum])
+                        ->update(['rt_id' => $rtId]);
+                }
+            }
+        }
     }
 
     public function down(): void
