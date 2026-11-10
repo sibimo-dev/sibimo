@@ -27,6 +27,7 @@ class CitizenController extends Controller
         $perPage = (int) $request->query('per_page', 10);
         $perPage = min(max($perPage, 1), 100);
         $search = trim((string) $request->query('search', ''));
+        $familyCardNumber = trim((string) $request->query('family_card_number', ''));
 
         // Endpoint ini dipakai oleh tabel/pagination admin. Gunakan join
         // ringan untuk wilayah dan jangan memuat relasi keluarga/accessor
@@ -62,6 +63,9 @@ class CitizenController extends Controller
             ->leftJoin('rws as rw_area', 'rw_area.id', '=', 'rt_area.rw_id')
             ->leftJoin('regions as region_area', 'region_area.region_id', '=', 'rw_area.region_id')
             ->select($selects)
+            ->when($familyCardNumber !== '', function ($query) use ($familyCardNumber): void {
+                $query->where('citizens.family_card_number', $familyCardNumber);
+            })
             ->when($search !== '', function ($query) use ($search): void {
                 $like = '%' . $search . '%';
                 $query->where(function ($nested) use ($like): void {
@@ -774,59 +778,98 @@ class CitizenController extends Controller
                 ->get();
         }
 
-        // Jika relasi father belum terhubung via father_national_id, cari dari nama ayah di dalam KK
-        if (!$citizen->father && !empty($citizen->father_name) && $familyMembers->isNotEmpty()) {
+        $myRel = mb_strtolower(trim((string) $citizen->family_relationship));
+        $isChild = str_contains($myRel, 'anak') || str_contains($myRel, 'cucu') || str_contains($myRel, 'famili');
+        $marital = mb_strtolower(trim((string) $citizen->marital_status));
+        $isUnmarried = $marital === 'belum kawin' || $marital === 'belum menikah' || str_contains($marital, 'belum');
+
+        // 1. Relasi father
+        $matchedFather = null;
+        if (!empty($citizen->father_national_id)) {
+            $matchedFather = Citizen::where('national_id', $citizen->father_national_id)->first();
+        }
+        if (!$matchedFather && !empty($citizen->father_name) && $familyMembers->isNotEmpty()) {
             $matchedFather = $familyMembers->first(function ($c) use ($citizen) {
-                return $c->gender === 'Laki-laki' &&
-                    (strcasecmp(trim($c->full_name), trim($citizen->father_name)) === 0 ||
-                     stripos($c->family_relationship ?? '', 'Kepala') !== false);
-            });
-            if (!$matchedFather && !empty($citizen->father_national_id)) {
-                $matchedFather = Citizen::where('national_id', $citizen->father_national_id)->first();
-            }
-            if ($matchedFather) {
-                $citizen->setRelation('father', $matchedFather);
-            }
-        }
-
-        // Jika relasi mother belum terhubung via mother_national_id, cari dari nama ibu di dalam KK
-        if (!$citizen->mother && !empty($citizen->mother_name) && $familyMembers->isNotEmpty()) {
-            $matchedMother = $familyMembers->first(function ($c) use ($citizen) {
-                return $c->gender === 'Perempuan' &&
-                    (strcasecmp(trim($c->full_name), trim($citizen->mother_name)) === 0 ||
-                     stripos($c->family_relationship ?? '', 'Istri') !== false);
-            });
-            if (!$matchedMother && !empty($citizen->mother_national_id)) {
-                $matchedMother = Citizen::where('national_id', $citizen->mother_national_id)->first();
-            }
-            if ($matchedMother) {
-                $citizen->setRelation('mother', $matchedMother);
-            }
-        }
-
-        // Jika relasi spouse belum terhubung via spouse_national_id
-        if (!$citizen->spouse && $familyMembers->isNotEmpty()) {
-            $oppositeGender = $citizen->gender === 'Laki-laki' ? 'Perempuan' : 'Laki-laki';
-            $matchedSpouse = $familyMembers->first(function ($c) use ($oppositeGender, $citizen) {
                 return $c->citizen_id !== $citizen->citizen_id &&
-                    $c->gender === $oppositeGender &&
-                    (stripos($c->family_relationship ?? '', 'Istri') !== false ||
-                     stripos($c->family_relationship ?? '', 'Suami') !== false ||
-                     stripos($c->family_relationship ?? '', 'Kepala') !== false);
+                    $c->gender === 'Laki-laki' &&
+                    strcasecmp(trim($c->full_name), trim($citizen->father_name)) === 0;
             });
-            if ($matchedSpouse) {
-                $citizen->setRelation('spouse', $matchedSpouse);
+            // Fallback kepala keluarga hanya bila warga adalah anak dalam KK
+            if (!$matchedFather && $isChild) {
+                $matchedFather = $familyMembers->first(function ($c) use ($citizen) {
+                    return $c->citizen_id !== $citizen->citizen_id &&
+                        $c->gender === 'Laki-laki' &&
+                        (stripos($c->family_relationship ?? '', 'Kepala') !== false ||
+                         stripos($c->family_relationship ?? '', 'Suami') !== false);
+                });
             }
         }
+        // 2. Relasi mother
+        $matchedMother = null;
+        if (!empty($citizen->mother_national_id)) {
+            $matchedMother = Citizen::where('national_id', $citizen->mother_national_id)->first();
+        }
+        if (!$matchedMother && !empty($citizen->mother_name) && $familyMembers->isNotEmpty()) {
+            $matchedMother = $familyMembers->first(function ($c) use ($citizen) {
+                return $c->citizen_id !== $citizen->citizen_id &&
+                    $c->gender === 'Perempuan' &&
+                    strcasecmp(trim($c->full_name), trim($citizen->mother_name)) === 0;
+            });
+            // Fallback istri hanya bila warga adalah anak dalam KK
+            if (!$matchedMother && $isChild) {
+                $matchedMother = $familyMembers->first(function ($c) use ($citizen) {
+                    return $c->citizen_id !== $citizen->citizen_id &&
+                        $c->gender === 'Perempuan' &&
+                        stripos($c->family_relationship ?? '', 'Istri') !== false;
+                });
+            }
+        }
+        // 3. Relasi spouse
+        $matchedSpouse = null;
+        if (!empty($citizen->spouse_national_id)) {
+            $matchedSpouse = Citizen::where('national_id', $citizen->spouse_national_id)->first();
+        }
+        // Hanya infer jika status perkawinan bukan belum kawin/menikah, dan posisinya di KK
+        // memang Kepala Keluarga atau Istri (bukan Anak, Cucu, dll).
+        if (!$matchedSpouse && !$isUnmarried && !$isChild && $familyMembers->isNotEmpty()) {
+            $oppositeGender = $citizen->gender === 'Laki-laki' ? 'Perempuan' : 'Laki-laki';
+            $targetRelation = (str_contains($myRel, 'kepala') || str_contains($myRel, 'suami')) ? 'istri' : 'kepala';
 
+            $matchedSpouse = $familyMembers->first(function ($c) use ($oppositeGender, $targetRelation, $citizen, $matchedFather, $matchedMother) {
+                if ($c->citizen_id === $citizen->citizen_id) return false;
+                if ($c->gender !== $oppositeGender) return false;
+                if ($matchedMother && $c->citizen_id === $matchedMother->citizen_id) return false;
+                if ($matchedFather && $c->citizen_id === $matchedFather->citizen_id) return false;
+                if ($citizen->mother_national_id && $c->national_id === $citizen->mother_national_id) return false;
+                if ($citizen->father_national_id && $c->national_id === $citizen->father_national_id) return false;
+                if ($citizen->mother_name && strcasecmp(trim($c->full_name), trim($citizen->mother_name)) === 0) return false;
+                if ($citizen->father_name && strcasecmp(trim($c->full_name), trim($citizen->father_name)) === 0) return false;
+
+                $rel = mb_strtolower(trim((string) $c->family_relationship));
+                if ($targetRelation === 'istri') {
+                    return str_contains($rel, 'istri');
+                } else {
+                    return str_contains($rel, 'kepala') || str_contains($rel, 'suami');
+                }
+            });
+        }
         $data = $this->appendAreaData($citizen);
-        if ($citizen->relationLoaded('father') && $citizen->father) {
+
+        // Directly assign matched relations to $data to bypass setRelation/toArray issues
+        // when eager-loaded relation was NULL (e.g. spouse_national_id is empty).
+        if ($matchedFather) {
+            $data['father'] = $this->appendAreaData($matchedFather);
+        } elseif ($citizen->relationLoaded('father') && $citizen->father) {
             $data['father'] = $this->appendAreaData($citizen->father);
         }
-        if ($citizen->relationLoaded('mother') && $citizen->mother) {
+        if ($matchedMother) {
+            $data['mother'] = $this->appendAreaData($matchedMother);
+        } elseif ($citizen->relationLoaded('mother') && $citizen->mother) {
             $data['mother'] = $this->appendAreaData($citizen->mother);
         }
-        if ($citizen->relationLoaded('spouse') && $citizen->spouse) {
+        if ($matchedSpouse) {
+            $data['spouse'] = $this->appendAreaData($matchedSpouse);
+        } elseif ($citizen->relationLoaded('spouse') && $citizen->spouse) {
             $data['spouse'] = $this->appendAreaData($citizen->spouse);
         }
         if ($familyMembers->isNotEmpty()) {
