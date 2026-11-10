@@ -40,10 +40,24 @@
 <body>
 
 @php
-    $maritalStatus = trim($applicant['marital_status'] ?? '');
+    $rawStatus = trim($applicant['marital_status'] ?? '');
+    $statusMap = [
+        'belum kawin' => 'Jejaka',
+        'perjaka' => 'Jejaka',
+        'jejaka' => 'Jejaka',
+        'duda' => 'Duda',
+        'janda' => 'Duda',
+        'cerai hidup' => 'Duda',
+        'cerai mati' => 'Duda',
+        'kawin' => 'Beristri',
+        'kawin tercatat' => 'Beristri',
+        'kawin belum tercatat' => 'Beristri',
+        'beristri' => 'Beristri',
+    ];
+    $maritalStatus = $statusMap[strtolower($rawStatus)] ?? $rawStatus;
     $genderLower   = strtolower(trim($applicant['gender'] ?? ''));
     $isFemale      = str_starts_with($genderLower, 'p')
-                     || in_array(strtolower($maritalStatus), ['perawan', 'janda']);
+                     || in_array(strtolower($rawStatus), ['perawan', 'janda']);
     $isMale        = !$isFemale && $maritalStatus !== '';
     $previousSpouseLabel = $isFemale ? 'Nama suami terdahulu' : 'Nama istri terdahulu';
 @endphp
