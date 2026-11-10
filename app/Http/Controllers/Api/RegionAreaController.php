@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Citizen;
 use App\Models\Region;
 use App\Models\Rt;
 use App\Models\Rw;
@@ -37,6 +38,20 @@ class RegionAreaController extends Controller
         $rwHeads = $assignments->where('position', 'Ketua RW')->whereNotNull('rw_id')->keyBy('rw_id');
         $rtHeads = $assignments->where('position', 'Ketua RT')->whereNotNull('rt_id')->keyBy('rt_id');
 
+        // Statistik kependudukan per RT dari data warga aktif
+        $rtStats = Citizen::query()
+            ->whereRaw("UPPER(citizens.record_type) = 'PENDUDUK'")
+            ->where('citizens.status', 'Active')
+            ->whereNotNull('citizens.rt_id')
+            ->selectRaw("citizens.rt_id,
+                COUNT(*) AS population,
+                SUM(CASE WHEN citizens.gender = 'Laki-laki' THEN 1 ELSE 0 END) AS male_count,
+                SUM(CASE WHEN citizens.gender = 'Perempuan' THEN 1 ELSE 0 END) AS female_count,
+                COUNT(DISTINCT NULLIF(citizens.family_card_number, '')) AS kk_count")
+            ->groupBy('citizens.rt_id')
+            ->get()
+            ->keyBy('rt_id');
+
         // Biodata + riwayat ketua, dipakai popup detail di halaman publik.
         $detail = fn (?StaffAssignment $a) => $a ? [
             'photo' => $a->person->photo,
@@ -52,20 +67,37 @@ class RegionAreaController extends Controller
             'dusun' => $region->name,
             'head' => $dukuhHeads->get($region->region_id)?->person?->name ?? $region->head_name,
             'head_staff_id' => $region->head_staff_id,
-            'rws' => $region->rws->map(fn (Rw $rw) => [
-                'id' => $rw->id,
-                'rw' => $rw->number,
-                'head_name' => $rwHeads->get($rw->id)?->person?->name ?? $rw->head_name,
-                'head' => $detail($rwHeads->get($rw->id)),
-                ...($isAdmin ? ['head_phone' => $rw->head_phone] : []),
-                'rts' => $rw->rts->map(fn (Rt $rt) => [
-                    'id' => $rt->id,
-                    'rt' => $rt->number,
-                    'head_name' => $rtHeads->get($rt->id)?->person?->name ?? $rt->head_name,
-                    'head' => $detail($rtHeads->get($rt->id)),
-                    ...($isAdmin ? ['head_phone' => $rt->head_phone] : []),
-                ])->values(),
-            ])->values(),
+            'rws' => $region->rws->map(function (Rw $rw) use ($rwHeads, $rtHeads, $detail, $isAdmin, $rtStats) {
+                $rts = $rw->rts->map(function (Rt $rt) use ($rtHeads, $detail, $isAdmin, $rtStats) {
+                    $s = $rtStats->get($rt->id);
+
+                    return [
+                        'id' => $rt->id,
+                        'rt' => $rt->number,
+                        'head_name' => $rtHeads->get($rt->id)?->person?->name ?? $rt->head_name,
+                        'head' => $detail($rtHeads->get($rt->id)),
+                        ...($isAdmin ? ['head_phone' => $rt->head_phone] : []),
+                        'kk_count' => (int) ($s?->kk_count ?? 0),
+                        'male_count' => (int) ($s?->male_count ?? 0),
+                        'female_count' => (int) ($s?->female_count ?? 0),
+                        'population' => (int) ($s?->population ?? 0),
+                    ];
+                })->values();
+
+                return [
+                    'id' => $rw->id,
+                    'rw' => $rw->number,
+                    'head_name' => $rwHeads->get($rw->id)?->person?->name ?? $rw->head_name,
+                    'head' => $detail($rwHeads->get($rw->id)),
+                    ...($isAdmin ? ['head_phone' => $rw->head_phone] : []),
+                    'rt_count' => $rts->count(),
+                    'kk_count' => (int) $rts->sum('kk_count'),
+                    'male_count' => (int) $rts->sum('male_count'),
+                    'female_count' => (int) $rts->sum('female_count'),
+                    'population' => (int) $rts->sum('population'),
+                    'rts' => $rts,
+                ];
+            })->values(),
         ])->values();
 
         return response()->json([

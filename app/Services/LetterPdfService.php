@@ -468,7 +468,9 @@ class LetterPdfService
                 'nik' => $letterRequest->applicant_nik,
                 'kk_number' => $form['kk_number'] ?? $citizen?->kk_number,
                 'gender' => $form['gender'] ?? $citizen?->gender,
-                'marital_status' => $form['marital_status'] ?? $citizen?->marital_status,
+                'marital_status' => in_array($templateSlug, ['marriage-introduction-letter', 'n1'], true)
+                    ? $this->normalizeN1Status($form['marital_status'] ?? $citizen?->marital_status, $templateSlug === 'n1' ? 'N1P' : 'N1L')
+                    : ($form['marital_status'] ?? $citizen?->marital_status),
                 'religion' => $form['religion'] ?? $citizen?->religion,
                 'occupation' => $form['occupation'] ?? $citizen?->occupation,
                 'education' => $form['education'] ?? $citizen?->education,
@@ -1745,6 +1747,7 @@ class LetterPdfService
         $marriageCodes = [
             'PNP', 'N2P', 'PNL', 'N1P', 'N4P', 'N5P', 'N6P',
             'SKWNP', 'SKWHP', 'SPTKP', 'SPBMLP', 'SKNNP', 'N1L', 'N4L',
+            'PNK',
             // Kode katalog baru untuk surat nikah individual. Template-nya
             // tetap memakai struktur marriedLetterData yang sama.
             'SPCCP', 'SKKMP', 'SKUMN', 'SPNIK', 'SPNIP', 'SKTNB',
@@ -1869,6 +1872,24 @@ class LetterPdfService
                 }
             }
 
+            if (in_array($code, ['PNP', 'N6P'], true)) {
+                foreach ([
+                    'ex_husband_name' => ['bride_prev_name'],
+                    'ex_husband_nik' => ['bride_prev_nik'],
+                    'ex_husband_bin' => ['bride_prev_bin'],
+                    'ex_husband_birth_place' => ['bride_prev_birth_place'],
+                    'ex_husband_birth_date' => ['bride_prev_birth_date'],
+                    'ex_husband_citizenship' => ['bride_prev_nationality'],
+                    'ex_husband_religion' => ['bride_prev_religion'],
+                    'ex_husband_occupation' => ['bride_prev_occupation'],
+                    'ex_husband_address' => ['bride_prev_address'],
+                    'ex_husband_died_at' => ['bride_prev_death_date'],
+                    'ex_husband_died_place' => ['bride_prev_death_place'],
+                ] as $canonical => $sources) {
+                    $set($form, $canonical, $sources);
+                }
+            }
+
             $set($form, 'akad_day', ['hari_akad']);
             $set($form, 'akad_date', ['tanggal_akad']);
             $set($form, 'akad_time', ['jam_akad']);
@@ -1928,7 +1949,7 @@ class LetterPdfService
                 $form['bride_status'] = $form['marital_status'];
             }
 
-            if ($code === 'N1L') {
+            if (in_array($code, ['N1L', 'PNK'], true)) {
                 $set($form, 'groom_gender', ['jenis_kelamin']);
                 $set($form, 'groom_birth_place', ['tempat_lahir']);
                 $set($form, 'groom_birth_date', ['tanggal_lahir']);
@@ -1962,13 +1983,16 @@ class LetterPdfService
                 $set($form, 'mother_occupation', ['pekerjaan_ibu']);
                 $set($form, 'mother_address', ['alamat_ibu']);
 
-                // N1L adalah varian untuk calon pengantin laki-laki. Kode
+                // N1L / PNK adalah varian untuk calon pengantin laki-laki. Kode
                 // surat menjadi sumber kebenaran agar data seed lama yang
                 // kebetulan memilih opsi gender perempuan tidak membuat
                 // baris status tampil pada bagian yang salah.
                 $form['gender'] = 'Laki-laki';
                 $form['groom_gender'] = 'Laki-laki';
-                $form['marital_status'] = $this->normalizeN1Status($form['marital_status'] ?? null, 'N1L');
+                $form['marital_status'] = $this->normalizeN1Status(
+                    $form['groom_status'] ?? $form['marital_status'] ?? null,
+                    'N1L',
+                );
                 $form['groom_status'] = $form['marital_status'];
             }
 
@@ -2002,6 +2026,11 @@ class LetterPdfService
                 $set($form, 'mother_religion', ['agama_ibu']);
                 $set($form, 'mother_occupation', ['pekerjaan_ibu']);
                 $set($form, 'mother_address', ['alamat_ibu']);
+                $form['marital_status'] = $this->normalizeN1Status(
+                    $form['groom_status'] ?? $form['marital_status'] ?? null,
+                    'N1L',
+                );
+                $form['groom_status'] = $form['marital_status'];
             }
 
             // N6 adalah varian surat kematian dalam folder template nikah.
@@ -2768,8 +2797,8 @@ class LetterPdfService
                 'perawan' => 'Perawan',
                 'duda' => 'Janda',
                 'janda' => 'Janda',
-                'cerai hidup' => 'Cerai Hidup',
-                'cerai mati' => 'Cerai Mati',
+                'cerai hidup' => 'Janda',
+                'cerai mati' => 'Janda',
             ]
             : [
                 'belum kawin' => 'Jejaka',
@@ -2777,11 +2806,13 @@ class LetterPdfService
                 'jejaka' => 'Jejaka',
                 'duda' => 'Duda',
                 'janda' => 'Duda',
-                'cerai hidup' => 'Cerai Hidup',
-                'cerai mati' => 'Cerai Mati',
+                'cerai hidup' => 'Duda',
+                'cerai mati' => 'Duda',
                 'beristri' => 'Beristri',
                 'beristri lagi' => 'Beristri',
                 'kawin' => 'Beristri',
+                'kawin tercatat' => 'Beristri',
+                'kawin belum tercatat' => 'Beristri',
             ];
 
         return $statusMap[strtolower($status)] ?? $status;
@@ -3281,13 +3312,24 @@ class LetterPdfService
         $date  = $f('birth_date') ?? $form["{$prefix}BirthDate"] ?? null;
         $raw   = $f('birth') ?? $form["{$prefix}Birth"] ?? $form["ttl_{$prefix}"] ?? null;
 
+        $hasIdentity = in_array($prefix, ['bride', 'groom', 'bride_father', 'bride_mother'], true)
+            || filled($f('name'))
+            || filled($f('nik'))
+            || filled($form["{$prefix}Name"] ?? null)
+            || filled($form["{$prefix}Nik"] ?? null)
+            || filled($f('citizenship'))
+            || filled($f('nationality'))
+            || filled($form["{$prefix}Nationality"] ?? null);
+
+        $citizenship = $f('citizenship') ?? $f('nationality') ?? $form["{$prefix}Nationality"] ?? ($hasIdentity ? 'WNI' : null);
+
         return [
             'name'        => $f('name') ?? $form["{$prefix}Name"] ?? null,
             'bin'         => $f('bin') ?? $f('binti') ?? $form["{$prefix}Bin"] ?? $form["{$prefix}Binti"] ?? null,
             'nik'         => $f('nik') ?? $form["{$prefix}Nik"] ?? null,
             'gender'      => $f('gender') ?? $form["{$prefix}Gender"] ?? null,
             'birth'       => $this->birthLong($place, $date) ?: $raw,
-            'citizenship' => $f('citizenship') ?? $f('nationality') ?? $form["{$prefix}Nationality"] ?? 'WNI',
+            'citizenship' => $citizenship,
             'religion'    => $f('religion') ?? $form["{$prefix}Religion"] ?? null,
             'occupation'  => $f('occupation') ?? $form["{$prefix}Occupation"] ?? null,
             'education'   => $f('education') ?? $form["{$prefix}Education"] ?? null,
@@ -3401,34 +3443,36 @@ class LetterPdfService
             'officer_name' => $form['registration_officer_name'] ?? null,
         ];
 
+        $hasGroomPrev = filled($form['groom_previous_spouse_name'] ?? null);
         $groom = $this->personBlock($form, 'groom', 'bin', [
             'status' => $form['groom_status'] ?? null,
             'last_education' => $form['groom_last_education'] ?? $form['groom_education'] ?? null,
             'previous_spouse_name' => $form['groom_previous_spouse_name'] ?? null,
-            'previous_spouse_parent_name' => $form['groom_previous_spouse_parent_name'] ?? null,
-            'previous_spouse_bin' => $form['groom_previous_spouse_bin'] ?? null,
-            'previous_spouse_nik' => $form['groom_previous_spouse_nik'] ?? null,
-            'previous_spouse_birth_place_date' => $this->birth(
+            'previous_spouse_parent_name' => $hasGroomPrev ? ($form['groom_previous_spouse_parent_name'] ?? null) : null,
+            'previous_spouse_bin' => $hasGroomPrev ? ($form['groom_previous_spouse_bin'] ?? null) : null,
+            'previous_spouse_nik' => $hasGroomPrev ? ($form['groom_previous_spouse_nik'] ?? null) : null,
+            'previous_spouse_birth_place_date' => $hasGroomPrev ? $this->birth(
                 $form['groom_previous_spouse_birth_place'] ?? null,
                 $form['groom_previous_spouse_birth_date'] ?? null,
-            ),
-            'previous_spouse_nationality' => $form['groom_previous_spouse_nationality'] ?? null,
-            'previous_spouse_religion' => $form['groom_previous_spouse_religion'] ?? null,
-            'previous_spouse_occupation' => $form['groom_previous_spouse_occupation'] ?? null,
-            'previous_spouse_address' => $form['groom_previous_spouse_address'] ?? null,
-            'previous_spouse_death_date' => $this->longDate($form['groom_previous_spouse_death_date'] ?? null),
-            'previous_spouse_death_place' => $form['groom_previous_spouse_death_place'] ?? null,
+            ) : null,
+            'previous_spouse_nationality' => $hasGroomPrev ? ($form['groom_previous_spouse_nationality'] ?? 'WNI') : null,
+            'previous_spouse_religion' => $hasGroomPrev ? ($form['groom_previous_spouse_religion'] ?? null) : null,
+            'previous_spouse_occupation' => $hasGroomPrev ? ($form['groom_previous_spouse_occupation'] ?? null) : null,
+            'previous_spouse_address' => $hasGroomPrev ? ($form['groom_previous_spouse_address'] ?? null) : null,
+            'previous_spouse_death_date' => $hasGroomPrev ? $this->longDate($form['groom_previous_spouse_death_date'] ?? null) : null,
+            'previous_spouse_death_place' => $hasGroomPrev ? ($form['groom_previous_spouse_death_place'] ?? null) : null,
         ]);
         $groom['name'] = $groom['full_name_alias'];
 
+        $hasBridePrev = filled($form['bride_previous_spouse_name'] ?? null);
         $bride = $this->personBlock($form, 'bride', 'binti', [
             'status' => $form['bride_status'] ?? null,
             'last_education' => $form['bride_last_education'] ?? $form['bride_education'] ?? null,
             'previous_spouse_name' => $form['bride_previous_spouse_name'] ?? null,
-            'previous_spouse_bin' => $form['bride_previous_spouse_bin'] ?? null,
-            'previous_spouse_nik' => $form['bride_previous_spouse_nik'] ?? null,
-            'previous_spouse_death_date' => $this->longDate($form['bride_previous_spouse_death_date'] ?? null),
-            'previous_spouse_death_place' => $form['bride_previous_spouse_death_place'] ?? null,
+            'previous_spouse_bin' => $hasBridePrev ? ($form['bride_previous_spouse_bin'] ?? null) : null,
+            'previous_spouse_nik' => $hasBridePrev ? ($form['bride_previous_spouse_nik'] ?? null) : null,
+            'previous_spouse_death_date' => $hasBridePrev ? $this->longDate($form['bride_previous_spouse_death_date'] ?? null) : null,
+            'previous_spouse_death_place' => $hasBridePrev ? ($form['bride_previous_spouse_death_place'] ?? null) : null,
         ]);
         $bride['name'] = $bride['full_name_alias'];
 
