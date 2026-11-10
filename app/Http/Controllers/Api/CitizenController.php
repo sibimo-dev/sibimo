@@ -57,7 +57,7 @@ class CitizenController extends Controller
         $selects[] = 'region_area.name as area_dusun';
         $selects[] = 'region_area.head_name as hamlet_head_name';
 
-        $paginator = DB::table('citizens')
+        $query = DB::table('citizens')
             ->leftJoin('rts as rt_area', 'rt_area.id', '=', 'citizens.rt_id')
             ->leftJoin('rws as rw_area', 'rw_area.id', '=', 'rt_area.rw_id')
             ->leftJoin('regions as region_area', 'region_area.region_id', '=', 'rw_area.region_id')
@@ -76,21 +76,44 @@ class CitizenController extends Controller
                         ->orWhere('region_area.name', 'like', $like);
                 });
             })
-            ->orderByDesc('citizens.citizen_id')
-            ->paginate($perPage);
+            ->orderByDesc('citizens.citizen_id');
+
+        $mapRow = function (object $row): array {
+            $data = (array) $row;
+            $data['rt'] = $data['rt'] ?? $data['area_rt_number'];
+            $data['rw'] = $data['area_rw_number'];
+            $data['dusun'] = $data['area_dusun'];
+            $data['rt_head_name'] = $data['rt_head_name'];
+            $data['rw_head_name'] = $data['rw_head_name'];
+            $data['hamlet_head_name'] = $data['hamlet_head_name'];
+            unset($data['area_rt_number'], $data['area_rw_number'], $data['area_dusun']);
+            return $data;
+        };
+
+        $isAll = $request->boolean('all') || $request->query('per_page') === 'all';
+
+        if ($isAll) {
+            $collection = $query->get();
+            $citizens = $collection->map($mapRow)->values();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Seluruh data citizen berhasil diambil.',
+                'data' => $citizens,
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $citizens->count(),
+                    'total' => $citizens->count(),
+                    'active_total' => DB::table('citizens')->where('status', 'Active')->count(),
+                ],
+            ]);
+        }
+
+        $paginator = $query->paginate($perPage);
 
         $citizens = $paginator->getCollection()
-            ->map(function (object $row): array {
-                $data = (array) $row;
-                $data['rt'] = $data['rt'] ?? $data['area_rt_number'];
-                $data['rw'] = $data['area_rw_number'];
-                $data['dusun'] = $data['area_dusun'];
-                $data['rt_head_name'] = $data['rt_head_name'];
-                $data['rw_head_name'] = $data['rw_head_name'];
-                $data['hamlet_head_name'] = $data['hamlet_head_name'];
-                unset($data['area_rt_number'], $data['area_rw_number'], $data['area_dusun']);
-                return $data;
-            })
+            ->map($mapRow)
             ->values();
 
         return response()->json([
