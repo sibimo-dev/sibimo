@@ -26,8 +26,71 @@
     $members = collect($form['members'] ?? [])->values();
     $totalRows = 8;
 
-    $f = fn ($key) => $form[$key] ?? '';
-    $m = fn ($i, $key) => $members->get($i)[$key] ?? '';
+    $memberAliases = [
+        'name' => ['name', 'full_name', 'nama', 'nama_lengkap'],
+        'nik' => ['nik', 'national_id', 'no_ktp'],
+        'previous_address' => ['previous_address', 'previousAddress', 'alamat_sebelumnya'],
+        'passport_number' => ['passport_number', 'passportNumber', 'no_paspor'],
+        'passport_expiry' => ['passport_expiry', 'passportExpiry', 'passport_expiry_date', 'tgl_berakhir_paspor'],
+        'gender' => ['gender', 'jenis_kelamin'],
+        'birth_place' => ['birth_place', 'birthPlace', 'tempat_lahir'],
+        'birth_date' => ['birth_date', 'birthDate', 'tanggal_lahir'],
+        'birth_cert' => ['birth_cert', 'birthCertStatus', 'birth_cert_status', 'akta_lahir'],
+        'birth_cert_number' => ['birth_cert_number', 'birthCertNumber', 'no_akta_lahir'],
+        'blood_type' => ['blood_type', 'bloodType', 'golongan_darah'],
+        'religion' => ['religion', 'agama'],
+        'marital_status' => ['marital_status', 'maritalStatus', 'status_perkawinan'],
+        'marriage_cert' => ['marriage_cert', 'marriageCertStatus', 'marriage_cert_status', 'akta_kawin', 'akta_nikah'],
+        'marriage_cert_number' => ['marriage_cert_number', 'marriageCertNumber', 'no_akta_nikah'],
+        'marriage_date' => ['marriage_date', 'marriageDate', 'tanggal_perkawinan', 'tanggal_nikah'],
+        'divorce_cert' => ['divorce_cert', 'divorceCertStatus', 'divorce_cert_status', 'akta_cerai'],
+        'divorce_cert_number' => ['divorce_cert_number', 'divorceCertNumber', 'no_akta_cerai'],
+        'divorce_date' => ['divorce_date', 'divorceDate', 'tanggal_perceraian'],
+        'family_status' => ['family_status', 'shdk', 'family_relationship', 'hubungan_keluarga'],
+        'disability_mental' => ['disability_mental', 'disorder', 'kelainan_fisik', 'disability_status'],
+        'disability_type' => ['disability_type', 'disability', 'penyandang_cacat'],
+        'education' => ['education', 'pendidikan', 'pendidikan_terakhir'],
+        'occupation' => ['occupation', 'pekerjaan'],
+        'mother_nik' => ['mother_nik', 'motherNik', 'nik_ibu'],
+        'mother_name' => ['mother_name', 'motherName', 'nama_ibu'],
+        'father_nik' => ['father_nik', 'fatherNik', 'nik_ayah'],
+        'father_name' => ['father_name', 'fatherName', 'nama_ayah'],
+    ];
+
+    $formAliases = [
+        'head_name' => ['head_name', 'headName', 'name', 'applicant_name'],
+        'address' => ['address', 'alamat', 'applicant_address'],
+        'postal_code' => ['postal_code', 'postalCode', 'kode_pos'],
+        'rt' => ['rt', 'rt_number'],
+        'rw' => ['rw', 'rw_number'],
+        'member_count' => ['member_count', 'memberCount'],
+        'phone' => ['phone', 'telepon', 'whatsapp', 'applicant_phone'],
+        'hamlet' => ['hamlet', 'dusun', 'padukuhan'],
+        'hamlet_code' => ['hamlet_code', 'hamletCode'],
+        'kk_number' => ['kk_number', 'kkNumber', 'familyCardNumber', 'nomor_kk', 'no_kk'],
+    ];
+
+    $f = function ($key) use ($form, $formAliases) {
+        $keys = $formAliases[$key] ?? [$key, \Illuminate\Support\Str::camel($key), \Illuminate\Support\Str::snake($key)];
+        foreach ($keys as $k) {
+            if (isset($form[$k]) && $form[$k] !== '') {
+                return $form[$k];
+            }
+        }
+        return '';
+    };
+
+    $m = function ($i, $key) use ($members, $memberAliases) {
+        $row = $members->get($i);
+        if (!is_array($row)) return '';
+        $keys = $memberAliases[$key] ?? [$key, \Illuminate\Support\Str::camel($key), \Illuminate\Support\Str::snake($key)];
+        foreach ($keys as $k) {
+            if (isset($row[$k]) && $row[$k] !== '') {
+                return $row[$k];
+            }
+        }
+        return '';
+    };
 
     // Bagian "Diisi Oleh Petugas": Provinsi, Kab, Kecamatan, Desa terisi DEFAULT
     // (Kalurahan Bimomartani, Ngemplak, Sleman, DIY). Kalau $form membawa
@@ -59,7 +122,14 @@
     $memberCount = $f('member_count') !== '' ? $f('member_count') : ($members->count() ?: '');
 
     // Kotak tunggal di dalam sel (kolom berkode: jenis kelamin, agama, dst.).
-    $box = fn ($v) => new \Illuminate\Support\HtmlString('<div class="box">' . e($v) . '</div>');
+    $box = function ($v) {
+        $val = trim((string) $v);
+        if ($val === '') return new \Illuminate\Support\HtmlString('<div class="box"></div>');
+        if (preg_match('/^(\d+)/', $val, $match)) {
+            $val = $match[1];
+        }
+        return new \Illuminate\Support\HtmlString('<div class="box">' . e($val) . '</div>');
+    };
 
     // Kotak digit tunggal (satu digit per kotak) untuk kode wilayah.
     $cells = function ($value, $n) {
