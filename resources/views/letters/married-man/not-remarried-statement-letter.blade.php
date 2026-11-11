@@ -32,9 +32,8 @@
 
         table.footer { width:100%; border-collapse:collapse; margin-top: 20pt; }
         table.footer td { width:50%; vertical-align:top; }
-        .footer-right { text-align:right; }
+        table.footer td.footer-right { text-align: left; padding-left: 55pt; }
         .footer-space { height: 50pt; }
-        .center-signer { width:71%; vertical-align:top; }
     </style>
 </head>
 <body>
@@ -73,8 +72,8 @@
                 <div>KAMITUWA</div>
             </td>
             <td class="footer-right">
-                <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
-                <div class="center-signer">Yang Menyatakan</div>
+                <div>{{ $signature['city'] ?? 'Bimomartani' }}, {{ $signature['date_long'] ?? '' }}</div>
+                <div>Yang Menyatakan</div>
             </td>
         </tr>
         <tr>

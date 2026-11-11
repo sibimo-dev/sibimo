@@ -8,7 +8,8 @@
         <td class="sign-r" style="text-align:left; padding-left:50pt; padding-right:0">{{ $rightTitle ?? mb_strtoupper($signer['position']) }}</td>
     </tr>
     <tr>
-        <td colspan="2" class="sign-space">
+        <td class="sign-space">&nbsp;</td>
+        <td class="sign-space" style="text-align:left; padding-left:50pt;">
             @include('letters.partials.signature-image')
         </td>
     </tr>

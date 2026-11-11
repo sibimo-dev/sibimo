@@ -17,12 +17,10 @@
         td.sep { width: 12pt; }
         td.val { padding-left: 3pt; height: 13pt; }
         p.gap-top { margin-top: 10pt; }
-        .signature-heading {text-align: right; margin-top: 16pt;}
-        table.sig-cols { width: 100%; border-collapse: collapse; margin-top: 4pt;}
-        table.sig-cols td { width: 50%; vertical-align: top;}
-        table.sig-cols tr:first-child td:nth-child(2) { text-indent: 90pt;}
-        table.sig-cols tr:last-child td:nth-child(2) { text-indent: 90pt;}
-        .sig-space { height: 40pt;}
+        table.sig-cols { width: 100%; border-collapse: collapse; margin-top: 16pt; page-break-inside: avoid; }
+        table.sig-cols td { width: 50%; vertical-align: top; }
+        table.sig-cols td.sig-right { padding-left: 60pt; text-align: left; }
+        .sig-space { height: 40pt; }
     </style>
 </head>
 <body>
@@ -68,20 +66,22 @@
     </p>
     <p class="gap-top">Demikian surat persetujuan ini dibuat untuk digunakan seperlunya.</p>
 
-    <div class="signature-heading">{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
-
     <table class="sig-cols">
         <tr>
+            <td>&nbsp;</td>
+            <td class="sig-right">{{ $signature['city'] ?? 'Bimomartani' }}, {{ $signature['date_long'] ?? '' }}</td>
+        </tr>
+        <tr>
             <td>Calon Suami</td>
-            <td>Calon Istri</td>
+            <td class="sig-right">Calon Istri</td>
         </tr>
         <tr>
             <td><div class="sig-space">&nbsp;</div></td>
-            <td><div class="sig-space">&nbsp;</div></td>
+            <td class="sig-right"><div class="sig-space">&nbsp;</div></td>
         </tr>
         <tr>
             <td>{{ $groom['full_name_alias'] ?? '' }}</td>
-            <td>{{ $bride['full_name_alias'] ?? '' }}</td>
+            <td class="sig-right">{{ $bride['full_name_alias'] ?? '' }}</td>
         </tr>
     </table>
 
