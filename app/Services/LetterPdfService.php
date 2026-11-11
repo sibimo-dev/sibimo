@@ -401,6 +401,14 @@ class LetterPdfService
             } elseif (blank($form['village_head_name'] ?? null) && $this->signedByLurah($signerPosition)) {
                 $form['village_head_name'] = $signer?->name;
             }
+
+            // Normalisasi data kepala keluarga dan nomor KK untuk template F-1.01
+            $form['kk_number'] ??= $form['kkNumber'] ?? $form['familyCardNumber'] ?? $form['nomor_kk'] ?? null;
+            $form['head_name'] ??= $form['headName'] ?? $form['name'] ?? $letterRequest->applicant_name;
+            $form['postal_code'] ??= $form['postalCode'] ?? null;
+            $form['member_count'] ??= $form['memberCount'] ?? null;
+            $form['hamlet'] ??= $form['dusun'] ?? null;
+            $form['hamlet_code'] ??= $form['hamletCode'] ?? null;
         }
 
         $isLurah = $this->signedByLurah($signerPosition);
@@ -3249,7 +3257,11 @@ class LetterPdfService
         }
 
         return [
-            'letter_number' => $form['letter_number'] ?? $number,
+            'letter_number'       => $form['letter_number'] ?? $number,
+            'registration_number' => $form['registration_number'] ?? $form['registrationNumber'] ?? null,
+            'registration_date'   => isset($form['registration_date']) || isset($form['registrationDate'])
+                ? $this->longDate($form['registration_date'] ?? $form['registrationDate'])
+                : null,
             'akad' => [
                 'day'   => $form['akad_day']
                     ?? (isset($form['akad_date'])

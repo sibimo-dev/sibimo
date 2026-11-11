@@ -33,7 +33,7 @@
         table.footer { width:100%; border-collapse:collapse; margin-top: 20pt; }
         table.footer td { width:50%; vertical-align:top; }
         .footer-right { text-align:right; }
-        .footer-space { height: 34pt; }
+        .footer-space { height: 50pt; }
         .center-signer { width:71%; vertical-align:top; }
     </style>
 </head>

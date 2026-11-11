@@ -142,7 +142,7 @@
     <div class="signature-block">
         <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
         <div>{{ $signature['position'] ?? 'Kamituwa' }}</div>
-        <div style="height: 22pt;">
+        <div style="height: 55pt;">
             @include('letters.partials.signature-image')
         </div>
         <div>{{ $signature['name'] ?? '' }}</div>
