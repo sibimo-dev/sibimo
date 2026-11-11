@@ -33,8 +33,11 @@
         td.val { padding-left: 3pt; height: 9pt; }
         tr.status-row td.lbl { width: auto; }
         p.gap-top { margin-top: 5pt; }
-        .signature-block { margin-top: 8pt; margin-left: 62%; }
-        .signature-block div { line-height: 12pt; }
+        table.ttd { width: 100%; border-collapse: collapse; margin-top: 8pt; page-break-inside: avoid; }
+        table.ttd td { padding: 0; vertical-align: top; }
+        table.ttd td.ttd-spacer { width: 58%; }
+        table.ttd td.ttd-content { width: 42%; text-align: left; line-height: 12pt; }
+        .ttd-space { height: 42pt; }
     </style>
 </head>
 <body>
@@ -139,14 +142,22 @@
         sebagaimana mestinya.
     </p>
 
-    <div class="signature-block">
-        <div>{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
-        <div>{{ $signature['position'] ?? 'Kamituwa' }}</div>
-        <div style="height: 55pt;">
-            @include('letters.partials.signature-image')
-        </div>
-        <div>{{ $signature['name'] ?? '' }}</div>
-    </div>
+    <table class="ttd">
+        <tr>
+            <td class="ttd-spacer"></td>
+            <td class="ttd-content">
+                <div>{{ $signature['city'] ?? 'Bimomartani' }}, {{ $signature['date_long'] ?? '' }}</div>
+                @foreach (($signature['prefix'] ?? []) as $line)
+                    <div>{{ $line }}</div>
+                @endforeach
+                <div>{{ $signature['position'] ?? 'Kamituwa' }}</div>
+                <div class="ttd-space">
+                    @include('letters.partials.signature-image')
+                </div>
+                <div>{{ $signature['name'] ?? '' }}</div>
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>

@@ -25,9 +25,8 @@
 
         table.footer { width:100%; border-collapse:collapse; margin-top: 20pt; }
         table.footer td { width:50%; vertical-align:top; }
-        .footer-right { text-align:right; }
-        .footer-space { height: 44pt; }
-        .sign-line { width: 170pt; height: 14pt; border-bottom: 1px dotted #000; }
+        table.footer td.footer-right { text-align: left; padding-left: 60pt; }
+        .footer-space { height: 30pt; }
     </style>
 </head>
 <body>

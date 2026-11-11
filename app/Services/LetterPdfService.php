@@ -1078,6 +1078,17 @@ class LetterPdfService
             $data = $this->fillEmptyData($this->sampleViewData($templateSlug), $data);
         }
 
+        // Jika surat ditandatangani langsung oleh Lurah, jangan tampilkan rantai
+        // "a.n LURAH BIMOMARTANI / Carik / u.b.". Prefix harus selalu kosong.
+        if (
+            $this->signedByLurah($signerPosition)
+            || $this->signedByLurah($data['signature']['position'] ?? null)
+            || $this->signedByLurah($signer?->position ?? null)
+        ) {
+            $data['signature']['prefix'] = [];
+            $data['signature']['position'] = self::SIGNATURE_LURAH_TITLE;
+        }
+
         return $data;
     }
 
@@ -1150,6 +1161,11 @@ class LetterPdfService
     private function fillEmptyData(array $defaults, array $data): array
     {
         foreach ($defaults as $key => $default) {
+            // Field 'prefix' sengaja dibiarkan [] bila ditandatangani Lurah langsung; jangan ditimpa default sample.
+            if ($key === 'prefix' && array_key_exists('prefix', $data) && is_array($data['prefix'])) {
+                continue;
+            }
+
             if (! array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '' || $data[$key] === []) {
                 $data[$key] = $default;
                 continue;
@@ -4170,7 +4186,7 @@ class LetterPdfService
                 'witnesses' => [null, null],
             ],
 
-            'unmarried-status-letter' => [
+            'unmarried-status-letter', 'never-married-certificate-letter' => [
                 'signer' => ['position' => 'Lurah'],
             ],
 
