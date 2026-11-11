@@ -25,7 +25,7 @@
 
         table.footer { width:100%; border-collapse:collapse; margin-top: 20pt; }
         table.footer td { width:50%; vertical-align:top; }
-        .footer-right { text-align:right; }
+        table.footer td.footer-right { text-align: left; padding-left: 60pt; }
         .footer-space { height: 30pt; }
     </style>
 </head>

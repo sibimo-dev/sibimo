@@ -42,7 +42,12 @@ class LetterType extends Model
     // isi attribute 'documents_count' -- accessor ini tinggal alias-in ke nama
     // yang dipakai frontend ('document_count', tanpa 's'). Kalau belum di-load
     // pakai withCount, fallback ke query count() manual (lebih lambat).
-    protected $appends = ['document_count'];
+    protected $appends = ['document_count', 'name'];
+
+    public function getNameAttribute(): ?string
+    {
+        return $this->letter_name;
+    }
 
     public function getDocumentCountAttribute()
     {

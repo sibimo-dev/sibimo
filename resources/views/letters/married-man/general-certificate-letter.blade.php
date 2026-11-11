@@ -379,7 +379,7 @@
         <tr>
             <td></td>
             <td class="signature-right">
-                {{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}
+                {{ $signature['city'] ?? 'Bimomartani' }}, {{ $signature['date_long'] ?? '' }}
             </td>
         </tr>
 
@@ -394,14 +394,14 @@
         </tr>
 
         <tr>
-            <td>
+            <td class="signature-left">
+                <div class="signature-space">&nbsp;</div>
+            </td>
+
+            <td class="signature-right">
                 <div class="signature-space">
                     @include('letters.partials.signature-image')
                 </div>
-            </td>
-
-            <td>
-                <div class="signature-space">&nbsp;</div>
             </td>
         </tr>
 

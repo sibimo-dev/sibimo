@@ -26,11 +26,10 @@
         td.sep { width: 12pt; }
         td.val { padding-left: 3pt; height: 9pt; }
         p.gap-top { margin-top: 3pt; }
-        .signature-heading { text-align:left; margin-top: 5pt; margin-left: 60%; }
-        table.sig-cols { width:100%; border-collapse:collapse; margin-top: 2pt; }
+        table.sig-cols { width:100%; border-collapse:collapse; margin-top: 6pt; page-break-inside: avoid; }
         table.sig-cols td { width:50%; vertical-align:top; }
-        table.sig-cols td.sig-right { padding-left: 50pt; }
-        .sig-space { height: 50pt; }
+        table.sig-cols td.sig-right { padding-left: 50pt; text-align: left; }
+        .sig-space { height: 45pt; }
     </style>
 </head>
 <body>
@@ -95,9 +94,11 @@
         digunakan seperlunya.
     </p>
 
-    <div class="signature-heading">{{ $signature['city'] ?? '' }}, {{ $signature['date_long'] ?? '' }}</div>
-
     <table class="sig-cols">
+        <tr>
+            <td>&nbsp;</td>
+            <td class="sig-right">{{ $signature['city'] ?? 'Bimomartani' }}, {{ $signature['date_long'] ?? '' }}</td>
+        </tr>
         <tr>
             <td>Ayah/Wali/Pengampu</td>
             <td class="sig-right">Ibu/Wali/Pengampu</td>
