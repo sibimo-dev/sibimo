@@ -8,7 +8,7 @@
       2. $region -> dari LetterPdfService (kode berupa array digit)
       3. DEFAULT -> Kalurahan Bimomartani, Ngemplak, Sleman, DIY
 
-    Dusun & Nomor KK TIDAK punya default: murni isian petugas.
+    Dusun: nama dari form (hamlet / originHamlet / origin.hamlet), kode dari hamletCode / hamlet_code (opsional, tanpa default).
 --}}
 @php
     $rgForm   = $form ?? [];
@@ -20,6 +20,16 @@
         'district' => ['code' => '11',  'name' => 'NGEMPLAK'],
         'village'  => ['code' => '020', 'name' => 'BIMOMARTANI'],
     ];
+
+    // Nilai pertama yang TERISI (string kosong / spasi dilewati, bukan menghentikan pencarian seperti operator ??)
+    $rgFirst = function (array $candidates) {
+        foreach ($candidates as $v) {
+            if (is_array($v)) { continue; }
+            $v = trim((string) $v);
+            if ($v !== '') { return $v; }
+        }
+        return '';
+    };
 
     // Kode -> array digit (terima string "34" maupun array ['3','4']).
     $rgDigits = function (string $k) use ($rgForm, $rgRegion, $rgDefault) {
@@ -46,10 +56,20 @@
         'village'  => 'DESA / KELURAHAN',
     ];
 
-    // Dusun: isian petugas. Key bisa 'hamlet' (surat datang) atau originHamlet (surat pindah).
-    $rgHamlet = $hamletValue
-        ?? ($rgForm['hamlet'] ?? null)
-        ?: ($rgForm['originHamlet'] ?? $rgForm['origin_hamlet'] ?? ($rgForm['origin']['hamlet'] ?? ''));
+    // Dusun: key 'hamlet' (surat datang) atau originHamlet / origin_hamlet / origin.hamlet (surat pindah).
+    $rgHamlet = $rgFirst([
+        $hamletValue ?? null,
+        $rgForm['hamlet'] ?? null,
+        $rgForm['originHamlet'] ?? null,
+        $rgForm['origin_hamlet'] ?? null,
+        $rgForm['origin']['hamlet'] ?? null,
+    ]);
+    // Kode dusun (isian petugas) -> hanya angka; kosong = baris dusun tanpa kotak kode
+    $rgHamletCode = preg_replace('/\D/', '', $rgFirst([
+        $rgForm['hamlet_code'] ?? null,
+        $rgForm['hamletCode'] ?? null,
+        $rgForm['origin']['hamlet_code'] ?? null,
+    ]));
 @endphp
 <table class="wgrid">
     @foreach ($rgRows as $rgKey => $rgLabel)
@@ -70,7 +90,18 @@
     <tr>
         <td class="wg-label">DUSUN/DUKUH/KAMPUNG</td>
         <td class="wg-sep">:</td>
-        <td colspan="2" class="wg-val">{{ $rgHamlet }}</td>
+        @if ($rgHamletCode !== '')
+            <td>
+                <table class="wg-kode"><tr>
+                    @foreach (str_split($rgHamletCode) as $d)
+                        <td>{{ $d }}</td>
+                    @endforeach
+                </tr></table>
+            </td>
+            <td class="wg-val">{{ $rgHamlet }}</td>
+        @else
+            <td colspan="2" class="wg-val">{{ $rgHamlet }}</td>
+        @endif
     </tr>
     @endif
 </table>

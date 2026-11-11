@@ -123,7 +123,9 @@
             </td>
         </tr>
         <tr>
-            <td>&nbsp;</td>
+            <td>
+                <div class="sign-line">&nbsp;</div>
+            </td>
             <td class="footer-right">{{ $applicant_name ?? '' }}</td>
         </tr>
     </table>
