@@ -56,7 +56,7 @@
         td.sign-l, td.sign-r { width: 50%; vertical-align: top; }
         td.sign-l { text-align: left; }
         td.sign-r { text-align: center; }
-        td.sign-space { height: 28pt; }
+        td.sign-space { height: 50pt; }
         .blank { display: inline-block; min-width: 120pt; border-bottom: 1px solid #000; }
 
         @stack('styles')
