@@ -25,10 +25,22 @@ return new class extends Migration {
             $table->index('status');
             $table->index('published_at');
         });
+
+        Schema::create('service_hours', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedTinyInteger('day_of_week'); // 1=Senin ... 7=Minggu
+            $table->boolean('is_closed')->default(false);
+            $table->time('open_time')->nullable();
+            $table->time('close_time')->nullable();
+            $table->timestamps();
+
+            $table->unique('day_of_week');
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('service_hours');
         Schema::dropIfExists('news');
     }
 };

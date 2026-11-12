@@ -27,6 +27,7 @@
         table.footer td { width:50%; vertical-align:top; }
         table.footer td.footer-right { text-align: left; padding-left: 60pt; }
         .footer-space { height: 30pt; }
+        .sign-line { width: 170pt; height: 14pt; border-bottom: 1px dotted #000; }
     </style>
 </head>
 <body>
@@ -124,7 +125,13 @@
         </tr>
         <tr>
             <td>
-                <div class="sign-line">&nbsp;</div>
+                @if(!empty($form['kua_head_name']))
+                    <div style="width: 170pt; border-bottom: 1px dotted #000; padding-bottom: 2pt;">
+                        {{ $form['kua_head_name'] }}
+                    </div>
+                @else
+                    <div class="sign-line">&nbsp;</div>
+                @endif
             </td>
             <td class="footer-right">{{ $applicant_name ?? '' }}</td>
         </tr>
