@@ -47,7 +47,7 @@ Dengan hormat kami mengajukan permohonan kehendak nikah untuk atas nama :</p>
     </tr>
     <tr><td colspan="2" class="sign-space">&nbsp;</td></tr>
     <tr>
-        <td class="sign-l"><span class="blank">&nbsp;</span></td>
+        <td class="sign-l"><span class="blank" style="border-bottom: 1px dotted #000;">{!! !empty($form['kua_head_name']) ? e($form['kua_head_name']) : '&nbsp;' !!}</span></td>
         <td class="sign-r">{{ mb_strtoupper($m['bride']['name'] ?? '') }}</td>
     </tr>
 </table>

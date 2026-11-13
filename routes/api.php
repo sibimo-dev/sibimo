@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\RegionAreaController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ServiceHourController;
 use App\Http\Controllers\Api\SignerController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\SurveyController;
@@ -122,6 +123,8 @@ Route::get('/village-potentials/{potential_id}', [VillagePotentialController::cl
 Route::get('/village-potential-categories', [VillagePotentialCategoryController::class, 'index']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{service_id}', [ServiceController::class, 'show']);
+// Jam pelayanan — publik (GET) dan admin (PUT)
+Route::get('/service-hours', [ServiceHourController::class, 'index']);
 Route::get('/developments', [DevelopmentController::class, 'index']);
 Route::get('/developments/{development_id}', [DevelopmentController::class, 'show']);
 Route::get('/legal-products', [LegalProductController::class, 'index']);
@@ -318,6 +321,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('permission:layanan-desa')->group(function () {
         Route::apiResource('services', ServiceController::class)
             ->parameters(['services' => 'service_id'])->except(['index', 'show']);
+    });
+
+    Route::middleware('permission:layanan-desa|berita')->group(function () {
+        Route::put('service-hours', [ServiceHourController::class, 'update']);
     });
 
     Route::middleware('permission:potensi-kalurahan')->group(function () {
