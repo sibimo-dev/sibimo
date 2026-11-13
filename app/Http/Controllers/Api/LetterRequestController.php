@@ -43,6 +43,7 @@ class LetterRequestController extends Controller
             'submitted_at',
             'verified_at',
             'authorized_at',
+            'form_data',
         ])
         ->with([
             'letterType:letter_type_id,letter_name,category,blade_view,signer_id',
