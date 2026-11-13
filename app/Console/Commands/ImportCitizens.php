@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Citizen;
+use App\Models\Region;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Console\Command;
@@ -127,6 +128,11 @@ class ImportCitizens extends Command
             if ($payload === null) {
                 continue;
             }
+
+            // Ubah Dusun + RW + RT menjadi relasi canonical rt_id sebelum
+            // data dimasukkan. Data lama tetap menyimpan nomor RT sebagai
+            // fallback teks, tetapi relasi wilayah menjadi sumber utama.
+            $payload = $this->resolveAreaRelations($payload);
 
             $nik = $payload['national_id'];
             if (isset($seenNik[$nik])) {
@@ -471,5 +477,59 @@ class ImportCitizens extends Command
     private function isEmptyRow(array $values): bool
     {
         return count(array_filter($values, static fn ($value): bool => trim((string) $value) !== '')) === 0;
+    }
+
+    /**
+     * Resolve wilayah dari kolom teks pada CSV. Jika kombinasi wilayah tidak
+     * ditemukan, data tetap boleh masuk tanpa rt_id agar import tidak salah
+     * menghubungkan warga ke RT yang keliru.
+     */
+    private function resolveAreaRelations(array $data): array
+    {
+        $normalizeName = static fn ($value): string => mb_strtolower(trim((string) $value), 'UTF-8');
+        $normalizeNumber = static fn ($value): string => preg_replace('/^0+/', '', trim((string) $value)) ?: '0';
+
+        $regionName = trim((string) ($data['dusun'] ?? ''));
+        if ($regionName === '' && trim((string) ($data['address'] ?? '')) !== '') {
+            $regionName = trim((string) $data['address']);
+        }
+
+        $region = $regionName === ''
+            ? null
+            : Region::query()
+                ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizeName($regionName)])
+                ->with('rws.rts')
+                ->first();
+
+        if (! $region) {
+            return $data;
+        }
+
+        $data['padukuhan_id'] = $region->region_id;
+        $data['dusun'] = $region->name;
+
+        $rwNumber = trim((string) ($data['rw'] ?? ''));
+        $rtNumber = trim((string) ($data['rt'] ?? ''));
+        $rw = $rwNumber === ''
+            ? null
+            : $region->rws->first(fn ($item) => $normalizeNumber($item->number) === $normalizeNumber($rwNumber));
+
+        if (! $rw) {
+            return $data;
+        }
+
+        $data['rw_id'] = $rw->id;
+        $data['rw'] = $rw->number;
+
+        $rt = $rtNumber === ''
+            ? null
+            : $rw->rts->first(fn ($item) => $normalizeNumber($item->number) === $normalizeNumber($rtNumber));
+
+        if ($rt) {
+            $data['rt_id'] = $rt->id;
+            $data['rt'] = $rt->number;
+        }
+
+        return $data;
     }
 }
