@@ -44,7 +44,10 @@ class VillagePotentialController extends Controller
             'location' => ['nullable','string','max:255'],
             'contact' => ['nullable','string','max:255'],
             'extra_info' => ['nullable','array'],
+            'status' => ['nullable', Rule::in(['Draft', 'Published', 'Archived'])],
         ]);
+
+        $validated['status'] = $validated['status'] ?? 'Draft';
     
         $validated['slug'] = \Illuminate\Support\Str::slug($validated['title']) . '-' . \Illuminate\Support\Str::random(5);
     
@@ -96,6 +99,7 @@ class VillagePotentialController extends Controller
             'location' => ['nullable','string','max:255'],
             'contact' => ['nullable','string','max:255'],
             'extra_info' => ['nullable','array'],
+            'status' => ['sometimes', Rule::in(['Draft', 'Published', 'Archived'])],
         ]);
     
         if (isset($validated['image'])) $validated['image'] = Storage::disk('public')->url($validated['image']->store('village-potentials', 'public'));

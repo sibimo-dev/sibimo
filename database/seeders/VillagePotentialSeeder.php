@@ -87,6 +87,7 @@ class VillagePotentialSeeder extends Seeder
                     'location' => $item['location'],
                     'contact' => $item['contact'],
                     'extra_info' => json_encode($item['extra_info']),
+                    'status' => 'Published',
                     'created_at' => now(),
                 ]
             );

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('location', 255)->nullable();
             $table->string('contact', 255)->nullable();
             $table->json('extra_info')->nullable();
+            $table->enum('status', ['Draft', 'Published', 'Archived'])->default('Draft');
             $table->timestamp('created_at')->nullable();
 
             $table->index('category');

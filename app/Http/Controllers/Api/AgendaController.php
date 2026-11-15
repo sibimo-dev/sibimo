@@ -31,8 +31,11 @@ class AgendaController extends Controller
             'start_time' => ['nullable','date_format:H:i'],
             'end_time' => ['nullable','date_format:H:i'],
             'location' => ['nullable','string','max:255'],
-            'attendee' => ['nullable', 'string', 'max:255']
+            'attendee' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['Draft', 'Published', 'Archived'])],
         ]);
+
+        $validated['status'] = $validated['status'] ?? 'Draft';
 
         $validated['created_by'] = $request->user()->user_id;
 
@@ -67,7 +70,8 @@ class AgendaController extends Controller
             'start_time' => ['nullable','date_format:H:i'],
             'end_time' => ['nullable','date_format:H:i'],
             'location' => ['nullable','string','max:255'],
-            'attendee' => ['nullable', 'string', 'max:255']
+            'attendee' => ['nullable', 'string', 'max:255'],
+            'status' => ['sometimes', Rule::in(['Draft', 'Published', 'Archived'])],
         ]);
 
         $agenda->update($validated);
