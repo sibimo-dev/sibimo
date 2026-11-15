@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
     'end_time',
     'location',
     'attendee',
+    'status',
     'created_by',
 ])]
 class Agenda extends Model
