@@ -58,6 +58,9 @@ class DevelopmentController extends Controller
         return [
             'name' => $required(['required', 'string', 'max:255']), 'address' => ['nullable', 'string', 'max:255'],
             'category' => $required(['required', Rule::exists('development_categories', 'slug')]),            
+            'status' => $partial
+                ? ['sometimes', 'nullable', Rule::in(self::STATUSES)]
+                : ['nullable', Rule::in(self::STATUSES)],
             'funding_source' => ['nullable', 'string', 'max:100'], 'budget' => ['nullable', 'numeric', 'min:0'],
             'volume' => ['nullable', 'numeric', 'min:0'], 'volume_unit' => ['nullable', 'string', 'max:20'],
             'executor' => ['nullable', 'string', 'max:100'], 'year' => $required(['required', 'integer', 'between:1945,2100']),
