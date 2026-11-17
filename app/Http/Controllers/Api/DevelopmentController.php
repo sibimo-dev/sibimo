@@ -17,7 +17,6 @@ class DevelopmentController extends Controller
 
     public function index(): JsonResponse
     {
-        $items = Development::query()->latest('created_at')->get()->map(fn (Development $item) => $this->present($item));
         $items = Development::query()->with('categoryRelation')->latest('created_at')->get()->map(fn (Development $item) => $this->present($item));
 
         return response()->json(['success' => true, 'message' => 'Data pembangunan berhasil diambil.', 'data' => $items]);
