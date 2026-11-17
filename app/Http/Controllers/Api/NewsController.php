@@ -26,6 +26,26 @@ class NewsController extends Controller
         ]);
     }
 
+    /**
+     * Ambil satu berita publik berdasarkan slug.
+     * Endpoint ini menghindari pengambilan seluruh daftar berita saat halaman
+     * detail dibuka, sekaligus memastikan draft/arsip tidak bocor ke publik.
+     */
+    public function showBySlug(string $slug): JsonResponse
+    {
+        $news = News::query()
+            ->with(['category', 'author'])
+            ->where('slug', $slug)
+            ->whereRaw('LOWER(status) = ?', ['published'])
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail berita berhasil diambil.',
+            'data'    => $news,
+        ]);
+    }
+
 
     public function store(Request $request): JsonResponse
     {
