@@ -136,6 +136,7 @@ Route::get('/galleries', [GalleryController::class, 'index']);
 Route::get('/galleries/{gallery_id}', [GalleryController::class, 'show']);
 Route::get('gallery-categories', [GalleryCategoryController::class, 'index']);
 Route::get('/news', [NewsController::class, 'index']);
+Route::get('/news/slug/{slug}', [NewsController::class, 'showBySlug']);
 Route::get('/news/{news_id}', [NewsController::class, 'show']);
 Route::get('/news-categories', [NewsCategoryController::class, 'index']);
 Route::get('/histories', [HistoryController::class, 'index']);

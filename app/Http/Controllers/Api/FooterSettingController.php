@@ -69,11 +69,15 @@ class FooterSettingController extends Controller
             'email' => ['nullable', 'email', 'max:150'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
             'stamp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'remove_logo' => ['nullable', 'boolean'],
+            'remove_stamp' => ['nullable', 'boolean'],
         ]);
 
         $oldLogo = $setting->logo;
         $oldStamp = $setting->stamp;
-        $attributes = collect($validated)->except(['logo', 'stamp'])->all();
+        $removeLogo = $request->boolean('remove_logo') && !$request->hasFile('logo');
+        $removeStamp = $request->boolean('remove_stamp') && !$request->hasFile('stamp');
+        $attributes = collect($validated)->except(['logo', 'stamp', 'remove_logo', 'remove_stamp'])->all();
 
         if ($request->hasFile('logo')) {
             $attributes['logo'] = Storage::disk('public')->url(
@@ -87,12 +91,19 @@ class FooterSettingController extends Controller
             );
         }
 
+        if ($removeLogo) {
+            $attributes['logo'] = null;
+        }
+        if ($removeStamp) {
+            $attributes['stamp'] = null;
+        }
+
         $setting->fill($attributes)->save();
 
-        if ($request->hasFile('logo')) {
+        if ($request->hasFile('logo') || $removeLogo) {
             $this->deleteStoredFile($oldLogo);
         }
-        if ($request->hasFile('stamp')) {
+        if ($request->hasFile('stamp') || $removeStamp) {
             $this->deleteStoredFile($oldStamp);
         }
 
