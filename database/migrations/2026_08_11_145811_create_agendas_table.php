@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->time('end_time')->nullable();
             $table->string('location', 255)->nullable();
             $table->string('attendee', 255)->nullable();
+            $table->string('attachment_path', 255)->nullable();
             $table->enum('status', ['Draft', 'Published', 'Archived'])->default('Draft');
             $table->foreignId('created_by')->constrained('users', 'user_id');
             $table->timestamp('created_at')->nullable();
