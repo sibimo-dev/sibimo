@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
     'end_time',
     'location',
     'attendee',
+    'attachment_path',
     'status',
     'created_by',
 ])]
