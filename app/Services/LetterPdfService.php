@@ -344,10 +344,27 @@ class LetterPdfService
         // Relasi authorizedSigner memakai scope khusus signer; fallback langsung
         // ke Staff diperlukan untuk data lama/konfigurasi yang menyimpan pejabat
         // sah pada tabel staff tetapi belum memiliki flag is_signer yang sama.
-        $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        // $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        // if (! $signer && filled($letterRequest->authorized_by_signer_id)) {
+        //     $signer = Staff::query()->find($letterRequest->authorized_by_signer_id);
+        // }
+        // if (! $signer && filled($letterRequest->letterType?->signer_id)) {
+        //     $signer = Staff::query()->find($letterRequest->letterType->signer_id);
+        // }
+
+        $signer = $letterRequest->authorizedSigner;
+        
+        // Prioritaskan pejabat yang benar-benar melakukan otorisasi.
         if (! $signer && filled($letterRequest->authorized_by_signer_id)) {
             $signer = Staff::query()->find($letterRequest->authorized_by_signer_id);
         }
+        
+        // Jika tidak ditemukan, gunakan signer bawaan jenis surat.
+        if (! $signer) {
+            $signer = $letterRequest->letterType?->signer;
+        }
+        
+        // Fallback terakhir berdasarkan signer_id.
         if (! $signer && filled($letterRequest->letterType?->signer_id)) {
             $signer = Staff::query()->find($letterRequest->letterType->signer_id);
         }
