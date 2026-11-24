@@ -3136,44 +3136,91 @@ class LetterPdfService
         return $this->imageBase64($pathOrUrl);
     }
 
+
     private function imageBase64(?string $pathOrUrl): ?string
     {
         if (blank($pathOrUrl)) {
             return null;
         }
 
-        // Kalau sudah berupa data-URI, langsung kembalikan.
+        // Jika sudah berupa data URI, langsung kembalikan.
         if (str_starts_with($pathOrUrl, 'data:')) {
             return $pathOrUrl;
         }
 
-        // Bersihkan query string / fragment.
-        $clean = strtok($pathOrUrl, '?#');
+        $path = $pathOrUrl;
 
-        // Ubah URL relatif ke path absolut di public/.
-        if (str_starts_with($clean, '/')) {
-            $absPath = public_path(ltrim($clean, '/'));
-        } elseif (preg_match('#^https?://#', $clean)) {
-            // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
-            // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
-            $parsed  = parse_url($clean);
-            $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+        // Jika berupa URL, ambil path setelah /storage/.
+        if (preg_match('#^https?://#i', $path)) {
+            $urlPath = parse_url($path, PHP_URL_PATH);
+
+            if (! $urlPath || ! str_starts_with($urlPath, '/storage/')) {
+                return null;
+            }
+
+            $path = substr($urlPath, strlen('/storage/'));
         } else {
-            $absPath = $clean;
+            $path = ltrim($path, '/');
+
+            if (str_starts_with($path, 'storage/')) {
+                $path = substr($path, strlen('storage/'));
+            }
         }
 
-        if (! is_file($absPath) || ! is_readable($absPath)) {
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+
+        if (! $disk->exists($path)) {
             return null;
         }
 
-        $mime = mime_content_type($absPath) ?: 'image/png';
+        $content = $disk->get($path);
+        $mime = $disk->mimeType($path) ?: 'image/png';
 
         if (! str_starts_with($mime, 'image/')) {
             return null;
         }
 
-        return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+        return "data:{$mime};base64," . base64_encode($content);
     }
+
+    // private function imageBase64(?string $pathOrUrl): ?string
+    // {
+    //     if (blank($pathOrUrl)) {
+    //         return null;
+    //     }
+
+    //     // Kalau sudah berupa data-URI, langsung kembalikan.
+    //     if (str_starts_with($pathOrUrl, 'data:')) {
+    //         return $pathOrUrl;
+    //     }
+
+    //     // Bersihkan query string / fragment.
+    //     $clean = strtok($pathOrUrl, '?#');
+
+    //     // Ubah URL relatif ke path absolut di public/.
+    //     if (str_starts_with($clean, '/')) {
+    //         $absPath = public_path(ltrim($clean, '/'));
+    //     } elseif (preg_match('#^https?://#', $clean)) {
+    //         // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
+    //         // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
+    //         $parsed  = parse_url($clean);
+    //         $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+    //     } else {
+    //         $absPath = $clean;
+    //     }
+
+    //     if (! is_file($absPath) || ! is_readable($absPath)) {
+    //         return null;
+    //     }
+
+    //     $mime = mime_content_type($absPath) ?: 'image/png';
+
+    //     if (! str_starts_with($mime, 'image/')) {
+    //         return null;
+    //     }
+
+    //     return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+    // }
 
     /**
      * Gambar tanda tangan digital hanya boleh dirender bila surat sudah
