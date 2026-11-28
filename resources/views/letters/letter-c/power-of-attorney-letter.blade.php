@@ -162,7 +162,7 @@
         </tr>
         <tr>
             <td style="text-align: center; padding-top: 8pt;">
-                <div style="height: 42pt;">
+                <div style="height: 72pt;">
                     @include('letters.partials.signature-image')
                 </div>
                 ({{ $fill($endorser['name'], 25) }})

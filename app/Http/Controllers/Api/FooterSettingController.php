@@ -7,6 +7,11 @@ use App\Models\FooterSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Color;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Laravel\Facades\Image;
 
 class FooterSettingController extends Controller
 {
@@ -68,7 +73,7 @@ class FooterSettingController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:150'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
-            'stamp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'stamp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'remove_logo' => ['nullable', 'boolean'],
             'remove_stamp' => ['nullable', 'boolean'],
         ]);
@@ -86,9 +91,10 @@ class FooterSettingController extends Controller
         }
 
         if ($request->hasFile('stamp')) {
-            $attributes['stamp'] = Storage::disk('public')->url(
-                $request->file('stamp')->store('footer', 'public'),
-            );
+            $png = $this->normalizeStamp($request->file('stamp'));
+            $path = 'footer/stamp_' . Str::uuid() . '.png';
+            Storage::disk('public')->put($path, $png);
+            $attributes['stamp'] = Storage::disk('public')->url($path);
         }
 
         if ($removeLogo) {
@@ -124,6 +130,60 @@ class FooterSettingController extends Controller
         }
 
         $request->merge(['social_media' => $decoded]);
+    }
+
+    private function normalizeStamp(\Illuminate\Http\UploadedFile $file): string
+    {
+        try {
+            $image = Image::decode($file)
+                ->contain(600, 600, Color::transparent())
+                ->encode(new PngEncoder());
+            $bitmap = imagecreatefromstring((string) $image);
+
+            if ($bitmap === false) {
+                throw new \RuntimeException('Gambar tidak bisa dibaca GD.');
+            }
+
+            imagealphablending($bitmap, false);
+            imagesavealpha($bitmap, true);
+
+            $width = imagesx($bitmap);
+            $height = imagesy($bitmap);
+
+            for ($y = 0; $y < $height; $y++) {
+                for ($x = 0; $x < $width; $x++) {
+                    $rgba = imagecolorsforindex($bitmap, imagecolorat($bitmap, $x, $y));
+                    $whiteLevel = min($rgba['red'], $rgba['green'], $rgba['blue']);
+
+                    // Transparankan kertas putih/abu muda dan lunakkan tepi antialias.
+                    $backgroundAlpha = $whiteLevel >= 242
+                        ? 127
+                        : ($whiteLevel > 215 ? (int) round(($whiteLevel - 215) * (127 / 27)) : 0);
+                    $alpha = max($rgba['alpha'], $backgroundAlpha);
+                    $color = (($alpha & 0x7f) << 24)
+                        | (($rgba['red'] & 0xff) << 16)
+                        | (($rgba['green'] & 0xff) << 8)
+                        | ($rgba['blue'] & 0xff);
+
+                    imagesetpixel($bitmap, $x, $y, $color);
+                }
+            }
+
+            ob_start();
+            imagepng($bitmap);
+            $png = ob_get_clean();
+            imagedestroy($bitmap);
+
+            if (! is_string($png) || $png === '') {
+                throw new \RuntimeException('PNG hasil normalisasi kosong.');
+            }
+
+            return $png;
+        } catch (\Throwable $exception) {
+            throw ValidationException::withMessages([
+                'stamp' => 'Stempel tidak dapat diproses. Unggah gambar PNG, JPG, atau WEBP yang valid.',
+            ]);
+        }
     }
 
     private function deleteStoredFile(?string $url): void

@@ -19,7 +19,7 @@
     .sub-heading { margin-top: 2pt; }
     .judul-form { margin-top: 1pt; font-size: 9.5pt; }
     .subjudul-form { font-size: 8pt; }
-    .ttd-left .ttd-space { height: 16pt; }
+    .ttd-left .ttd-space { height: 72pt; }
     table.kop-dukcapil { width: 100%; border-collapse: collapse; }
     table.kop-dukcapil td { padding: 0; vertical-align: middle; }
     table.kop-dukcapil td.kop-logo { width: 62pt; }
@@ -41,7 +41,7 @@
     .opsi-box { height: 11pt; }
     .sub-heading { margin-top: 2pt; font-size: 9pt; }
     .judul-form { margin-top: 2pt; font-size: 10.5pt; }
-    .ttd-left .ttd-space { height: 26pt; }
+    .ttd-left .ttd-space { height: 72pt; }
     table.ttd-left { width: 100%; border-collapse: collapse; margin-top: 2pt; }
     table.ttd-left td { font-size: 9.5pt; vertical-align: top; padding: 0; }
 @endsection

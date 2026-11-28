@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
     'letter_type_id',
     'status',
     'signature_type',
+    'with_stamp',
     'letter_number',
     'verified_by',
     'authorized_by_signer_id',
@@ -43,6 +44,7 @@ class LetterRequest extends Model
         return [
             'form_data' => 'array',
             'is_new_resident' => 'boolean',
+            'with_stamp' => 'boolean',
             'submitted_at' => 'datetime',
             'verified_at' => 'datetime',
             'authorized_at' => 'datetime',

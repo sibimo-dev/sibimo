@@ -308,16 +308,16 @@
                         <td style="text-align:right;">{{ $signature['city'] }}, {{ $signature['date'] }}</td>
                     </tr>
                     <tr>
-                        <td style="text-align:left; padding-top:2pt;">Dukuh</td>
-                        <td style="text-align:right; padding-top:2pt;">Pemohon</td>
+                        <td style="text-align:center; padding-top:2pt;">Dukuh</td>
+                        <td style="text-align:center; padding-top:2pt;">Pemohon</td>
                     </tr>
                 </table>
                 {{-- Nama penandatangan opsional: dari $signers (hamlet_head_name, applicant_name); kosong = dibiarkan manual. --}}
                 <div style="height:50pt;"></div>
                 <table class="signature-inner">
                     <tr>
-                        <td style="text-align:left;">{{ $signers['hamlet_head_name'] ?? '' }}</td>
-                        <td style="text-align:right;">{{ $signers['applicant_name'] ?? '' }}</td>
+                        <td style="text-align:center;">{{ $signers['hamlet_head_name'] ?? '' }}</td>
+                        <td style="text-align:right; padding-right:4pt;">{{ $signers['applicant_name'] ?? '' }}</td>
                     </tr>
                 </table>
             </td>
@@ -330,17 +330,21 @@
             <td style="width:42%; padding-left:10pt;">
                 <table class="signature-inner">
                     <tr>
-                        <td style="text-align:left; vertical-align:top; line-height:1.2;">
+                        <td style="text-align:center; vertical-align:top; line-height:1.2;">
                             Camat
                             <div style="height:40pt;"></div>
                             <div style="margin-top:3pt;">{{ $signers['district_head_name'] ?? '' }}</div>
                         </td>
-                        <td style="text-align:right; vertical-align:top; line-height:1.2;">
-                            Mengetahui Lurah
-                            <div style="height:40pt; text-align:center;">
+                        <td style="text-align:center; vertical-align:top; line-height:1.2;">
+                            Mengetahui
+                            @foreach (($signature['prefix'] ?? []) as $line)
+                                <div>{{ $line }}</div>
+                            @endforeach
+                            <div>{{ $signature['position'] ?? 'Lurah Bimomartani' }}</div>
+                            <div style="height:72pt; text-align:center;">
                                 @include('letters.partials.signature-image')
                             </div>
-                            <div style="margin-top:3pt;">{{ $signers['village_officer_name'] ?? '' }}</div>
+                            <div style="margin-top:3pt;">{{ $signature['name'] ?? '' }}</div>
                         </td>
                     </tr>
                 </table>

@@ -65,11 +65,11 @@
         }
         .signature-space {
             width: 150pt;
-            height: 32pt;
+            height: 72pt;
         }
         .sign-name {
             width: 220pt;
-            margin-top: 34pt;          /* ruang kosong untuk tanda tangan di atas nama */
+            margin-top: 4pt;
             text-align: center;
             white-space: nowrap;
             border-bottom: 1px dashed #000;

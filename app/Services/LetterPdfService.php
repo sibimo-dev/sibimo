@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LetterRequest;
 use App\Models\LetterType;
 use App\Models\Staff;
+use App\Models\FooterSetting;
 use App\Support\LetterNumberFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -855,6 +856,9 @@ class LetterPdfService
                 $letterDate,
                 in_array($templateSlug, self::SIGNATURE_DIRECT_SLUGS, true),
                 $this->shouldRenderDigitalSignature($letterRequest) ? $signer?->signature_image : null,
+                $this->shouldRenderDigitalSignature($letterRequest) && $letterRequest->with_stamp
+                    ? $this->footerStampBase64()
+                    : null,
             ),
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
@@ -3069,7 +3073,7 @@ class LetterPdfService
         return "{$classificationIndex}/{$seq}";
     }
 
-    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null): array
+    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null, ?string $stampImage = null): array
     {
         $parsed = $date ? Carbon::parse($date) : null;
 
@@ -3081,7 +3085,13 @@ class LetterPdfService
             'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
             'image' => $this->signatureImageBase64($signatureImagePath),
+            'stamp' => $stampImage,
         ];
+    }
+
+    private function footerStampBase64(): ?string
+    {
+        return $this->imageBase64(FooterSetting::query()->value('stamp'));
     }
 
     /**

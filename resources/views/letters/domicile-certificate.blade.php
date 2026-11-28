@@ -19,7 +19,7 @@
     p.gap-top-lg { margin-top: 8pt; }
     p.gap-top { margin-top: 4pt; }
     table.ttd td.ttd-content { padding-top: 10pt; line-height: 16pt; }
-    .ttd-space { height: 35pt; }
+    .ttd-space { height: 72pt; }
 @endsection
 
 @section('content')
