@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->json('form_data')->nullable();
             $table->string('letter_number', 100)->nullable();
             $table->enum('signature_type', ['manual', 'digital'])->nullable();
+            $table->boolean('with_stamp')->default(true);
             $table->foreignId('verified_by')->nullable()->constrained('users', 'user_id');
             $table->foreignId('authorized_by_signer_id')->nullable()->constrained('staff', 'staff_id');
             $table->enum('source', ['Online', 'Manual (Kelurahan)'])->default('Manual (Kelurahan)');

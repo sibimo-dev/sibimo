@@ -304,7 +304,7 @@
         <table class="ttd-multi" style="page-break-inside: avoid;">
             <tr>
                 <td width="34%">Petugas Registrasi,</td>
-                <td width="33%">a.n LURAH BIMOMARTANI</td>
+                <td width="33%">@foreach (($signature['prefix'] ?? []) as $line){{ $line }}<br>@endforeach{{ $signature['position'] ?? '' }}</td>
                 <td width="33%">Pemohon,</td>
             </tr>
             <tr style="page-break-inside: avoid;">

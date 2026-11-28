@@ -19,7 +19,7 @@
     table.fuel-data td.val.multiline-value { height: auto; }
 
     table.ttd td.ttd-content { padding-top: 14pt; }
-    .ttd-space { height: 36pt; }
+    .ttd-space { height: 72pt; }
 @endsection
 
 @section('content')

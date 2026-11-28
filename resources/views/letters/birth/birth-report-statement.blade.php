@@ -24,7 +24,7 @@
 
     table.sign { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
     table.sign td { width: 50%; vertical-align: top; padding: 0 10pt; line-height: 1.15; }
-    .sign-space { height: 26pt; }
+    .sign-space { height: 72pt; }
 @endsection
 
 @section('content')

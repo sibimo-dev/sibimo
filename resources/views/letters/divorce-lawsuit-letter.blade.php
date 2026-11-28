@@ -75,7 +75,7 @@
     .keep-together { page-break-inside: avoid; }
 
     .ttd { margin-top: 4pt !important; }
-    .ttd-space { height: 28pt !important; }
+    .ttd-space { height: 72pt !important; }
 @endsection
 
 @section('content')

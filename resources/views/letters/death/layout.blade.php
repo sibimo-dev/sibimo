@@ -44,7 +44,7 @@
         .right { text-align: right; }
         .signature { width: 100%; margin-top: 18pt; page-break-inside: avoid; }
         .signature td { width: 50%; text-align: center; vertical-align: top; }
-        .signature-space { height: 48pt; }
+        .signature-space { height: 72pt; }
         .line { display: inline-block; min-width: 145pt; border-bottom: 1px solid #000; height: 14pt; }
         .page-break { page-break-before: always; }
         .check { display: inline-block; border: 1px solid #000; width: 10pt; height: 10pt; margin-right: 4pt; vertical-align: -1pt; }
@@ -68,8 +68,8 @@
         .checklist .check-box { width: 18pt; height: 18pt; border: 1px solid #000; }
         .signature-lines { width: 100%; border-collapse: collapse; margin-top: 12pt; }
         .signature-lines td { width: 50%; text-align: center; vertical-align: top; padding: 0 8pt; }
-        .signature-lines .space { height: 40pt; }
-        .signature-lines .long-space { height: 58pt; }
+        .signature-lines .space { height: 72pt; }
+        .signature-lines .long-space { height: 72pt; }
         @yield('extra_css')
     </style>
 </head>

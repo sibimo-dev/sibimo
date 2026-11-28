@@ -16,7 +16,7 @@
     td.lbl { width: 112pt; }
     td.val { height: 12.5pt; }
     table.ttd td.ttd-content { padding-top: 8pt; line-height: 16pt; }
-    .ttd-space { height: 35pt; }
+    .ttd-space { height: 72pt; }
 @endsection
 
 @section('content')

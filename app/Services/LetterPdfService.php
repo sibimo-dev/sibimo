@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LetterRequest;
 use App\Models\LetterType;
 use App\Models\Staff;
+use App\Models\FooterSetting;
 use App\Support\LetterNumberFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -344,10 +345,27 @@ class LetterPdfService
         // Relasi authorizedSigner memakai scope khusus signer; fallback langsung
         // ke Staff diperlukan untuk data lama/konfigurasi yang menyimpan pejabat
         // sah pada tabel staff tetapi belum memiliki flag is_signer yang sama.
-        $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        // $signer = $letterRequest->authorizedSigner ?? $letterRequest->letterType?->signer;
+        // if (! $signer && filled($letterRequest->authorized_by_signer_id)) {
+        //     $signer = Staff::query()->find($letterRequest->authorized_by_signer_id);
+        // }
+        // if (! $signer && filled($letterRequest->letterType?->signer_id)) {
+        //     $signer = Staff::query()->find($letterRequest->letterType->signer_id);
+        // }
+
+        $signer = $letterRequest->authorizedSigner;
+        
+        // Prioritaskan pejabat yang benar-benar melakukan otorisasi.
         if (! $signer && filled($letterRequest->authorized_by_signer_id)) {
             $signer = Staff::query()->find($letterRequest->authorized_by_signer_id);
         }
+        
+        // Jika tidak ditemukan, gunakan signer bawaan jenis surat.
+        if (! $signer) {
+            $signer = $letterRequest->letterType?->signer;
+        }
+        
+        // Fallback terakhir berdasarkan signer_id.
         if (! $signer && filled($letterRequest->letterType?->signer_id)) {
             $signer = Staff::query()->find($letterRequest->letterType->signer_id);
         }
@@ -855,6 +873,9 @@ class LetterPdfService
                 $letterDate,
                 in_array($templateSlug, self::SIGNATURE_DIRECT_SLUGS, true),
                 $this->shouldRenderDigitalSignature($letterRequest) ? $signer?->signature_image : null,
+                $this->shouldRenderDigitalSignature($letterRequest) && $letterRequest->with_stamp
+                    ? $this->footerStampBase64()
+                    : null,
             ),
             'logo' => $this->asset('logo-sleman.png'),
             'kop' => $this->kopData($signerPosition, $kalurahanKop),
@@ -3069,7 +3090,7 @@ class LetterPdfService
         return "{$classificationIndex}/{$seq}";
     }
 
-    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null): array
+    private function signature(?string $name, ?string $position, $date, bool $directPrefix = false, ?string $signatureImagePath = null, ?string $stampImage = null): array
     {
         $parsed = $date ? Carbon::parse($date) : null;
 
@@ -3081,7 +3102,13 @@ class LetterPdfService
             'position' => $this->signedByLurah($position) ? self::SIGNATURE_LURAH_TITLE : $position,
             'name' => $name,
             'image' => $this->signatureImageBase64($signatureImagePath),
+            'stamp' => $stampImage,
         ];
+    }
+
+    private function footerStampBase64(): ?string
+    {
+        return $this->imageBase64(FooterSetting::query()->value('stamp'));
     }
 
     /**
@@ -3136,44 +3163,91 @@ class LetterPdfService
         return $this->imageBase64($pathOrUrl);
     }
 
+
     private function imageBase64(?string $pathOrUrl): ?string
     {
         if (blank($pathOrUrl)) {
             return null;
         }
 
-        // Kalau sudah berupa data-URI, langsung kembalikan.
+        // Jika sudah berupa data URI, langsung kembalikan.
         if (str_starts_with($pathOrUrl, 'data:')) {
             return $pathOrUrl;
         }
 
-        // Bersihkan query string / fragment.
-        $clean = strtok($pathOrUrl, '?#');
+        $path = $pathOrUrl;
 
-        // Ubah URL relatif ke path absolut di public/.
-        if (str_starts_with($clean, '/')) {
-            $absPath = public_path(ltrim($clean, '/'));
-        } elseif (preg_match('#^https?://#', $clean)) {
-            // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
-            // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
-            $parsed  = parse_url($clean);
-            $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+        // Jika berupa URL, ambil path setelah /storage/.
+        if (preg_match('#^https?://#i', $path)) {
+            $urlPath = parse_url($path, PHP_URL_PATH);
+
+            if (! $urlPath || ! str_starts_with($urlPath, '/storage/')) {
+                return null;
+            }
+
+            $path = substr($urlPath, strlen('/storage/'));
         } else {
-            $absPath = $clean;
+            $path = ltrim($path, '/');
+
+            if (str_starts_with($path, 'storage/')) {
+                $path = substr($path, strlen('storage/'));
+            }
         }
 
-        if (! is_file($absPath) || ! is_readable($absPath)) {
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+
+        if (! $disk->exists($path)) {
             return null;
         }
 
-        $mime = mime_content_type($absPath) ?: 'image/png';
+        $content = $disk->get($path);
+        $mime = $disk->mimeType($path) ?: 'image/png';
 
         if (! str_starts_with($mime, 'image/')) {
             return null;
         }
 
-        return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+        return "data:{$mime};base64," . base64_encode($content);
     }
+
+    // private function imageBase64(?string $pathOrUrl): ?string
+    // {
+    //     if (blank($pathOrUrl)) {
+    //         return null;
+    //     }
+
+    //     // Kalau sudah berupa data-URI, langsung kembalikan.
+    //     if (str_starts_with($pathOrUrl, 'data:')) {
+    //         return $pathOrUrl;
+    //     }
+
+    //     // Bersihkan query string / fragment.
+    //     $clean = strtok($pathOrUrl, '?#');
+
+    //     // Ubah URL relatif ke path absolut di public/.
+    //     if (str_starts_with($clean, '/')) {
+    //         $absPath = public_path(ltrim($clean, '/'));
+    //     } elseif (preg_match('#^https?://#', $clean)) {
+    //         // URL absolut: ambil hanya path-nya (strip host:port) ke public/.
+    //         // Tidak pakai url('/') karena tidak reliable di CLI / queue context.
+    //         $parsed  = parse_url($clean);
+    //         $absPath = public_path(ltrim($parsed['path'] ?? '', '/'));
+    //     } else {
+    //         $absPath = $clean;
+    //     }
+
+    //     if (! is_file($absPath) || ! is_readable($absPath)) {
+    //         return null;
+    //     }
+
+    //     $mime = mime_content_type($absPath) ?: 'image/png';
+
+    //     if (! str_starts_with($mime, 'image/')) {
+    //         return null;
+    //     }
+
+    //     return "data:{$mime};base64," . base64_encode(file_get_contents($absPath));
+    // }
 
     /**
      * Gambar tanda tangan digital hanya boleh dirender bila surat sudah

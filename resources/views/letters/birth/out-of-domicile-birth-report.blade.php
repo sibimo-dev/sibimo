@@ -74,7 +74,7 @@
 
         table.foot { width: 100%; border-collapse: collapse; margin-top: 2pt; page-break-inside: avoid; }
         table.foot td { width: 50%; vertical-align: top; text-align: center; padding: 0; }
-        table.foot td.foot-space { height: 24pt; }
+        table.foot td.foot-space { height: 72pt; }
         .foot-name { display: inline-block; min-width: 130pt; border-bottom: 1px dashed #000; }
     </style>
 </head>

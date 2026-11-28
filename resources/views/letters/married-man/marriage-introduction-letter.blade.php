@@ -37,7 +37,7 @@
         table.ttd td { padding: 0; vertical-align: top; }
         table.ttd td.ttd-spacer { width: 58%; }
         table.ttd td.ttd-content { width: 42%; text-align: left; line-height: 12pt; }
-        .ttd-space { height: 42pt; }
+        .ttd-space { height: 72pt; }
     </style>
 </head>
 <body>
