@@ -1,4 +1,3 @@
-
 @extends('letters.layouts.base')
 
 @section('title', 'Surat Keterangan Tidak Mampu')
@@ -12,9 +11,9 @@
     table.data { margin-left: 74pt; width: 383pt; }
     table.data td { padding: 1.4pt 0; }
     td.lbl { width: 112pt; }
-    table.purpose { margin-left: 0; width: 457pt; }
+    table.purpose { margin-left: 0; width: 457pt; border-collapse: collapse; }
     table.purpose td.lbl { width: 215pt; white-space: nowrap; }
-    table.purpose td.sep { width: 0; }
+    table.purpose td.val { text-align: left; white-space: nowrap; }
 @endsection
 
 @section('content')
@@ -94,16 +93,17 @@
         </tr>
     </table>
 
-    <table class="data purpose" style="margin-top: 16pt;">
-        <tr>
-            <td class="lbl">Surat Keterangan ini dipergunakan untuk</td>
-            <td class="sep"></td>
-            <td class="val">{{ $purpose }}</td>
-        </tr>
-        <tr>
-            <td class="val" colspan="3">di {{ $destination }}</td>
-        </tr>
-    </table>
+    @php
+        // pecah isian keperluan per baris sesuai lebar kolom kanan (~242pt)
+        $purposeLines = explode("\n", wordwrap(trim($purpose), 42, "\n", false));
+    @endphp
+
+    <div style="margin-top: 16pt; width: 457pt; text-align: left;
+            line-height: 18pt;
+            background: url('{{ public_path('images/dot-line.png') }}') repeat-x 0 100%;
+            background-size: 4px 18pt;">
+    Surat Keterangan ini dipergunakan untuk {{ $purpose }}@if(!empty($destination)) di {{ $destination }}@endif
+</div>
 
     <p style="margin-top: 9pt;">Demikian surat keterangan ini dibuat untuk dipergunakan seperlunya.</p>
 @endsection
