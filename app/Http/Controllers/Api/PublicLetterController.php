@@ -12,11 +12,13 @@ use App\Models\LetterType;
 use App\Models\StaffAssignment;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
+use App\Services\SignatureSpecimenNormalizer;
 use App\Support\LetterNumberFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -171,7 +173,7 @@ class PublicLetterController extends Controller
         return response()->json(['success' => true, 'data' => $documents]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, SignatureSpecimenNormalizer $specimenNormalizer): JsonResponse
     {
         $validated = $request->validate([
             'letter_type_code' => ['required', 'string', Rule::in(self::ONLINE_CODES)],
@@ -234,10 +236,21 @@ class PublicLetterController extends Controller
         }
 
         $documents = $letterType->documents->keyBy('letter_type_document_id');
-        foreach ($documentIds as $documentId) {
+        foreach ($documentIds as $index => $documentId) {
             if (! $documents->has((int) $documentId)) {
                 throw ValidationException::withMessages([
                     'attachment_document_ids' => 'Tipe dokumen lampiran tidak sesuai dengan tipe surat.',
+                ]);
+            }
+
+            $requirement = $documents->get((int) $documentId);
+            if (
+                isset($files[$index])
+                && $specimenNormalizer->isSpecimen($requirement?->document_name)
+                && ! in_array(strtolower($files[$index]->extension()), ['jpg', 'jpeg', 'png'], true)
+            ) {
+                throw ValidationException::withMessages([
+                    "attachments.{$index}" => 'Spesimen tanda tangan harus berupa gambar JPG atau PNG.',
                 ]);
             }
         }
@@ -329,6 +342,7 @@ class PublicLetterController extends Controller
                 $documentIds,
                 $reusedDocuments,
                 $isAllowedNewResidentRegistration,
+                $specimenNormalizer,
                 &$storedPaths,
             ): LetterRequest {
                 $letterRequest = LetterRequest::create([
@@ -345,17 +359,37 @@ class PublicLetterController extends Controller
                 ]);
 
                 foreach ($files as $index => $file) {
-                    $storedPath = $file->store("letter-requests/{$letterRequest->letter_request_id}", 'public');
-                    $storedPaths[] = $storedPath;
                     $requirement = $documents->get((int) $documentIds[$index]);
                     $docLabel = $documentLabels[$index] ?? $requirement?->document_name;
+                    $isSpecimen = $specimenNormalizer->isSpecimen($docLabel ?: $requirement?->document_name);
+                    $normalizedContents = $isSpecimen ? $specimenNormalizer->normalize($file) : null;
+                    $storedName = $isSpecimen
+                        ? $specimenNormalizer->fileName($file)
+                        : $file->getClientOriginalName();
+
+                    if ($normalizedContents !== null) {
+                        $baseName = pathinfo($storedName, PATHINFO_FILENAME);
+                        $storedPath = "letter-requests/{$letterRequest->letter_request_id}/{$baseName}_" . Str::uuid() . '.png';
+                        Storage::disk('public')->put($storedPath, $normalizedContents);
+                    } else {
+                        $storedPath = $file->store("letter-requests/{$letterRequest->letter_request_id}", 'public');
+                    }
+                    $storedPaths[] = $storedPath;
 
                     LetterRequestAttachment::create([
                         'letter_request_id' => $letterRequest->letter_request_id,
                         'letter_type_document_id' => (int) $documentIds[$index],
-                        'citizen_document_id' => $this->storeCitizenDocument($citizen, $file, $requirement, $storedPaths, $docLabel),
+                        'citizen_document_id' => $this->storeCitizenDocument(
+                            $citizen,
+                            $file,
+                            $requirement,
+                            $storedPaths,
+                            $docLabel,
+                            $normalizedContents,
+                            $storedName,
+                        ),
                         'document_type' => $this->documentType($docLabel ?: $requirement?->document_name),
-                        'file_name' => $file->getClientOriginalName(),
+                        'file_name' => $storedName,
                         'file_path' => Storage::disk('public')->url($storedPath),
                         'uploaded_at' => now(),
                     ]);
@@ -363,8 +397,17 @@ class PublicLetterController extends Controller
 
                 foreach ($reusedDocuments as $documentId => $citizenDocument) {
                     $sourceDisk = Storage::disk('local')->exists($citizenDocument->storage_path) ? 'local' : 'public';
-                    $requestPath = "letter-requests/{$letterRequest->letter_request_id}/" . uniqid('reused-', true) . '-' . $citizenDocument->file_name;
-                    Storage::disk('public')->put($requestPath, Storage::disk($sourceDisk)->get($citizenDocument->storage_path));
+                    $sourceContents = Storage::disk($sourceDisk)->get($citizenDocument->storage_path);
+                    $requirement = $documents->get((int) $documentId);
+                    $isSpecimen = $specimenNormalizer->isSpecimen($requirement?->document_name);
+                    $requestContents = $isSpecimen
+                        ? $specimenNormalizer->normalizeContents($sourceContents)
+                        : $sourceContents;
+                    $requestFileName = $isSpecimen
+                        ? $specimenNormalizer->pngFileName($citizenDocument->file_name)
+                        : $citizenDocument->file_name;
+                    $requestPath = "letter-requests/{$letterRequest->letter_request_id}/" . uniqid('reused-', true) . '-' . $requestFileName;
+                    Storage::disk('public')->put($requestPath, $requestContents);
                     $storedPaths[] = $requestPath;
 
                     LetterRequestAttachment::create([
@@ -372,7 +415,7 @@ class PublicLetterController extends Controller
                         'letter_type_document_id' => $documentId,
                         'citizen_document_id' => $citizenDocument->citizen_document_id,
                         'document_type' => $citizenDocument->document_type,
-                        'file_name' => $citizenDocument->file_name,
+                        'file_name' => $requestFileName,
                         'file_path' => Storage::disk('public')->url($requestPath),
                         'uploaded_at' => now(),
                     ]);
@@ -585,23 +628,37 @@ class PublicLetterController extends Controller
         return explode(':', $type, 2)[0];
     }
 
-    private function storeCitizenDocument(?Citizen $citizen, $file, $requirement, array &$storedPaths, ?string $docLabel = null): ?int
+    private function storeCitizenDocument(
+        ?Citizen $citizen,
+        $file,
+        $requirement,
+        array &$storedPaths,
+        ?string $docLabel = null,
+        ?string $normalizedContents = null,
+        ?string $storedName = null,
+    ): ?int
     {
         if (! $citizen || ! $requirement) {
             return null;
         }
 
-        $hash = hash_file('sha256', $file->getRealPath());
+        $hash = $normalizedContents !== null
+            ? hash('sha256', $normalizedContents)
+            : hash_file('sha256', $file->getRealPath());
         $type = $this->documentType($docLabel ?: $requirement->document_name);
-        $extension = strtolower($file->getClientOriginalExtension() ?: 'bin');
+        $extension = $normalizedContents !== null ? 'png' : strtolower($file->getClientOriginalExtension() ?: 'bin');
         $privatePath = "citizen-documents/{$citizen->citizen_id}/{$hash}.{$extension}";
 
         if (! Storage::disk('local')->exists($privatePath)) {
-            Storage::disk('local')->putFileAs(
-                "citizen-documents/{$citizen->citizen_id}",
-                $file,
-                "{$hash}.{$extension}",
-            );
+            if ($normalizedContents !== null) {
+                Storage::disk('local')->put($privatePath, $normalizedContents);
+            } else {
+                Storage::disk('local')->putFileAs(
+                    "citizen-documents/{$citizen->citizen_id}",
+                    $file,
+                    "{$hash}.{$extension}",
+                );
+            }
         }
 
         $document = CitizenDocument::query()->firstOrCreate(
@@ -611,10 +668,10 @@ class PublicLetterController extends Controller
                 'file_hash' => $hash,
             ],
             [
-                'file_name' => $file->getClientOriginalName(),
+                'file_name' => $storedName ?? $file->getClientOriginalName(),
                 'storage_path' => $privatePath,
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
+                'mime_type' => $normalizedContents !== null ? 'image/png' : $file->getMimeType(),
+                'file_size' => $normalizedContents !== null ? strlen($normalizedContents) : $file->getSize(),
                 'is_active' => true,
             ],
         );

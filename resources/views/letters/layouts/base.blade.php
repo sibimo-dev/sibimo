@@ -87,8 +87,8 @@
             line-height: 20pt;
             padding-top: 26pt;
         }
-        .ttd-space { height: 52pt; }
-        .signature-image { display: block; width: auto; max-width: 120pt; max-height: 48pt; margin: 0 auto; object-fit: contain; }
+        .ttd-space { height: 72pt; }
+        .signature-image { display: block; width: auto; max-width: 170pt; max-height: 64pt; margin: 0 auto; object-fit: contain; }
 
         /* ===== TEMBUSAN =====
            Opsional: surat yang butuh baris "Tembusan Dikirim Kepada" (mis.

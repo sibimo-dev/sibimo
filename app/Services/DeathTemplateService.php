@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LetterRequest;
+use App\Models\FooterSetting;
 use App\Support\LetterNumberFormatter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
@@ -190,17 +191,38 @@ class DeathTemplateService
         $signer = $request->authorizedSigner ?? $request->letterType?->signer;
         $data['death'] = $death;
         $data['signature']['date'] = $request->authorized_at?->format('d-m-Y') ?? '';
-        $data['signature']['position'] = $signer?->position ?? '';
-        $data['signature']['name'] = $signer?->name ?? '';
-
         $isAuthorized = filled($request->authorized_at)
             || in_array($request->status, ['authorized', 'completed'], true);
+        $position = $signer?->position ?? '';
+        $isLurah = $this->signedByLurah($position);
+        $data['signature']['prefix'] = $isAuthorized && ! $isLurah
+            ? (str_contains(mb_strtolower($position), 'carik')
+                ? ['a.n LURAH BIMOMARTANI']
+                : ['a.n LURAH BIMOMARTANI', 'Carik', 'u.b.'])
+            : [];
+        $data['signature']['position'] = $isLurah ? 'LURAH BIMOMARTANI' : $position;
+        $data['signature']['name'] = $signer?->name ?? '';
+
         $signatureImage = ($isAuthorized && $request->signature_type === 'digital')
             ? $signer?->signature_image
             : null;
         $data['signature']['image'] = $this->signatureImageBase64($signatureImage);
+        $data['signature']['stamp'] = ($isAuthorized && $request->signature_type === 'digital' && $request->with_stamp)
+            ? $this->imageBase64(FooterSetting::query()->value('stamp'))
+            : null;
 
         return $data;
+    }
+
+    private function signedByLurah(?string $position): bool
+    {
+        $position = mb_strtolower((string) $position);
+
+        if (str_contains($position, 'urusan') || str_starts_with($position, 'kaur')) {
+            return false;
+        }
+
+        return str_starts_with($position, 'lurah') || str_contains($position, 'kepala desa');
     }
 
     private function signatureImageBase64(?string $pathOrUrl): ?string

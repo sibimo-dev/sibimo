@@ -16,7 +16,7 @@
     .judul { margin-left: 0; margin-top: 2pt; font-size: 11pt; }
     .nomor { font-size: 9.5pt; margin-top: 1pt; }
     .kop-line { margin-top: 4pt; }
-    .sign-space { height: 16pt; }
+    .sign-space { height: 72pt; }
 
     .bf { font-size: 8.6pt; line-height: 0.98; }
 

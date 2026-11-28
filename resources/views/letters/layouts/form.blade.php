@@ -71,7 +71,7 @@ table.tbl-bordered th { text-align: center; font-weight: bold; }
 
 table.ttd-multi { width: 100%; margin-top: 3pt; border-collapse: collapse; }
 table.ttd-multi td { text-align: center; vertical-align: top; padding: 0 6pt; font-size: 9.5pt; }
-table.ttd-multi .ttd-space { height: 50pt; }
+table.ttd-multi .ttd-space { height: 72pt; }
 
 @yield('extra_css')
     </style>

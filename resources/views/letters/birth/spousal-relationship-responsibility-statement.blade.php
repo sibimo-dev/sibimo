@@ -48,7 +48,7 @@
         td.know-offset { width: 33%; }
         table.know td { padding: 0; text-align: left; }
         table.know td.know-head { text-align: center; }
-        table.know td.know-space { height: 44pt; }
+        table.know td.know-space { height: 72pt; }
     </style>
 </head>
 <body>

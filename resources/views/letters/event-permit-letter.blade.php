@@ -31,7 +31,7 @@
     p.gap-top { margin-top: 3pt; margin-bottom: 2pt; }
     p { margin: 2pt 0; }
     table.ttd td.ttd-content { padding-top: 8pt; line-height: 16pt; }
-    .ttd-space { height: 35pt; }
+    .ttd-space { height: 72pt; }
     .no-break, .signature, .ttd { page-break-inside: avoid; }
 @endsection
 

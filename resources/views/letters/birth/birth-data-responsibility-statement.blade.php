@@ -9,7 +9,7 @@
       $father           : name, nik, birth, occupation, address
       $birth_attendant  : name, nik, birth, occupation, address
       $witnesses        : array of 2 items (name, nik)
-      $signature        : city, name (name of the Ulu-Ulu official)
+      $signature        : city, prefix, position, image, name (authorized signer)
 --}}
 @php
     $witnessOne = data_get($witnesses, 0, []);
@@ -95,7 +95,7 @@
         td.know-offset { width: 33%; }
         table.know td { padding: 0; text-align: left; }
         table.know td.know-head { text-align: center; }
-        table.know td.know-space { height: 30pt; }
+        table.know td.know-space { height: 72pt; }
     </style>
 </head>
 <body>
@@ -167,8 +167,10 @@
             <td>
                 <table class="know">
                     <tr><td class="know-head">Mengetahui</td></tr>
-                    <tr><td>a.n LURAH BIMOMARTANI</td></tr>
-                    <tr><td>Ulu-Ulu</td></tr>
+                    @foreach (($signature['prefix'] ?? []) as $line)
+                        <tr><td>{{ $line }}</td></tr>
+                    @endforeach
+                    <tr><td>{{ $signature['position'] ?? '' }}</td></tr>
                     <tr><td class="know-space">@include('letters.partials.signature-image')</td></tr>
                     <tr><td>{{ $signature['name'] ?? '' }}</td></tr>
                 </table>

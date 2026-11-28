@@ -16,8 +16,8 @@
     .judul-form { margin-top: 1.5pt; font-size: 10pt; }
     .subjudul-form { font-size: 8.6pt; }
     table.ttd-multi td { font-size: 8.6pt; vertical-align: top; text-align: center; }
-    table.ttd-multi .ttd-space { height: 40pt; }
-    table.ttd-multi .ttd-space .signature-image { max-width: 100pt; max-height: 36pt; }
+    table.ttd-multi .ttd-space { height: 72pt; }
+    table.ttd-multi .ttd-space .signature-image { max-width: 150pt; max-height: 56pt; }
     table.ttd-multi .ttd-name { display: block; margin-top: 3pt; white-space: nowrap; font-size: 7.6pt; }
 @endsection
 
@@ -258,7 +258,7 @@
     <table class="ttd-multi">
         <tr>
             <td width="34%">Petugas Registrasi</td>
-            <td width="33%">Mengetahui<br>a.n LURAH BIMOMARTANI</td>
+            <td width="33%">Mengetahui<br>@foreach (($signature['prefix'] ?? []) as $line){{ $line }}<br>@endforeach{{ $signature['position'] ?? '' }}</td>
             <td width="33%">Pemohon</td>
         </tr>
         <tr>

@@ -207,7 +207,7 @@
         }
 
         .signature-space {
-            height: 38pt;
+            height: 72pt;
         }
     </style>
 </head>

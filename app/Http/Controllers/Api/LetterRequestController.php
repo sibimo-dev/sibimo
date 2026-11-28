@@ -9,14 +9,17 @@ use App\Models\LetterClassificationSequence;
 use App\Models\LetterRequest;
 use App\Models\LetterRequestAttachment;
 use App\Models\LetterRequestStatusHistory;
+use App\Models\LetterTypeDocument;
 use App\Models\LetterType;
 use App\Models\Staff;
 use App\Services\DeathTemplateService;
 use App\Services\LetterPdfService;
+use App\Services\SignatureSpecimenNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -431,6 +434,7 @@ class LetterRequestController extends Controller
             // FIX #2: hapus 'nullable' agar required_if benar-benar enforce
             'authorized_by_signer_id' => ['required_if:status,authorized', 'exists:staff,staff_id'],
             'signature_type'          => ['required_if:status,authorized', Rule::in(['digital', 'manual'])],
+            'with_stamp'              => ['sometimes', 'boolean'],
         ]);
 
         if ($letterRequest->status !== 'verified') {
@@ -464,6 +468,8 @@ class LetterRequestController extends Controller
         if ($validated['status'] === 'authorized') {
             $updateData['authorized_by_signer_id'] = $validated['authorized_by_signer_id'];
             $updateData['signature_type']           = $validated['signature_type'];
+            $updateData['with_stamp']               = $validated['signature_type'] === 'digital'
+                && (bool) ($validated['with_stamp'] ?? true);
             $updateData['authorized_at']            = now();
             // Gunakan sequence berdasarkan indeks klasifikasi + DB transaction.
             $updateData['letter_number']            = $this->generateLetterNumber($letterRequest->letterType);
@@ -576,7 +582,7 @@ class LetterRequestController extends Controller
     }
 
     // ===== Lampiran dokumen =====
-    public function storeAttachment(Request $request, int $letterRequest_id): JsonResponse
+    public function storeAttachment(Request $request, SignatureSpecimenNormalizer $specimenNormalizer, int $letterRequest_id): JsonResponse
     {
         $letterRequest = LetterRequest::findOrFail($letterRequest_id);
 
@@ -589,12 +595,31 @@ class LetterRequestController extends Controller
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
 
-        $storedPath = $request->file('file')->store("letter-requests/{$letterRequest_id}", 'public');
+        $file = $request->file('file');
+        $document = LetterTypeDocument::findOrFail($validated['letter_type_document_id']);
+        $isSignatureSpecimen = $specimenNormalizer->isSpecimen($document->document_name);
+
+        if ($isSignatureSpecimen && ! in_array(strtolower($file->extension()), ['jpg', 'jpeg', 'png'], true)) {
+            throw ValidationException::withMessages([
+                'file' => 'Spesimen tanda tangan harus berupa gambar JPG atau PNG.',
+            ]);
+        }
+
+        if ($isSignatureSpecimen) {
+            $fileContents = $specimenNormalizer->normalize($file);
+            $storedName = $specimenNormalizer->fileName($file);
+            $baseName = pathinfo($storedName, PATHINFO_FILENAME);
+            $storedPath = "letter-requests/{$letterRequest_id}/{$baseName}_" . Str::uuid() . '.png';
+            Storage::disk('public')->put($storedPath, $fileContents);
+        } else {
+            $storedPath = $file->store("letter-requests/{$letterRequest_id}", 'public');
+            $storedName = $file->getClientOriginalName();
+        }
 
         $attachment = LetterRequestAttachment::create([
             'letter_request_id' => $letterRequest_id,
             'letter_type_document_id' => $validated['letter_type_document_id'],
-            'file_name' => $request->file('file')->getClientOriginalName(),
+            'file_name' => $storedName,
             'file_path' => Storage::disk('public')->url($storedPath),
             'uploaded_at' => now(),
         ]);

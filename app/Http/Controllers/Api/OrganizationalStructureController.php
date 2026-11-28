@@ -18,6 +18,9 @@ use App\Models\Rt;
 use App\Models\Rw;
 use App\Models\StaffAssignment;
 use App\Models\StaffPerson;
+use Intervention\Image\Color;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Laravel\Facades\Image;
 
 class OrganizationalStructureController extends Controller
 {
@@ -535,7 +538,21 @@ class OrganizationalStructureController extends Controller
         $token = substr($signature, 17);
         $file = $files[$token] ?? null;
         if (!$file) throw ValidationException::withMessages(['signatures' => "File tanda tangan untuk token {$token} tidak ditemukan."]);
-        return Storage::disk('public')->url($file->store('profile/signatures', 'public'));
+
+        try {
+            $normalized = Image::decode($file)
+                ->contain(600, 200, Color::transparent())
+                ->encode(new PngEncoder());
+        } catch (\Throwable $exception) {
+            throw ValidationException::withMessages([
+                'signatures' => "File tanda tangan untuk token {$token} tidak dapat diproses sebagai gambar.",
+            ]);
+        }
+
+        $path = 'profile/signatures/' . uniqid('signature_', true) . '.png';
+        Storage::disk('public')->put($path, (string) $normalized);
+
+        return Storage::disk('public')->url($path);
     }
 
     private function collectMediaUrls(array $files, string $directory): array
